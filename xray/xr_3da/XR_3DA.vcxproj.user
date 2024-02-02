@@ -6,9 +6,9 @@
     <LocalDebuggerCommandArguments>-nointro -ltx user.ltx</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-nointro -nosound -ltx user.ltx</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-nointro -ltx user.ltx </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>G:\GAMES\STALKER\SOC</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>x:\binaries</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>

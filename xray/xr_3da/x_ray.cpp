@@ -29,6 +29,7 @@ extern	void	Intro				( void* fn );
 extern	void	Intro_DSHOW			( void* fn );
 extern	int PASCAL IntroDSHOW_wnd	(HINSTANCE hInstC, HINSTANCE hInstP, LPSTR lpCmdLine, int nCmdShow);
 int		max_load_stage = 0;
+CInifile* pIniLoadTitle = NULL;
 
 // computing build id
 XRCORE_API	LPCSTR	build_date;
@@ -47,7 +48,7 @@ static int days_in_month[12] = {
 
 static int start_day	= 31;	// 31
 static int start_month	= 1;	// January
-static int start_year	= 1999;	// 1999
+static int start_year	= 2021;	// 1999
 
 
 /*KD: not using obviosly
@@ -159,14 +160,18 @@ void InitEngine		()
 
 void InitSettings	()
 {
-	string_path					fname; 
-	FS.update_path				(fname,"$game_config$","system.ltx");
-	pSettings					= xr_new<CInifile>	(fname,TRUE);
-	CHECK_OR_EXIT				(!pSettings->sections().empty(),make_string("Cannot find file %s.\nReinstalling application may fix this problem.",fname));
+	string_path fname; 
+	FS.update_path(fname,"$game_config$","system.ltx");
+	pSettings = xr_new<CInifile>	(fname,TRUE);
+	CHECK_OR_EXIT(!pSettings->sections().empty(),make_string("Cannot find file %s.\nReinstalling application may fix this problem.",fname));
 
-	FS.update_path				(fname,"$game_config$","game.ltx");
-	pGameIni					= xr_new<CInifile>	(fname,TRUE);
-	CHECK_OR_EXIT				(!pGameIni->sections().empty(),make_string("Cannot find file %s.\nReinstalling application may fix this problem.",fname));
+	FS.update_path(fname,"$game_config$","game.ltx");
+	pGameIni = xr_new<CInifile>	(fname,TRUE);
+	CHECK_OR_EXIT(!pGameIni->sections().empty(),make_string("Cannot find file %s.\nReinstalling application may fix this problem.",fname));
+	
+	FS.update_path(fname, "$game_config$","load_title.ltx");
+	pIniLoadTitle = xr_new<CInifile>(fname,TRUE);
+	CHECK_OR_EXIT(!pIniLoadTitle->sections().empty(),make_string("Cannot find file %s.\nReinstalling application may fix this problem.",fname));
 }
 void InitConsole	()
 {
@@ -216,6 +221,7 @@ void destroySettings()
 {
 	xr_delete					( pSettings		);
 	xr_delete					( pGameIni		);
+	xr_delete					( pIniLoadTitle		);
 }
 void destroyConsole	()
 {
@@ -641,8 +647,13 @@ int APIENTRY WinMain_impl(HINSTANCE hInstance,
 	SetProcessPriorityBoost		(GetCurrentProcess(), FALSE);
 	SetPriorityClass			(GetCurrentProcess(), HIGH_PRIORITY_CLASS);          // при подвисании это конечно накажет, но есть быстрые клавиши суицида процесса игры. 
 #else
-	SetThreadAffinityMask		(GetCurrentThread(),1);
+	//SetThreadAffinityMask		(GetCurrentThread(),1);
 #endif
+
+	SetThreadAffinityMask		(GetCurrentThread(), 2 + 4 + 8);	
+	SetThreadPriority			(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);  // чтобы вытеснить остальных из планировщика винды на занятом ядре
+	SetProcessPriorityBoost		(GetCurrentProcess(), FALSE);
+	SetPriorityClass			(GetCurrentProcess(), HIGH_PRIORITY_CLASS);          // при подвисании это конечно накажет, но есть быстрые клавиши суицида процесса игры.
 
 	// Title window
 	logoWindow					= CreateDialog(GetModuleHandle(NULL),	MAKEINTRESOURCE(IDD_STARTUP), 0, logDlgProc );
@@ -995,7 +1006,11 @@ void CApplication::LoadBegin	()
 		g_bootComplete		= FALSE;
 
 #ifndef DEDICATED_SERVER
-		_InitializeFont		(pFontSystem,"ui_font_graffiti19_russian",0);
+		_InitializeFont		(
+			pFontSystem,
+			pIniLoadTitle->r_string("main","font"),
+			0
+		);
 
 		ll_hGeom.create		(FVF::F_TL, RCache.Vertex.Buffer(), RCache.QuadIB);
 		curr_texture = "$null";
@@ -1351,7 +1366,11 @@ void CApplication::load_draw_internal()
 		pFontSystem->Clear			();
 		pFontSystem->SetColor		(color_rgba(157,140,120,255));
 		pFontSystem->SetAligment	(CGameFont::alCenter);
-		pFontSystem->OutI			(0.f,0.815f,app_title);
+		pFontSystem->OutI			(
+			pIniLoadTitle->r_float("main","x"),
+			pIniLoadTitle->r_float("main","y"),
+			app_title
+		);
 		pFontSystem->OnRender		();
 
 

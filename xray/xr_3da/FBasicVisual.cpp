@@ -10,6 +10,7 @@
 #endif    
 #include "fbasicvisual.h"
 #include "fmesh.h"
+#include "FHierrarhyVisual.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -62,11 +63,18 @@ void IRender_Visual::Load		(const char* N, IReader *data, u32 )
 
 	// Shader
 	if (data->find_chunk(OGF_TEXTURE)) {
+		LPCSTR gsn = ::Render->getShaderFromModel();
 		string256		fnT,fnS;
 		data->r_stringZ	(fnT,sizeof(fnT));
 		data->r_stringZ	(fnS,sizeof(fnS));
-		shader_ref.create	(fnS,fnT);
-		shader_name = fnS;
+		if (gsn != NULL) {
+			shader_ref.create	(gsn,fnT);
+			shader_name = gsn;
+		}
+		else {
+			shader_ref.create	(fnS,fnT);
+			shader_name = fnS;
+		}
 		textures = fnT;
 	}
 
@@ -93,3 +101,23 @@ void	IRender_Visual::Copy(IRender_Visual *pFrom)
 	PCOPY(dbg_name);
 #endif
 }
+
+void IRender_Visual::UpdateShaders(LPCSTR shader, LPCSTR texture_name) {
+	FHierrarhyVisual* pVisual = dynamic_cast<FHierrarhyVisual*>(this);
+	if (pVisual) {
+		xr_vector<IRender_Visual*>::iterator B, E;
+		B = (pVisual->children).begin();
+		E = (pVisual->children).end();
+		for ( ; B!=E;++B) {
+			IRender_Visual* pVisual2 = dynamic_cast<IRender_Visual*>(*B);
+			if (pVisual2) {
+				(pVisual2->shader_ref).create(shader, textures.c_str());
+				shader_name = shader;
+			}
+		}
+	}
+	else {
+		Msg("IRender_Visual::UpdateShaders(pVisual==NULL)");
+	}
+}
+

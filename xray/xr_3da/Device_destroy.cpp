@@ -67,12 +67,16 @@ void CRenderDevice::Reset		(bool precache)
 
 	Resources->reset_begin	();
 	Memory.mem_compact		();
+	Resources->DeferredUnload();   // //noramtexture
 	HW.Reset				(m_hWnd);
 	dwWidth					= HW.DevPP.BackBufferWidth;
 	dwHeight				= HW.DevPP.BackBufferHeight;
 	fWidth_2				= float(dwWidth/2);
 	fHeight_2				= float(dwHeight/2);
 	Resources->reset_end	();
+
+	Device.Resources->DeferredLoad		(FALSE);
+	Device.Resources->DeferredUpload	();
 
 	if (g_pGamePersistent)
 	{

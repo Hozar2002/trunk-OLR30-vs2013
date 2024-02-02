@@ -29,6 +29,8 @@ public:
 	
 	virtual		void		Render_First			(){;}
 	virtual		void		Render_Last				(){;}
+	virtual		void		RenderUI(){ ; }
+	virtual		void		Render3dUI(){ ; }
 	virtual		void		Render_Actor_Shadow		(){;}	// added by KD
 	
 	virtual		void		OnFrame					(){;}

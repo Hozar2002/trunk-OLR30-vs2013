@@ -20,7 +20,7 @@ CDemoRecord * xrDemoRecord = 0;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CDemoRecord::CDemoRecord(const char *name,float life_time) : CEffectorCam(cefDemo,life_time/*,FALSE*/)
+CDemoRecord::CDemoRecord(const char *name,float life_time) : CEffectorCam(cefDemo,life_time,FALSE)
 {
 	_unlink	(name);
 	file	= FS.w_open	(name);
@@ -251,25 +251,25 @@ BOOL CDemoRecord::Process(Fvector &P, Fvector &D, Fvector &N, float& fFov, float
 		if (psHUD_Flags.test(HUD_DRAW)){
 			if ((Device.dwTimeGlobal/750)%3!=0) {
 //				pApp->pFontSystem->SetSizeI	(0.02f);
-				pApp->pFontSystem->SetColor	(color_rgba(255,0,0,255));
+				pApp->pFontSystem->SetColor	(color_rgba(255,255,255,255));
 				pApp->pFontSystem->SetAligment(CGameFont::alCenter);
 				pApp->pFontSystem->OutSetI	(0,-.05f);
-				pApp->pFontSystem->OutNext	("%s","RECORDING");
-				pApp->pFontSystem->OutNext	("Key frames count: %d",iCount);
+//				pApp->pFontSystem->OutNext	("%s","RECORDING");
+//				pApp->pFontSystem->OutNext	("Key frames count: %d",iCount);
 				pApp->pFontSystem->SetAligment(CGameFont::alLeft);
 				pApp->pFontSystem->OutSetI	(-0.2f,+.05f);
-				pApp->pFontSystem->OutNext	("SPACE");
-				pApp->pFontSystem->OutNext	("BACK");
-				pApp->pFontSystem->OutNext	("ESC");
-				pApp->pFontSystem->OutNext	("F11");
-				pApp->pFontSystem->OutNext	("F12");
+//				pApp->pFontSystem->OutNext	("SPACE");
+	//			pApp->pFontSystem->OutNext	("BACK");
+		//		pApp->pFontSystem->OutNext	("ESC");
+			//	pApp->pFontSystem->OutNext	("F11");
+				//pApp->pFontSystem->OutNext	("F12");
 				pApp->pFontSystem->SetAligment(CGameFont::alLeft);
 				pApp->pFontSystem->OutSetI	(0,+.05f);
-				pApp->pFontSystem->OutNext	("= Append Key");
-				pApp->pFontSystem->OutNext	("= Cube Map");
-				pApp->pFontSystem->OutNext	("= Quit");
-				pApp->pFontSystem->OutNext	("= Level Map ScreenShot");
-				pApp->pFontSystem->OutNext	("= ScreenShot");
+				//pApp->pFontSystem->OutNext	("= Append Key");
+				//pApp->pFontSystem->OutNext	("= Cube Map");
+				//pApp->pFontSystem->OutNext	("= Quit");
+				//pApp->pFontSystem->OutNext	("= Level Map ScreenShot");
+				//pApp->pFontSystem->OutNext	("= ScreenShot");
 			}
 		}
 
@@ -335,9 +335,9 @@ void CDemoRecord::IR_OnKeyboardPress	(int dik)
 	{	
 		if (g_pGameLevel->CurrentEntity())
 		{
-#ifndef NDEBUG
+
 			g_pGameLevel->CurrentEntity()->ForceTransform(m_Camera);
-#endif
+
 			fLifeTime		= -1; 
 		}
 	}

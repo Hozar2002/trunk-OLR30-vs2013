@@ -16,6 +16,9 @@ class ENGINE_API	CPerlinNoise1D;
 
 #define DAY_LENGTH		86400.f
 
+const u16 sky_ver_count = 24;
+const u16 sky_fac_count = 20*3;
+
 #include "blenders\blender.h"
 class CBlender_skybox		: public IBlender  
 {
@@ -31,6 +34,7 @@ public:
 		C.r_Sampler_clf		("s_sky1",		"$null"			);
 		C.r_Sampler_rtf		("s_tonemap",	"$user$tonemap"	);	//. hack
 		C.r_End				();
+		
 	}
 };
 
@@ -49,7 +53,7 @@ public:
 	Fvector3			sky_color;		
 	Fvector3			hemi_color;
 
-	bool				load		(IReader*		fs);
+	void				load		(IReader*		fs);
 	float				sum			(CEnvModifier&	_another, Fvector3& view);
 };
 
@@ -89,10 +93,11 @@ public:
 	shared_str			sky_texture_name	;
 	shared_str			sky_texture_env_name;
 	shared_str			clouds_texture_name	;
-
+	
 	ref_texture			sky_texture		;
 	ref_texture			sky_texture_env	;
 	ref_texture			clouds_texture	;
+	bool				background_texture_visible;
 
 	Fvector4			clouds_color	;
 	Fvector3			sky_color		;
@@ -144,9 +149,10 @@ public:
 
 class ENGINE_API		CEnvDescriptorMixer: public CEnvDescriptor{
 public:
-	STextureList		sky_r_textures;		
+	STextureList		sky_r_textures;			
 	STextureList		sky_r_textures_env;	
 	STextureList		clouds_r_textures;	
+	STextureList		background_r_textures;	
 	float				weight;				
 
 	float				fog_near;		
@@ -211,6 +217,9 @@ public:
 	ref_shader				sh_2sky;
 	ref_geom				sh_2geom;
 
+	ref_shader				sh_2background;
+	ref_geom				background_geom;
+
 	ref_shader				clouds_sh;
 	ref_geom				clouds_geom;
 
@@ -221,14 +230,28 @@ public:
 	float					fTimeFactor;
 	ref_texture				tonemap;
 	ref_texture				tsky0,tsky1;
-
+	
+	ref_texture				background_texture;
+	ref_texture				background_empty_texture;
+	
+	shared_str				background_texture_name;
+	shared_str				background_texture_empty_name;
+	
+	shared_str				background_shader_name;
+	
+	bool					m_background_loaded;
+	float					m_background_min_y;
+	float					m_background_max_y;
+	float					m_background_min_cam_y;
+	float					m_background_max_cam_y;
+	
+public:
     void					SelectEnvs			(float gt);
 
 	void					UpdateAmbient		();
 	CEnvAmbient*			AppendEnvAmb		(const shared_str& sect);
 
 	void					Invalidate			();
-public:
 							CEnvironment		();
 							~CEnvironment		();
 
@@ -245,6 +268,7 @@ public:
 	void					RenderFlares		();
 	void					RenderLast			();
 
+	void					SetFogSc			(float fog);
 	bool					SetWeatherFX		(shared_str name);
 	bool					IsWFXPlaying		(){return bWFX;}
     void					SetWeather			(shared_str name, bool forced=false);
@@ -253,6 +277,11 @@ public:
 
 	void					OnDeviceCreate		();
 	void					OnDeviceDestroy		();
+	
+	void					BackgroundTextureLoad();
+	void					BackgroundTextureDestroy();
+	
+	float					GetAddY() const;
 
 	// editor-related
 #ifdef _EDITOR

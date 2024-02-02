@@ -1,32 +1,32 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#include "igame_persistent.h"
 #include "Environment.h"
 #include "xr_efflensflare.h"
 #include "thunderbolt.h"
 #include "rain.h"
 #include "resourcemanager.h"
 
+#ifndef _EDITOR
+#	include "igame_level.h"
+#endif
+
 //-----------------------------------------------------------------------------
 // Environment modifier
 //-----------------------------------------------------------------------------
-bool	CEnvModifier::load	(IReader* fs)
+void	CEnvModifier::load	(IReader* fs)
 {
-	// Проверка на корректность файла. Real Wolf.
-	if (fs->tell() + 76 > fs->length())
-		return false;
-
-	fs->r_fvector3	(position);			// 4*3=12
-	radius			= fs->r_float	();	// 4
-	power			= fs->r_float	();	// 4
-	far_plane		= fs->r_float	();	// 4
-	fs->r_fvector3	(fog_color);		// 4*3=12
-	fog_density		= fs->r_float	();	// 4
-	fs->r_fvector3	(ambient);			// 4*3=12
-	fs->r_fvector3	(sky_color);		// 4*3=12
-	fs->r_fvector3	(hemi_color);		// 4*3=12
-
-	return true;
+//	Fvector			dummy;
+	fs->r_fvector3	(position);
+	radius			= fs->r_float	();
+	power			= fs->r_float	();
+	far_plane		= fs->r_float	();
+	fs->r_fvector3	(fog_color);
+	fog_density		= fs->r_float	();
+	fs->r_fvector3	(ambient);
+	fs->r_fvector3	(sky_color);
+	fs->r_fvector3	(hemi_color);
 }
 float	CEnvModifier::sum	(CEnvModifier& M, Fvector3& view)
 {
@@ -124,6 +124,8 @@ CEnvDescriptor::CEnvDescriptor()
 	tb_id				= -1;
     
 	env_ambient			= NULL;
+	background_texture_visible = false;
+	
 }
 
 #define	C_CHECK(C)	if (C.x<0 || C.x>2 || C.y<0 || C.y>2 || C.z<0 || C.z>2)	{ Msg("! Invalid '%s' in env-section '%s'",#C,S);}
@@ -166,7 +168,9 @@ void CEnvDescriptor::load	(LPCSTR exec_tm, LPCSTR S, CEnvironment* parent)
 	bolt_period				= (tb_id>=0)?pSettings->r_float	(S,"bolt_period"):0.f;
 	bolt_duration			= (tb_id>=0)?pSettings->r_float	(S,"bolt_duration"):0.f;
 	env_ambient				= pSettings->line_exist(S,"env_ambient")?parent->AppendEnvAmb	(pSettings->r_string(S,"env_ambient")):0;
-
+	
+	background_texture_visible = !!READ_IF_EXISTS(pSettings,r_bool,S,"background_visible",TRUE);
+	
 	C_CHECK					(clouds_color);
 	C_CHECK					(sky_color	);
 	C_CHECK					(fog_color	);
@@ -200,6 +204,7 @@ void CEnvDescriptorMixer::destroy()
 	sky_r_textures.clear		();
 	sky_r_textures_env.clear	();
 	clouds_r_textures.clear		();
+	background_r_textures.clear		();
 
 	sky_texture.destroy			();
 	sky_texture_env.destroy		();
@@ -213,7 +218,7 @@ void CEnvDescriptorMixer::clear	()
 	sky_r_textures.push_back	(zero);
 	sky_r_textures.push_back	(zero);
 	sky_r_textures.push_back	(zero);
-
+	
 	sky_r_textures_env.clear	();
 	sky_r_textures_env.push_back(zero);
 	sky_r_textures_env.push_back(zero);
@@ -223,6 +228,11 @@ void CEnvDescriptorMixer::clear	()
 	clouds_r_textures.push_back	(zero);
 	clouds_r_textures.push_back	(zero);
 	clouds_r_textures.push_back	(zero);
+	
+	background_r_textures.clear		();
+	background_r_textures.push_back	(zero);
+	background_r_textures.push_back	(zero);
+	background_r_textures.push_back	(zero);
 }
 int get_ref_count(IUnknown* ii);
 void CEnvDescriptorMixer::lerp	(CEnvironment* , CEnvDescriptor& A, CEnvDescriptor& B, float f, CEnvModifier& M, float m_power)
@@ -242,6 +252,23 @@ void CEnvDescriptorMixer::lerp	(CEnvironment* , CEnvDescriptor& A, CEnvDescripto
 	clouds_r_textures.clear		();
 	clouds_r_textures.push_back	(mk_pair(0,A.clouds_texture));
 	clouds_r_textures.push_back	(mk_pair(1,B.clouds_texture));
+
+	background_r_textures.clear		();
+
+	if (g_pGamePersistent->Environment().m_background_loaded) {
+		if (A.background_texture_visible) {
+			background_r_textures.push_back(mk_pair(0,g_pGamePersistent->Environment().background_texture));
+		}
+		else {
+			background_r_textures.push_back(mk_pair(0,g_pGamePersistent->Environment().background_empty_texture));
+		}
+		if (B.background_texture_visible) {
+			background_r_textures.push_back(mk_pair(1,g_pGamePersistent->Environment().background_texture));
+		}
+		else {
+			background_r_textures.push_back(mk_pair(1,g_pGamePersistent->Environment().background_empty_texture));
+		}
+	}
 
 	weight					=	f;
 
@@ -300,9 +327,7 @@ void	CEnvironment::mods_load			()
 		while		(fs->find_chunk(id))	
 		{
 			CEnvModifier		E;
-			// Надо обязательно проверять, что файл корректный, даже если чанк был найден. Real Wolf.
-			if (!E.load(fs))
-				break;
+			E.load				(fs);
 			Modifiers.push_back	(E);
 			id					++;
 		}
@@ -316,6 +341,8 @@ void	CEnvironment::mods_unload		()
 
 void CEnvironment::load		()
 {
+	
+	
 	tonemap					= Device.Resources->_CreateTexture("$user$tonemap");	//. hack
 	if (!eff_Rain)    		eff_Rain 		= xr_new<CEffect_Rain>();
 	if (!eff_LensFlare)		eff_LensFlare 	= xr_new<CLensFlare>();
@@ -417,6 +444,7 @@ void CEnvironment::unload	()
 	CurrentWeather		= 0;
 	CurrentWeatherName	= 0;
 	CurrentEnv.clear	();
+	
 	Invalidate			();
 	tonemap				= 0;
 }

@@ -20,7 +20,7 @@
 //#include <locale>
 #pragma warning(pop)
 
-#define  LDIST .05f
+#define  LDIST .035f // 05
 
 ENGINE_API CConsole*	Console		=	NULL;
 const char *			ioc_prompt	=	">>> ";
@@ -160,7 +160,7 @@ void CConsole::OnRender	()
 
 	if (!bVisible) return;
 	if (0==pFont)
-		pFont		= xr_new<CGameFont>	("hud_font_di",CGameFont::fsDeviceIndependent);
+		pFont		= xr_new<CGameFont>	("ui_font_arial_21",CGameFont::fsDeviceIndependent);
 
 	bGame	=false;	
 	if ( (g_pGameLevel && g_pGameLevel->bReady)||
@@ -175,7 +175,7 @@ void CConsole::OnRender	()
 	D3DRECT R = { 0,0,Device.dwWidth,Device.dwHeight};
 	if		(bGame) R.y2 /= 2;
 
-	CHK_DX	(HW.pDevice->Clear(1,&R,D3DCLEAR_TARGET,D3DCOLOR_ARGB(0,32,32,32),1,0));
+	CHK_DX	(HW.pDevice->Clear(1,&R,D3DCLEAR_TARGET,D3DCOLOR_ARGB(0,30,30,30),1,0)); // 0,32,32,32
 
 
 	float dwMaxY=float(Device.dwHeight);
@@ -192,7 +192,7 @@ void CConsole::OnRender	()
 		str_insert(buf, ".", n_char + xr_strlen(ioc_prompt));
 
 	pFont->SetColor( color_rgba(128  ,128  ,255, 255) );
-	pFont->SetHeightI(0.025f);
+	pFont->SetHeightI(0.020f);  // 0.025f
 	pFont->OutI	( -1.f, fMaxY-LDIST, "%s", buf );
 
 	float ypos=fMaxY-LDIST-LDIST;
@@ -209,7 +209,7 @@ void CConsole::OnRender	()
 //.			pFont->OutI  (-1.f,ypos,"%s",&ls[2]);
 			break;
 		case '!':
-			pFont->SetColor(color_rgba(255,0  ,0  , 255));
+			pFont->SetColor(color_rgba(255,0,0,255));
 			out_font		(pFont,&ls[2],ypos);
 //.			pFont->OutI  (-1.f,ypos,"%s",&ls[2]);
 			break;
@@ -290,7 +290,7 @@ void CConsole::OnPressKey(int dik, BOOL bHold)
 				IConsole_Command &O = *(I->second);
 				strcpy_s(editor+offset, sizeof(editor)-offset, O.Name());
 				strcat(editor+offset," ");
-				n_char = xr_strlen(editor + offset);
+				n_char = strlen(editor+offset);
 			}
 		}
 		break;

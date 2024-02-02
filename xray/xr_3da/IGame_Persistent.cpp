@@ -103,13 +103,16 @@ void IGame_Persistent::Start		(LPCSTR op)
 
 void IGame_Persistent::Disconnect	()
 {
-#ifndef _EDITOR
+//#ifndef _EDITOR
 	// clear "need to play" particles
-	destroy_particles					(true);
+	destroy_particles(true);
 
 	if(g_hud)
 		g_hud->OnDisconnected			();
-#endif
+//#endif
+	ObjectPool.clear();
+	Render->models_Clear(TRUE);
+
 }
 
 void IGame_Persistent::OnGameStart()

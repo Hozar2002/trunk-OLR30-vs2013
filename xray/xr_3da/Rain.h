@@ -62,6 +62,7 @@ private:
 
 	// Sounds
 	ref_sound						snd_Ambient;
+	ref_sound						snd_OnIndoor;
 
 	// Utilities
 	void							p_create		();
@@ -78,14 +79,16 @@ private:
 	void							Hit				(Fvector& pos);
 	BOOL							RayPick			(const Fvector& s, const Fvector& d, float& range, collide::rq_target tgt);
 	void							RenewItem		(Item& dest, float height, BOOL bHit);
+//	void			                Update	();
+//	void                            UpdateCL();
+//	void                            shedule_Update();
 public:
 									CEffect_Rain	();
 									~CEffect_Rain	();
 
 	void							Render			();
 	void							OnFrame			();
-
-	void							InvalidateState	()		{state = stIdle;}
+	void							InvalidateState	() {state = stIdle;}
 };
 
 #endif //RainH

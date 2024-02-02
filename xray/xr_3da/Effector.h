@@ -10,12 +10,14 @@ protected:
 	
 	friend class		CCameraManager;
 	float				fLifeTime;
+	BOOL				bAffected;
 public:
-						CEffectorCam	(ECamEffectorType type, float tm)	{eType=type; fLifeTime=tm;};
-						CEffectorCam	()									{eType=(ECamEffectorType)0; fLifeTime=0.0f;};
+	CEffectorCam(ECamEffectorType type, float tm, BOOL affected) { eType = type; fLifeTime = tm; bAffected = affected; };
+	CEffectorCam()									{ eType = (ECamEffectorType)0; fLifeTime = 0.0f; bAffected = true; };
 	virtual				~CEffectorCam	()									{};
 			void		SetType			(ECamEffectorType type)				{eType=type;}
 	IC ECamEffectorType	GetType			()									{return eType;}
+	IC BOOL				Affected		()									{return bAffected; }
 	virtual	BOOL		Valid			()									{return fLifeTime>0.0f;}
 	IC virtual BOOL		Overlapped		()									{return FALSE;}
 

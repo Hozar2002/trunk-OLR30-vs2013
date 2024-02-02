@@ -16,19 +16,19 @@
 
 static const int	max_desired_items	= 2500;
 static const float	source_radius		= 12.5f;
-static const float	source_offset		= 40.f;
+static const float	source_offset		= 80.f;
 static const float	max_distance		= source_offset*1.25f;
 static const float	sink_offset			= -(max_distance-source_offset);
 static const float	drop_length			= 5.f;
 static const float	drop_width			= 0.30f;
 static const float	drop_angle			= 3.0f;
-static const float	drop_max_angle		= deg2rad(10.f);
-static const float	drop_max_wind_vel	= 20.0f;
+static const float	drop_max_angle		= deg2rad(100.f);
+static const float	drop_max_wind_vel	= 200.0f;
 static const float	drop_speed_min		= 40.f;
 static const float	drop_speed_max		= 80.f;
 
 const int	max_particles		= 1000;
-const int	particles_cache		= 400;
+const int	particles_cache		= 800;
 const float particles_time		= .3f;
  
 //////////////////////////////////////////////////////////////////////
@@ -40,6 +40,7 @@ CEffect_Rain::CEffect_Rain()
 	state							= stIdle;
 	
 	snd_Ambient.create				("ambient\\rain",st_Effect,sg_Undefined);
+	snd_OnIndoor.create				("ambient\\rainindoor",st_Effect,sg_Undefined);
 
 	IReader*	F					= FS.r_open("$game_meshes$","dm\\rain.dm"); 
 	VERIFY3							(F,"Can't open file.","dm\\rain.dm");
@@ -56,6 +57,7 @@ CEffect_Rain::CEffect_Rain()
 CEffect_Rain::~CEffect_Rain()
 {
 	snd_Ambient.destroy				();
+	snd_OnIndoor.destroy();
 
 	// Cleanup
 	p_destroy						();
@@ -136,11 +138,14 @@ void	CEffect_Rain::OnFrame	()
 		state					= stWorking;
 		snd_Ambient.play		(0,sm_Looped);
 		snd_Ambient.set_range	(source_offset,source_offset*2.f);
+
+		snd_OnIndoor.play(0,sm_Looped);
 	break;
 	case stWorking:
 		if (factor<EPS_L){
 			state				= stIdle;
 			snd_Ambient.stop	();
+			snd_OnIndoor.stop();
 			return;
 		}
 		break;
@@ -153,6 +158,18 @@ void	CEffect_Rain::OnFrame	()
 		snd_Ambient.set_position(sndP);
 		snd_Ambient.set_volume	(1.1f*factor*hemi_factor);
 	}
+	    if (snd_Ambient._feedback()){
+		float dist = 10.f;
+        if(RayPick(Device.vCameraPosition, Fvector().set(0,1,0), dist,collide::rqtBoth))
+        {
+        	Fvector	sndP;
+            sndP.mad(Device.vCameraPosition, Fvector().set(0,1,0), dist);
+        	snd_Ambient.set_position(sndP);
+            snd_Ambient.set_volume(factor);
+        }
+        //else
+		//snd_Ambient.set_volume(0.f);
+    }
 }
 
 //#include "xr_input.h"
@@ -451,3 +468,25 @@ void	CEffect_Rain::p_free(Particle* P)
 	p_remove	(P,particle_active);
 	p_insert	(P,particle_idle);
 }
+
+
+/*
+void	CEffect_Rain::Update()
+{
+	Msg("rain update");
+}
+
+
+
+void	CEffect_Rain::UpdateCL()
+{
+	Msg("rain update UpdateCL");
+}
+
+
+
+void	CEffect_Rain::shedule_Update()
+{
+	Msg("rain update shedule_Update()");
+}
+*/

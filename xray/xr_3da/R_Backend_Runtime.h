@@ -21,7 +21,7 @@ IC void		CBackend::set_xform			(u32 ID, const Fmatrix& M)
 }
 IC	void	CBackend::set_xform_world	(const Fmatrix& M)
 { 
-	xforms.set_W(M);	
+	xforms.set_W(M);  // дин. объекты, скайбокс	
 }
 IC	void	CBackend::set_xform_view	(const Fmatrix& M)					
 { 
@@ -199,7 +199,7 @@ ICF void CBackend::Render				(D3DPRIMITIVETYPE T, u32 baseV, u32 startV, u32 cou
 	stat.verts			+= countV;
 	stat.polys			+= PC;
 	constants.flush		();
-	CHK_DX				(HW.pDevice->DrawIndexedPrimitive(T,baseV, startV, countV,startI,PC));
+	CHK_DX				(HW.pDevice->DrawIndexedPrimitive(T,baseV, startV, countV,startI,PC));  // динамические объекты, шрифты
 	PGO					(Msg("PGO:DIP:%dv/%df",countV,PC));
 }
 
@@ -209,7 +209,7 @@ ICF void CBackend::Render				(D3DPRIMITIVETYPE T, u32 startV, u32 PC)
 	stat.verts			+= 3*PC;
 	stat.polys			+= PC;
 	constants.flush		();
-	CHK_DX				(HW.pDevice->DrawPrimitive(T, startV, PC));
+	CHK_DX				(HW.pDevice->DrawPrimitive(T, startV, PC));  // ???
 	PGO					(Msg("PGO:DIP:%dv/%df",3*PC,PC));
 }
 

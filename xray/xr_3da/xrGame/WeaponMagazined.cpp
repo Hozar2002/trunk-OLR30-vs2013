@@ -32,6 +32,7 @@ CWeaponMagazined::CWeaponMagazined(LPCSTR name, ESoundTypes eSoundType) : CWeapo
 	m_eSoundShot = ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING | eSoundType);
 	m_eSoundEmptyClick = ESoundTypes(SOUND_TYPE_WEAPON_EMPTY_CLICKING | eSoundType);
 	m_eSoundReload = ESoundTypes(SOUND_TYPE_WEAPON_RECHARGING | eSoundType);
+    m_eSoundReload_jammed = ESoundTypes(SOUND_TYPE_WEAPON_RECHARGING | eSoundType);
 	m_eSoundSightsUp	=	ESoundTypes(SOUND_TYPE_WORLD_AMBIENT | eSoundType);	//added by Daemonion for iron sight audio in weapon parameters - sights being raised
 	m_eSoundSightsDown	=	ESoundTypes(SOUND_TYPE_WORLD_AMBIENT | eSoundType);	//added by Daemonion for iron sight audio in weapon parameters - sights being lowered
 
@@ -53,6 +54,7 @@ CWeaponMagazined::~CWeaponMagazined()
 	HUD_SOUND::DestroySound(sndShot);
 	HUD_SOUND::DestroySound(sndEmptyClick);
 	HUD_SOUND::DestroySound(sndReload);
+    HUD_SOUND::DestroySound(sndReload_jammed);
 	HUD_SOUND::DestroySound(sndSightsUp);		//added by Daemonion for ironsight audio in weapon parameters - sights being raised
 	HUD_SOUND::DestroySound(sndSightsDown);		//added by Daemonion for ironsight audio in weapon parameters - sights being lowered
 }
@@ -64,6 +66,7 @@ void CWeaponMagazined::StopHUDSounds()
 
 	HUD_SOUND::StopSound(sndEmptyClick);
 	HUD_SOUND::StopSound(sndReload);
+    HUD_SOUND::StopSound(sndReload_jammed);
 
 	HUD_SOUND::StopSound(sndShot);
 	HUD_SOUND::StopSound(sndSightsUp);			//added by Daemonion for ironsight audio in weapon parameters - sights being raised
@@ -89,6 +92,10 @@ void CWeaponMagazined::Load(LPCSTR section)
 	HUD_SOUND::LoadSound(section, "snd_shoot", sndShot, m_eSoundShot);
 	HUD_SOUND::LoadSound(section, "snd_empty", sndEmptyClick, m_eSoundEmptyClick);
 	HUD_SOUND::LoadSound(section, "snd_reload", sndReload, m_eSoundReload);
+    if (pSettings->line_exist(section, "m_eSoundReload_jammed"))
+		HUD_SOUND::LoadSound(section, "snd_reload_jammed", sndReload_jammed, m_eSoundReload_jammed);
+	else
+		HUD_SOUND::LoadSound(section, "snd_reload_jammed", sndReload_jammed, m_eSoundReload);
 	HUD_SOUND::LoadSound(section, "snd_SightsUp", sndSightsUp, m_eSoundSightsUp);		//added by Daemonion for ironsight audio in weapon parameters - sights being raised
 	HUD_SOUND::LoadSound(section, "snd_SightsDown", sndSightsDown, m_eSoundSightsDown);	//added by Daemonion for ironsight audio in weapon parameters - sights being lowered
 
@@ -99,6 +106,11 @@ void CWeaponMagazined::Load(LPCSTR section)
 	R_ASSERT(m_pHUD);
 	animGet(mhud.mhud_idle, pSettings->r_string(*hud_sect, "anim_idle"));
 	animGet(mhud.mhud_reload, pSettings->r_string(*hud_sect, "anim_reload"));
+	if (pSettings->line_exist(*hud_sect, "anim_reload_jammed"))
+		animGet(mhud.mhud_reload_jammed, pSettings->r_string(*hud_sect, "anim_reload_jammed"));
+	else
+		animGet(mhud.mhud_reload_jammed, pSettings->r_string(*hud_sect, "anim_reload"));
+
 	animGet(mhud.mhud_show, pSettings->r_string(*hud_sect, "anim_draw"));
 	animGet(mhud.mhud_hide, pSettings->r_string(*hud_sect, "anim_holster"));
 	animGet(mhud.mhud_shots, pSettings->r_string(*hud_sect, "anim_shoot"));
@@ -156,6 +168,7 @@ void CWeaponMagazined::FireStart()
 			if (GetState() == eShowing) return;
 			if (GetState() == eHiding) return;
 			if (GetState() == eMisfire) return;
+            if (GetState() == eJammed) return;
 
 			inherited::FireStart();
 
@@ -208,21 +221,44 @@ bool CWeaponMagazined::TryToGetAmmo(u32 id)
 
 bool CWeaponMagazined::TryReload()
 {
-	if (m_pCurrentInventory)
+		if (m_pCurrentInventory)
 	{
-		if (TryToGetAmmo(m_ammoType) || unlimited_ammo() || (IsMisfire() && iAmmoElapsed))
+		#if defined(AMMO_FROM_BELT)
+		if (ParentIsActor())
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[m_ammoType]));
+		else
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[m_ammoType]));
+		#else
+		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[m_ammoType]));
+		#endif
+
+		if (IsMisfire() && iAmmoElapsed && iAmmoElapsed > iMinAmmoTryJammed)
 		{
-			m_bPending	= true;
-			SwitchState(eReload);
+			m_bPending = true;
+			SwitchState(eJammed);
 			return true;
 		}
 
-		for (u32 i = 0; i < m_ammoTypes.size(); ++i)
+		if (m_pAmmo || unlimited_ammo())
 		{
-			if (TryToGetAmmo(i))
+			m_bPending = true;
+			SwitchState(eReload);
+			return true;
+		}
+		else for (u32 i = 0; i < m_ammoTypes.size(); ++i)
+		{
+					#if defined(AMMO_FROM_BELT)
+		if (ParentIsActor())
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[i]));
+		else
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[i]));
+		#else
+		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[i]));
+		#endif
+			if (m_pAmmo)
 			{
-				m_ammoType	= i;
-				m_bPending	= true;
+				m_ammoType = i;
+				m_bPending = true;
 				SwitchState(eReload);
 				return true;
 			}
@@ -236,17 +272,30 @@ bool CWeaponMagazined::TryReload()
 
 bool CWeaponMagazined::IsAmmoAvailable()
 {
-	if (TryToGetAmmo(m_ammoType))
-		return true;
-	
-	for (u32 i = 0; i < m_ammoTypes.size(); ++i)
-	{
-		if (TryToGetAmmo(i))
-			return true;
-	}
+		#if defined(AMMO_FROM_BELT)
+		if (ParentIsActor())
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[m_ammoType]));
+		else
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[m_ammoType]));
+		#else
+		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[m_ammoType]));
+		#endif
 
-	return false;
-	
+	if (m_pAmmo)
+		return	(true);
+	else
+		for (u32 i = 0; i < m_ammoTypes.size(); ++i)
+		#if defined(AMMO_FROM_BELT)
+		if (ParentIsActor())
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[i]));
+		else
+			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[i]));
+		#else
+		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAny(*m_ammoTypes[i]));
+		#endif
+			if (m_pAmmo)
+				return	(true);
+	return		(false);
 }
 
 void CWeaponMagazined::OnMagazineEmpty()
@@ -309,6 +358,11 @@ void CWeaponMagazined::UnloadMagazine(bool spawn_ammo)
 	}
 }
 
+void CWeaponMagazined::RestoreMagazineJammed()
+{
+	//устранить осечку
+	bMisfire = false;
+}
 void CWeaponMagazined::ReloadMagazine()
 {
 	m_dwAmmoCurrentCalcFrame = 0;
@@ -472,6 +526,9 @@ void CWeaponMagazined::OnStateSwitch(u32 S)
 		// Callbacks added by Cribbledirge.
 		StateSwitchCallback(GameObject::eOnActorWeaponReload, GameObject::eOnNPCWeaponReload);
 		break;
+	case eJammed:
+		switch2_ReloadJammed();
+		break;
 	case eShowing:
 		switch2_Showing();
 		break;
@@ -497,6 +554,7 @@ void CWeaponMagazined::UpdateCL()
 		{
 		case eShowing:
 		case eHiding:
+		case eJammed:
 		case eReload:
 		case eIdle:
 			fTime -= dt;
@@ -540,6 +598,7 @@ void CWeaponMagazined::UpdateSounds()
 	if (sndHide.playing())	sndHide.set_position(get_LastFP());
 	if (sndShot.playing()) sndShot.set_position(get_LastFP());
 	if (sndReload.playing()) sndReload.set_position(get_LastFP());
+	if (sndReload_jammed.playing()) sndReload_jammed.set_position(get_LastFP());
 	if (sndEmptyClick.playing())	sndEmptyClick.set_position(get_LastFP());
 	if (sndSightsUp.playing())	sndSightsUp.set_position(get_LastFP());			//Daemonion - iron sight audio - sights being raised
 	if (sndSightsDown.playing())	sndSightsDown.set_position(get_LastFP());	//Daemonion - iron sight audio - sights being lowered
@@ -656,6 +715,7 @@ void CWeaponMagazined::OnAnimationEnd(u32 state)
 {
 	switch (state)
 	{
+	case eJammed:   RestoreMagazineJammed(); SwitchState(eIdle); break;
 	case eReload:	ReloadMagazine();	SwitchState(eIdle);	break;	// End of reload animation
 	case eHiding:	SwitchState(eHidden);   break;	// End of Hide
 	case eShowing:	SwitchState(eIdle);		break;	// End of Show
@@ -736,6 +796,11 @@ void CWeaponMagazined::PlayReloadSound()
 {
 	PlaySound(sndReload, get_LastFP());
 }
+void CWeaponMagazined::PlayReloadJammedSound()
+{
+	PlaySound(sndReload_jammed, get_LastFP());
+}
+
 
 void CWeaponMagazined::switch2_Reload()
 {
@@ -745,10 +810,18 @@ void CWeaponMagazined::switch2_Reload()
 	PlayAnimReload();
 	m_bPending = true;
 }
+void CWeaponMagazined::switch2_ReloadJammed()
+{
+	CWeapon::FireEnd();
+	PlayReloadJammedSound();
+	PlayAnimReloadJammed();
+	m_bPending = true;
+}
+
 void CWeaponMagazined::switch2_Hiding()
 {
 	CWeapon::FireEnd();
-
+	HUD_SOUND::StopSound( sndReload );
 	PlaySound(sndHide, get_LastFP());
 
 	PlayAnimHide();
@@ -758,7 +831,7 @@ void CWeaponMagazined::switch2_Hiding()
 void CWeaponMagazined::switch2_Hidden()
 {
 	CWeapon::FireEnd();
-
+	HUD_SOUND::StopSound( sndReload );
 	if (m_pHUD) m_pHUD->StopCurrentAnimWithoutCallback();
 
 	signal_HideComplete();
@@ -767,7 +840,7 @@ void CWeaponMagazined::switch2_Hidden()
 void CWeaponMagazined::switch2_Showing()
 {
 	PlaySound(sndShow, get_LastFP());
-
+	if (iUnJammedOnShow) bMisfire = false;
 	m_bPending = true;
 	PlayAnimShow();
 }
@@ -1067,6 +1140,11 @@ void CWeaponMagazined::PlayAnimReload()
 	VERIFY(GetState() == eReload);
 	m_pHUD->animPlay(random_anim(mhud.mhud_reload), TRUE, this, GetState());
 }
+void CWeaponMagazined::PlayAnimReloadJammed()
+{
+	VERIFY(GetState() == eJammed);
+	m_pHUD->animPlay(random_anim(mhud.mhud_reload_jammed), TRUE, this, GetState());
+}
 
 bool CWeaponMagazined::TryPlayAnimIdle()
 {
@@ -1259,15 +1337,18 @@ void CWeaponMagazined::net_Import(NET_Packet& P)
 	SetQueueSize(GetCurrentFireMode());
 }
 #include "string_table.h"
-void CWeaponMagazined::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count)
+void CWeaponMagazined::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name)
 {
 	int	AE = GetAmmoElapsed();
 	int	AC = GetAmmoCurrent();
 
 	if (AE == 0 || 0 == m_magazine.size())
-		icon_sect_name = *m_ammoTypes[m_ammoType];
+		ammo_sect_name = *CStringTable().translate(pSettings->r_string(m_ammoTypes[m_ammoType].c_str(), "inv_name_short"));  // *m_ammoTypes[m_ammoType];
 	else
-		icon_sect_name = *m_ammoTypes[m_magazine.back().m_LocalAmmoType];
+		ammo_sect_name = *CStringTable().translate(pSettings->r_string(m_ammoTypes[m_magazine.back().m_LocalAmmoType].c_str(), "inv_name_short"));  // *m_ammoTypes[m_magazine.back().m_LocalAmmoType];
+
+
+	icon_sect_name = *cNameSect();
 
 	string256		sItemName;
 	strcpy_s(sItemName, *CStringTable().translate(pSettings->r_string(icon_sect_name.c_str(), "inv_name_short")));

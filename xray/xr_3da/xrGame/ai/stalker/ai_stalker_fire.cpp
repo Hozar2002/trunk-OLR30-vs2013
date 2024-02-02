@@ -214,11 +214,11 @@ void			CAI_Stalker::Hit					(SHit* pHDS)
 		}
 
 		const CEntityAlive	*entity_alive = smart_cast<const CEntityAlive*>(pHDS->initiator());
-		if (entity_alive && !wounded()) {
+		if (entity_alive && !wounded() && !fis_zero( pHDS->damage() ) ) {
 			if (is_relation_enemy(entity_alive))
 				sound().play		(eStalkerSoundInjuring);
-//			else
-//				sound().play		(eStalkerSoundInjuringByFriend);
+			else													// HF 
+				sound().play		(eStalkerSoundInjuringByFriend); // HF 
 		}
 
 		int							weapon_type = -1;
@@ -520,6 +520,16 @@ IC BOOL ray_query_callback	(collide::rq_result& result, LPVOID params)
 //	}
 
 	if (!result.O) {
+
+		// статический объект
+		// получить треугольник и узнать его материал
+		CDB::TRI* T   = Level().ObjectSpace.GetStaticTris() + result.element;
+		SGameMtl* mtl = GMLib.GetMaterialByIdx( T->material );
+		// ≈сли материал полностью простреливаемый, продолжаем
+		// трассировку.
+		if ( fsimilar( mtl->fShootFactor, 1.0f, EPS ) )
+		 return						(true);
+
 		if (param->m_power > param->m_power_threshold)
 			return						(true);
 

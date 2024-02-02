@@ -12,8 +12,8 @@ class CUIStatic;
 class CUIMapWnd;
 class CUIEncyclopediaWnd;
 class CUIDiaryWnd;
-class CUIActorInfoWnd;
-class CUIStalkersRankingWnd;
+//class CUIActorInfoWnd;
+//class CUIStalkersRankingWnd;
 class CUIEventsWnd;
 class CUIPdaContactsWnd;
 
@@ -26,13 +26,13 @@ private:
 protected:
 	//элементы декоративного интерфейса
 	CUIFrameLineWnd*		UIMainButtonsBackground;
-	CUIFrameLineWnd*		UITimerBackground;
+	//CUIFrameLineWnd*		UITimerBackground;
 
 	// кнопки PDA
 	CUITabControl*			UITabControl;
 
 	// Установить игровое время
-	void					UpdateDateTime					();
+	//void					UpdateDateTime					();
 	void					DrawUpdatedSections				();
 protected:
 	// Бэкграунд
@@ -51,8 +51,8 @@ public:
 	CUIPdaContactsWnd*		UIPdaContactsWnd;
 	CUIEncyclopediaWnd*		UIEncyclopediaWnd;
 	CUIDiaryWnd*			UIDiaryWnd;
-	CUIActorInfoWnd*		UIActorInfo;
-	CUIStalkersRankingWnd*	UIStalkersRanking;
+	//CUIActorInfoWnd*		UIActorInfo;
+	//CUIStalkersRankingWnd*	UIStalkersRanking;
 	CUIEventsWnd*			UIEventsWnd;
 	virtual void			Reset				();
 public:
@@ -64,6 +64,7 @@ public:
 	virtual void 			SendMessage			(CUIWindow* pWnd, s16 msg, void* pData = NULL);
 
 	virtual void 			Draw				();
+	virtual void 			OpenBloknot();
 	virtual void 			Update				();
 	virtual void 			Show				();
 	virtual void 			Hide				();

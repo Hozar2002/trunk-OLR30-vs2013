@@ -154,11 +154,11 @@ void	CCustomOutfit::OnMoveToRuck		()
 		CActor* pActor = smart_cast<CActor*> (m_pCurrentInventory->GetOwner());
 		if (pActor)
 		{
-			CTorch* pTorch = smart_cast<CTorch*>(pActor->inventory().ItemFromSlot(TORCH_SLOT));
+			/*CTorch* pTorch = smart_cast<CTorch*>(pActor->inventory().ItemFromSlot(TORCH_SLOT));
 			if(pTorch)
 			{
 				pTorch->SwitchNightVision(false);
-			}
+			}*/
 			if (m_ActorVisual.size())
 			{
 				shared_str DefVisual = pActor->GetDefaultVisualOutfit();

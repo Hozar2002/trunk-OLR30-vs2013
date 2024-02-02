@@ -11,11 +11,14 @@
 #include "GameMtlLib.h"
 #include "ui/UIMainIngameWnd.h"
 #include "Grenade.h"
+#include "eatable_item_object.h"
 #include "clsid_game.h"
 
 #include "game_cl_base.h"
 #include "Level.h"
 
+//отображаем сталкеров
+#include "ai/stalker/ai_stalker.h"
 #define PICKUP_INFO_COLOR 0xFFDDDDDD
 //AAAAAA
 
@@ -121,7 +124,7 @@ void CActor::PickupModeUpdate()
 		!Level().m_feel_deny.is_object_denied(smart_cast<CGameObject*>(inventory().m_pTarget)) )
 	{
 		NET_Packet P;
-		u_EventGen(P, GE_OWNERSHIP_TAKE, ID());
+		u_EventGen(P,GE_OWNERSHIP_TAKE, ID());
 		P.w_u16(inventory().m_pTarget->object().ID());
 		u_EventSend(P);
 	}
@@ -142,11 +145,11 @@ void	CActor::PickupModeUpdate_COD	()
 {
 	if (Level().CurrentViewEntity() != this || !g_b_COD_PickUpMode) return;
 		
-	if (!g_Alive() || eacFirstEye != cam_active) 
+	/*if (!g_Alive() || eacFirstEye != cam_active) 
 	{
 		HUD().GetUI()->UIMainIngameWnd->SetPickUpItem(NULL);
 		return;
-	};
+	};*/
 	
 	CFrustum frustum;
 	frustum.CreateFromMatrix(Device.mFullTransform,FRUSTUM_P_LRTB|FRUSTUM_P_FAR);
@@ -172,7 +175,8 @@ void	CActor::PickupModeUpdate_COD	()
 		if (pGrenade && !pGrenade->Useful()) continue;
 
 		CMissile*	pMissile	= smart_cast<CMissile*> (spatial->dcast_CObject        ());
-		if (pMissile && !pMissile->Useful()) continue;
+		CEatableItemObject*	pEatable	= smart_cast<CEatableItemObject*> (spatial->dcast_CObject        ());
+		if (!pEatable && pMissile && !pMissile->Useful()) continue;
 		
 		Fvector A, B, tmp; 
 		pIItem->object().Center			(A);
@@ -204,7 +208,7 @@ void	CActor::PickupModeUpdate_COD	()
 				pNearestItem = NULL;
 	}
 
-	HUD().GetUI()->UIMainIngameWnd->SetPickUpItem(pNearestItem);
+	//HUD().GetUI()->UIMainIngameWnd->SetPickUpItem(pNearestItem);
 
 	if (pNearestItem && m_bPickupMode)
 	{
@@ -220,17 +224,29 @@ void CActor::PickupInfoDraw(CObject* object)
 	LPCSTR draw_str = NULL;
 	
 	CInventoryItem* item = smart_cast<CInventoryItem*>(object);
-//.	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(object);
-//.	VERIFY(item || inventory_owner);
-	if(!item)		return;
+	CAI_Stalker* stalker = smart_cast<CAI_Stalker*>(object);
+
+	//CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(object);
+	//VERIFY(item || inventory_owner);
+	if (!item)
+		if(!stalker)
+			return;
 
 	Fmatrix			res;
 	res.mul			(Device.mFullTransform,object->XFORM());
 	Fvector4		v_res;
 	Fvector			shift;
 
-	draw_str = item->Name/*Complex*/();
-	shift.set(0,0,0);
+	if (!stalker)
+		//draw_str = item->Name();
+		draw_str = item->NameComplex();
+	else
+		draw_str = stalker->Name();
+	
+	if (!stalker)
+		shift.set(0, 0, 0);
+	else
+		shift.set(0, 1.2f, 0);
 
 	res.transform(v_res,shift);
 
@@ -240,9 +256,9 @@ void CActor::PickupInfoDraw(CObject* object)
 	float x = (1.f + v_res.x)/2.f * (Device.dwWidth);
 	float y = (1.f - v_res.y)/2.f * (Device.dwHeight);
 
-	HUD().Font().pFontLetterica16Russian->SetAligment	(CGameFont::alCenter);
-	HUD().Font().pFontLetterica16Russian->SetColor		(PICKUP_INFO_COLOR);
-	HUD().Font().pFontLetterica16Russian->Out			(x,y,draw_str);
+	HUD().Font().pFontMedium->SetAligment(CGameFont::alCenter);
+	HUD().Font().pFontMedium->SetColor(PICKUP_INFO_COLOR);
+	HUD().Font().pFontMedium->Out(x, y, draw_str);
 }
 
 void CActor::feel_sound_new(CObject* who, int type, CSound_UserDataPtr user_data, const Fvector& Position, float power)

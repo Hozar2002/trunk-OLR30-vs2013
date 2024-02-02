@@ -125,6 +125,10 @@ void CUIGameLog::Update()
 		RecalcSize			();
 
 	toDelList.clear();
+
+	// фикс непоказа смс
+	/*
+
 	Frect visible_rect;
 	GetAbsoluteRect(visible_rect);
 	for(	WINDOW_LIST_it it = m_pad->GetChildWndList().begin(); 
@@ -149,4 +153,7 @@ void CUIGameLog::Update()
 
 	if(m_flags.test	(eNeedRecalc) )
 		RecalcSize			();
+
+	*/
+
 }

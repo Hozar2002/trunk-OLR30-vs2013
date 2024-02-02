@@ -18,6 +18,8 @@ protected:
 #if defined(KNIFE_SPRINT_MOTION)
 	MotionSVec			mhud_idle_sprint;
 #endif
+	MotionSVec			mhud_idle_walk;
+	MotionSVec			mhud_idle_walk_slow;
 
 	HUD_SOUND			m_sndShot;
 
@@ -30,6 +32,9 @@ protected:
 	virtual void		switch2_Hidden				();
 	virtual void		switch2_Showing				();
 			void		switch2_Attacking			(u32 state);
+	virtual bool	TryPlayAnimIdle	();
+	
+	virtual void	PlayAnimIdle();
 
 	virtual void		OnAnimationEnd				(u32 state);
 	virtual void		OnStateSwitch				(u32 S);
@@ -49,6 +54,9 @@ protected:
 	Fvector4			fvHitPower_1;
 	float				fHitImpulse_1;
 
+	float			                fBrightness;
+	shared_str		                light_trace_bone;
+
 	ALife::EHitType		m_eHitType_2;
 	//float				fHitPower_2;
 	Fvector4			fvHitPower_2;
@@ -61,19 +69,21 @@ public:
 	virtual				~CWeaponKnife(); 
 
 	void				Load							(LPCSTR section);
-
+	virtual BOOL					net_Spawn			(CSE_Abstract* DC);
 	virtual void		Fire2Start						();
 	virtual void		FireStart						();
 
 
+	//virtual void			renderable_Render();
+	virtual void			shedule_Update(u32 dt);
+	//void	                Update();
+
 	virtual bool		Action							(s32 cmd, u32 flags);
 
 	virtual void		StartIdleAnim					();
-	virtual void		GetBriefInfo					(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count);
+	virtual void		GetBriefInfo					(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name);
 
-#if defined(KNIFE_SPRINT_MOTION)
 	virtual void		onMovementChanged				(ACTOR_DEFS::EMoveCommand cmd);
-#endif
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 };

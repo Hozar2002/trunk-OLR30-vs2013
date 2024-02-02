@@ -48,6 +48,16 @@ struct HUD_SOUND
 		}
 	}
 
+	// hi_flyer 29.11.19 for minigun
+		ICF void		set_frequency	(const float& frc)
+	{
+		if(m_activeSnd)	{ 
+			if (m_activeSnd->snd._feedback()&&!m_activeSnd->snd._feedback()->is_2D())	
+									m_activeSnd->snd.set_frequency	(frc);
+			else					m_activeSnd	= NULL;
+		}
+	}
+
 	struct SSnd		{
 		ref_sound	snd;
 		float		delay;		//задержка перед проигрыванием

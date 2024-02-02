@@ -106,6 +106,7 @@ void CAttachableItem::enable			(bool value)
 bool  CAttachableItem::can_be_attached	() const
 {
 //	VERIFY							(m_valid);
+	//Msg("CAttachableItem try attach");	// FOR NPC ONLY
 	if (!item().m_pCurrentInventory)
 		return				(false);
 
@@ -114,7 +115,7 @@ bool  CAttachableItem::can_be_attached	() const
 
 	if (item().m_eItemPlace != eItemPlaceBelt)
 		return				(false);
-	 
+	//Msg("CAttachableItem try attach - TRUE");  // FOR NPC ONLY
 	return					(true);
 }
 void CAttachableItem::afterAttach		()

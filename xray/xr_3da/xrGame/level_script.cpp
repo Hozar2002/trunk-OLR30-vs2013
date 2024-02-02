@@ -120,6 +120,11 @@ void set_weather	(LPCSTR weather_name, bool forced)
 	return			(g_pGamePersistent->Environment().SetWeather(weather_name,forced));
 }
 
+void set_fog	(float fog)
+{
+	return			(g_pGamePersistent->Environment().SetFogSc(fog));
+}
+
 bool set_weather_fx	(LPCSTR weather_name)
 {
 	return			(g_pGamePersistent->Environment().SetWeatherFX(weather_name));
@@ -292,6 +297,48 @@ void show_indicators()
 	HUD().GetUI()->ShowCrosshair();
 }
 
+#include "UIGameCustom.h"
+#include "ui/UIInventoryWnd.h"
+#include "ui/UITradeWnd.h"
+#include "ui/UITalkWnd.h"
+#include "ui/UICarBodyWnd.h"
+#include "UIGameSP.h"
+#include "HUDManager.h"
+#include "HUDTarget.h"
+#include "InventoryBox.h"
+
+CScriptGameObject* GetSecondTalker()
+{
+	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+	if (!pGameSP) return nullptr;
+	CUITalkWnd* wnd = pGameSP->TalkMenu;
+	if (wnd == nullptr) return nullptr;
+	return smart_cast<CGameObject*>(wnd->GetSecondTalker())->lua_game_object();
+}
+
+//CScriptGameObject *GetTargetObj()
+//{
+//	CObject *obj = ((CHUDManager *)g_hud)->GetTarget()->GetObj();
+//	if (!obj)
+//		return nullptr;
+//	return smart_cast<CGameObject *>(obj)->lua_game_object();
+//}
+
+
+CScriptGameObject *get_object_by_name(LPCSTR caObjectName)
+{
+	static bool first_time = true;
+	if (first_time)
+		ai().script_engine().script_log(eLuaMessageTypeError,"Do not use level.object function!");
+	first_time = false;
+	
+	CGameObject		*l_tpGameObject	= smart_cast<CGameObject*>(Level().Objects.FindObjectByName(caObjectName));
+	if (l_tpGameObject)
+		return		(l_tpGameObject->lua_game_object());
+	else
+		return		(0);
+}
+
 
 bool is_level_present()
 {
@@ -404,6 +451,7 @@ extern bool g_bDisableAllInput;
 void disable_input()
 {
 	g_bDisableAllInput = true;
+	//Actor()->PickupModeOff();
 }
 void enable_input()
 {
@@ -413,6 +461,11 @@ void enable_input()
 void spawn_phantom(const Fvector &position)
 {
 	Level().spawn_item("m_phantom", position, u32(-1), u16(-1), false);
+}
+
+void spawn_phantom_ds(const Fvector &position)
+{
+	Level().spawn_item("m_phantom_swamp", position, u32(-1), u16(-1), false);
 }
 
 Fbox get_bounding_volume()
@@ -597,6 +650,38 @@ bool ray_pick (const Fvector &start, const Fvector &dir, float range, collide::r
 // KD
 
 
+CScriptGameObject* g_get_target_obj()
+{
+	collide::rq_result& RQ = HUD().GetCurrentRayQuery();
+	if (RQ.O)
+	{
+		CGameObject	*game_object = static_cast<CGameObject*>(RQ.O);
+		if (game_object)
+			return game_object->lua_game_object();
+	}
+	return (0);
+}
+
+float g_get_target_dist()
+{
+	collide::rq_result& RQ = HUD().GetCurrentRayQuery();
+	if (RQ.range)
+		return RQ.range;
+	return (0);
+}
+
+u32 g_get_target_element()
+{
+	collide::rq_result& RQ = HUD().GetCurrentRayQuery();
+	if (RQ.element)
+	{
+		return RQ.element;
+	}
+	return (0);
+}
+
+
+
 #include "UIGameSP.h"
 CUIWindow* get_inventory_wnd()
 {
@@ -684,7 +769,13 @@ void reinit_shown_ui()
 	}
 }
 
+void disable_vertex( u32 vertex_id ) {
+  ai().level_graph().set_mask( vertex_id );
 
+}
+void enable_vertex( u32 vertex_id ) {
+  ai().level_graph().clear_mask( vertex_id );
+}
 
 #pragma optimize("s",on)
 void CLevel::script_register(lua_State *L)
@@ -717,9 +808,21 @@ void CLevel::script_register(lua_State *L)
 		def("debug_actor",						tpfGetActor),
 		def("check_object",						check_object),
 #endif
+
+		def("get_second_talker",				&GetSecondTalker),
+		//def("get_target_obj",					&GetTargetObj),
+		def("object_by_name",					get_object_by_name),
+
+		def("get_target_obj", &g_get_target_obj), 
+		def("get_target_dist", &g_get_target_dist),
+		def("get_target_element", &g_get_target_element),
+
+		def( "disable_vertex",					disable_vertex ),
+		def( "enable_vertex",					enable_vertex ),
 		
 		def("get_weather",						get_weather),
 		def("set_weather",						set_weather),
+		def("set_fog",							set_fog),
 		def("set_weather_fx",					set_weather_fx),
 		def("is_wfx_playing",					is_wfx_playing),
 
@@ -768,6 +871,7 @@ void CLevel::script_register(lua_State *L)
 		def("disable_input",					disable_input),
 		def("enable_input",						enable_input),
 		def("spawn_phantom",					spawn_phantom),
+		def("spawn_phantom_ds",					spawn_phantom_ds),
 
 		def("get_bounding_volume",				get_bounding_volume),
 

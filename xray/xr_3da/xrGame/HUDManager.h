@@ -29,6 +29,7 @@ struct CFontManager :public pureDeviceReset			{
 	CGameFont*				pFontGraffiti50Russian;
 	CGameFont*				pFontLetterica25;
 	CGameFont*				pFontStat;
+	CGameFont*				pFontStartup;
 
 	void					InitializeFonts			();
 	void					InitializeFont			(CGameFont*& F, LPCSTR section, u32 flags = 0);
@@ -59,7 +60,6 @@ public:
 	virtual		void		OnFrame				();
 
 	virtual		void		RenderUI			();
-
 	virtual		IC CUI*		GetUI				(){return pUI;}
 
 				void		Hit					(int idx, float power, const Fvector& dir);
@@ -77,4 +77,6 @@ public:
 	virtual void			OnDisconnected		();
 	virtual void			OnConnected			();
 	virtual void			net_Relcase			(CObject *object);
+
+	CHUDTarget				*GetTarget			()	const { return m_pHUDTarget; };
 };

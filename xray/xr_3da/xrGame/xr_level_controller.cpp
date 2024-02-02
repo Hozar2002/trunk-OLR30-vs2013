@@ -7,6 +7,8 @@
 #include "string_table.h"
 #include "../../build_config_defines.h"
 
+//#undef INV_NEW_SLOTS_SYSTEM
+
 _binding	g_key_bindings		[bindings_count]; 
 _key_group	g_current_keygroup	= _sp;
 
@@ -49,6 +51,7 @@ _action  actions[]		= {
 	{ "artefact",			kARTEFACT				,_mp},		
 	{ "wpn_next",			kWPN_NEXT				,_both},	
 	{ "wpn_fire",			kWPN_FIRE				,_both},	
+	{ "wpn_fire_second",	kWPN_FIRE_SEC			,_both},
 	{ "wpn_zoom",			kWPN_ZOOM				,_both},	
 	{ "wpn_zoom_inc",		kWPN_ZOOM_INC			,_both},	
 	{ "wpn_zoom_dec",		kWPN_ZOOM_DEC			,_both},	
@@ -96,13 +99,14 @@ _action  actions[]		= {
 	{ "use_bandage",		kUSE_BANDAGE			,_sp},		
 	{ "use_medkit",			kUSE_MEDKIT				,_sp},		
 	{ "quick_save",			kQUICK_SAVE				,_sp},		
-	{ "quick_load",			kQUICK_LOAD				,_sp},		
+	{ "quick_load",			kQUICK_LOAD				,_sp},	
 #ifdef INV_NEW_SLOTS_SYSTEM
-	{ "use_slot_quick_access_0",			kUSE_SLOT_QUICK_ACCESS_0				,_both},
-	{ "use_slot_quick_access_1",			kUSE_SLOT_QUICK_ACCESS_1				,_both},
-	{ "use_slot_quick_access_2",			kUSE_SLOT_QUICK_ACCESS_2				,_both},
-	{ "use_slot_quick_access_3",			kUSE_SLOT_QUICK_ACCESS_3				,_both},
-#endif																	
+	{ "use_slot_quick_access_0",			kUSE_SLOT_QUICK_ACCESS_0				,_sp},
+	{ "use_slot_quick_access_1",			kUSE_SLOT_QUICK_ACCESS_1				,_sp},
+	{ "use_slot_quick_access_2",			kUSE_SLOT_QUICK_ACCESS_2				,_sp},
+	{ "use_slot_quick_access_3",			kUSE_SLOT_QUICK_ACCESS_3				,_sp},
+#endif
+	{ "car_open_door",		kCAR_OPEN_DOOR			,_sp},	
 	{ NULL, 				kLASTACTION				,_both}		
 };															
 

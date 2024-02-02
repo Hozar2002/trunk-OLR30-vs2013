@@ -32,7 +32,7 @@ void CControllerAnimation::on_start_control(ControlCom::EControlType type)
 		m_man->subscribe	(this, ControlCom::eventTorsoAnimationEnd);	
 		m_man->subscribe	(this, ControlCom::eventLegsAnimationEnd);
 
-		on_switch_controller();
+		on_switch_controller();   /// !!!!!ТЕСТОВЫЙ КОММЕНТ ОТ ВЫЛЕТА!!!  -- не пашет
 		break;
 	}
 }
@@ -74,20 +74,29 @@ void CControllerAnimation::update_frame()
 {
 	
 	inherited::update_frame();
+
+	//Msg("upd");
+
+	//select_velocity();  // ункомент  (бегает но без анимки)
+	//select_legs_animation	();	 // ункомент					// если всё раском - бегает но с лагами
+	//select_torso_animation	();	 // ункомент
+
+	//set_path_params();  // добавил вызов  (стоят тупят)
+
 	return;
 
+	// uncomented
+//	if (m_controller->m_mental_state == CController::eStateIdle) {  
+//		inherited::update_frame();
+//		return;
+//	}
 	
-	//if (m_controller->m_mental_state == CController::eStateIdle) {
-	//	inherited::update_frame();
-	//	return;
-	//}
-	//
-	//if (is_moving()) set_path_direction();
-	//
-	//select_legs_animation	();	
-	//select_torso_animation	();	
-	//
-	//select_velocity			();
+///	if (is_moving()) set_path_direction();
+	
+//	select_legs_animation	();	
+//	select_torso_animation	();	
+	
+	// uncomented
 }
 
 void CControllerAnimation::load()
@@ -112,9 +121,9 @@ void CControllerAnimation::load()
 	m_legs[eLegsStealBkwdRight]			= skeleton->ID_Cycle_Safe("steal_bwd_rs");
 
 	m_legs[eLegsStandDamaged]			= skeleton->ID_Cycle_Safe("new_run_fwd_0");
-	m_legs[eLegsRunDamaged]				= skeleton->ID_Cycle_Safe("new_run_fwd_0");
+	m_legs[eLegsRunDamaged]				= skeleton->ID_Cycle_Safe("stand_run_dmg_0");   // new_run_fwd_0
 	m_legs[eLegsWalkDamaged]			= skeleton->ID_Cycle_Safe("new_run_fwd_0");
-	m_legs[eLegsBackRunDamaged]			= skeleton->ID_Cycle_Safe("new_run_fwd_0");
+	m_legs[eLegsBackRunDamaged]			= skeleton->ID_Cycle_Safe("new_walk_beack_0");  // new_run_fwd_0
 	m_legs[eLegsRunStrafeLeftDamaged]	= skeleton->ID_Cycle_Safe("new_run_fwd_0");
 	m_legs[eLegsRunStrafeRightDamaged]	= skeleton->ID_Cycle_Safe("new_run_fwd_0");
 
@@ -162,7 +171,7 @@ void CControllerAnimation::add_path_rotation(ELegsActionType action, float angle
 void CControllerAnimation::select_velocity() 
 {
 	if (m_current_legs_action == eLegsTypeRun) {
-		
+		Msg("m_current_legs_action == eLegsTypeRun - SELECT VEL");
 		// if we are moving, get yaw from path
 		float cur_yaw, target_yaw;
 		m_man->direction().get_heading(cur_yaw, target_yaw);
@@ -233,12 +242,13 @@ void CControllerAnimation::select_legs_animation()
 
 		SPathRotations	path_rot = get_path_rotation(cur_yaw);
 		legs_action		= path_rot.legs_motion;
-	
+		//Msg("legs_action (moving): %s", legs_action);
 	} else {
 		// else select standing animation
 		for (LEGS_MOTION_MAP_IT it = m_legs.begin(); it != m_legs.end(); it++) {
 			if ((it->first & m_current_legs_action) == m_current_legs_action) {
 				legs_action		= it->first;
+				//Msg("legs_action (stay): %s", legs_action);
 				break;
 			}
 		}
@@ -282,10 +292,17 @@ CControllerAnimation::SPathRotations CControllerAnimation::get_path_rotation(flo
 
 void CControllerAnimation::set_body_state(ETorsoActionType torso, ELegsActionType legs)
 {
-	m_current_legs_action		= CControllerAnimation::eLegsTypeStealMotion;
-	m_current_torso_action		= CControllerAnimation::eTorsoSteal;
+	if (Random.randI(100) > 50){
+	m_current_legs_action		= CControllerAnimation::eLegsTypeRun;    // ориг   eLegsTypeStealMotion
+	m_current_torso_action		= CControllerAnimation::eTorsoRun;		// ориг   eTorsoSteal
+		}else{
+	m_current_legs_action		= CControllerAnimation::eLegsTypeStealMotion;    // ориг   eLegsTypeStealMotion
+	m_current_torso_action		= CControllerAnimation::eTorsoSteal;		// ориг   eTorsoSteal
+	};
 	//m_current_legs_action		= legs;
 	//m_current_torso_action		= torso;
+	//Msg("m_current_legs_action: %s", legs);
+	//Msg("m_current_torso_action: %s", torso);
 }
 
 bool CControllerAnimation::is_moving()
@@ -346,15 +363,28 @@ void CControllerAnimation::set_path_params()
 
 void CControllerAnimation::on_switch_controller()
 {
-	if (m_controller->m_mental_state == CController::eStateDanger) {
-		m_wait_torso_anim_end	= false;
-		set_body_state			(eTorsoIdle, eLegsTypeStand);
 
+	//if (m_controller) {
+	//	Msg("m_controller HAS");
+	//		//if (m_controller->m_mental_state) {    // !!!!!!!!!! тут вылет !!!!!!!!!!
+	//		//	Msg("m_controller->m_mental_state HAS");
+	//		//}
+	//}
+
+	//if (m_controller->m_mental_state == CController::eStateDanger) {  ///  ЗАТЫЧКА КОММЕНТ
+		//Msg("contr 1");
+		m_wait_torso_anim_end	= false;
+		//Msg("contr 2");
+		set_body_state			(eTorsoIdle, eLegsTypeStand);
+		//Msg("contr 3");
 		select_torso_animation	();
+		//Msg("contr 4");
 		select_legs_animation	();
-	} else {
-		select_animation		();
-	}
+		//Msg("contr 5");
+	//} else {                 ///  ЗАТЫЧКА КОММЕНТ
+		//select_animation		();    ///  ЗАТЫЧКА КОММЕНТ
+		//Msg("contr 6");
+	//}    ///  ЗАТЫЧКА КОММЕНТ
 }
 
 

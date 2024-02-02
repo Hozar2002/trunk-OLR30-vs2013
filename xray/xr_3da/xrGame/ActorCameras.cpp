@@ -12,6 +12,7 @@
 #include "Inventory.h"
 
 #include "SleepEffector.h"
+#include "ShootingHitEffector.h"
 #include "ActorEffector.h"
 #include "level.h"
 #include "../cl_intersect.h"
@@ -21,6 +22,8 @@
 #include "EffectorShot.h"
 #include "phcollidevalidator.h"
 #include "PHShell.h"
+
+
 void CActor::cam_Set	(EActorCameras style)
 {
 	CCameraBase* old_cam = cam_Active();
@@ -126,6 +129,7 @@ ICF BOOL test_point(xrXRC& xrc, const Fmatrix& xform, const Fmatrix33& mat, cons
 	return FALSE;
 }
 
+static float CurrentHeight = 0.f; //smooth crouch fix
 #include "physics.h"
 #include "PHActivationShape.h"
 #include "debug_renderer.h"
@@ -136,8 +140,17 @@ void CActor::cam_Update(float dt, float fFOV)
 	if(mstate_real & mcClimb&&cam_active!=eacFreeLook)
 		camUpdateLadder(dt);
 
-	Fvector point={0,CameraHeight(),0}, dangle={0,0,0};
-	
+	//Fvector point={0,CameraHeight(),0}, dangle={0,0,0};
+
+	//smooth crouch fix
+	if (!CurrentHeight)CurrentHeight = CameraHeight();
+	float HeightInterpolationSpeed = 9.f;
+	if (CurrentHeight != CameraHeight() && !Device.dwPrecacheFrame)
+	{
+		CurrentHeight = (CurrentHeight * (1.0f - HeightInterpolationSpeed*dt)) + (CameraHeight() * HeightInterpolationSpeed*dt);
+	}
+	Fvector point = {0,CurrentHeight,0}, dangle={0,0,0};
+	//smooth crouch fix
 
 	Fmatrix				xform,xformR;
 	xform.setXYZ		(0,r_torso.yaw,0);
@@ -361,7 +374,7 @@ void CActor::OnRender	()
 	inherited::OnRender();
 }
 #endif
-/*
+
 void CActor::LoadShootingEffector (LPCSTR section)
 {
 
@@ -386,7 +399,7 @@ void CActor::LoadShootingEffector (LPCSTR section)
 	m_pShootingEffector->time_attack		= pSettings->r_float(section,"time_attack");
 	m_pShootingEffector->time_release		= pSettings->r_float(section,"time_release");
 
-}*/
+}
 
 void CActor::LoadSleepEffector	(LPCSTR section)
 {

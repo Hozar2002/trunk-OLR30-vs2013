@@ -82,6 +82,7 @@ bool CUIGameSP::IR_OnKeyboardPress(int dik)
 	CActor *pActor = smart_cast<CActor*>(Level().CurrentEntity());
 	if(!pActor)								return false;
 	if( pActor && !pActor->g_Alive() )		return false;
+	if (g_actor->IsEat()) return false;
 
 	switch ( get_binded_action(dik) )
 	{

@@ -43,7 +43,7 @@ protected:
 	CUIFrameLineWnd*			UIContactsHeader;
 	CUIFrameWindow*				UIRightFrame;
 	CUIFrameLineWnd*			UIRightFrameHeader;
-	CUIAnimatedStatic*			UIAnimation;
+	//CUIAnimatedStatic*			UIAnimation;
 };
 
 #include "UIPdaListItem.h"

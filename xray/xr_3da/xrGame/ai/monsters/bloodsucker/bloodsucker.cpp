@@ -80,7 +80,14 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 	anim().AddAnim(eAnimStandDamaged,	"stand_damaged_",		-1, &velocity_none,		PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimStandTurnLeft,	"stand_turn_ls_",		-1, &velocity_turn,		PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimStandTurnRight,	"stand_turn_rs_",		-1, &velocity_turn,		PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
-	anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE,	  	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+
+	//anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE,	  	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+	anim().AddAnim(eAnimLieIdle,		"sit_idle_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieStandUp,		"sit_stand_up_",		-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieToSleep,		"sit_sleep_down_",		-1, &velocity_none,		PS_LIE	);
+
+
 	anim().AddAnim(eAnimWalkFwd,		"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimWalkDamaged,	"stand_walk_fwd_dmg_",	-1, &velocity_walk_dmg,	PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimRun,			"stand_run_",			-1,	&velocity_run,		PS_STAND, 	"fx_run_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
@@ -111,27 +118,43 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 
 	// define transitions
 	//	anim().AddTransition(PS_STAND,			eAnimThreaten,	eAnimMiscAction_00,	false);
-	anim().AddTransition(eAnimStandSitDown,	eAnimSleep,		eAnimSitToSleep,	false);
-	anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandSitDown,	true);
+
+	anim().AddTransition(eAnimStandLieDown,	eAnimSleep,		eAnimLieToSleep,		false);										
+	anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandLieDown,		true);
+	anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandLieDown,		false);
+	anim().AddTransition(PS_LIE,			PS_STAND,		eAnimLieStandUp,		false, SKIP_IF_AGGRESSIVE);
+
+	//anim().AddTransition(eAnimStandSitDown,	eAnimSleep,		eAnimSitToSleep,	false);
+	//anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandSitDown,	true);
 	anim().AddTransition(PS_STAND,			PS_SIT,			eAnimStandSitDown,	false);
-	anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandSitDown,	false);
+	//anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandSitDown,	false);
 	anim().AddTransition(PS_SIT,			PS_STAND,		eAnimSitStandUp,	false);
-	anim().AddTransition(PS_LIE,			PS_STAND,		eAnimSitStandUp,	false);
+	//anim().AddTransition(PS_LIE,			PS_STAND,		eAnimSitStandUp,	false);
+
+
+
+
+
 
 	// define links from Action to animations
 	anim().LinkAction(ACT_STAND_IDLE,	eAnimStandIdle);
 	anim().LinkAction(ACT_SIT_IDLE,		eAnimSitIdle);
-	anim().LinkAction(ACT_LIE_IDLE,		eAnimSitIdle);
+	//anim().LinkAction(ACT_LIE_IDLE,		eAnimSitIdle);
+	anim().LinkAction(ACT_LIE_IDLE,		eAnimLieIdle);
 	anim().LinkAction(ACT_WALK_FWD,		eAnimWalkFwd);
 	anim().LinkAction(ACT_WALK_BKWD,	eAnimWalkBkwd);
 	anim().LinkAction(ACT_RUN,			eAnimRun);
 	anim().LinkAction(ACT_EAT,			eAnimEat);
+	//anim().LinkAction(ACT_SLEEP,			eAnimSleep);
 	anim().LinkAction(ACT_SLEEP,		eAnimSleep);
 	anim().LinkAction(ACT_REST,			eAnimSitIdle);
 	anim().LinkAction(ACT_DRAG,			eAnimWalkBkwd);
 	anim().LinkAction(ACT_ATTACK,		eAnimAttack);
 	anim().LinkAction(ACT_STEAL,		eAnimSteal);
 	anim().LinkAction(ACT_LOOK_AROUND,	eAnimLookAround); 
+
+
+
 
 	#ifdef DEBUG	
 		anim().accel_chain_test		();
@@ -149,8 +172,9 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 	m_vampire_want_speed			= pSettings->r_float(section,"Vampire_Want_Speed");
 	m_vampire_wound					= pSettings->r_float(section,"Vampire_Wound");
 
-
-	invisible_particle_name			= pSettings->r_string(section,"Particle_Invisible");
+	invisible_particle_name = pSettings->r_string(section, "Particle_Invisible");
+	invisible_run_particles_name = pSettings->r_string(section, "Particles_Invisible_Tracks");
+	m_run_particles_freq = pSettings->r_u32(section, "Particles_Invisible_Tracks_Freq");
 }
 
 
@@ -220,11 +244,11 @@ void  CAI_Bloodsucker::BoneCallback(CBoneInstance *B)
 
 void CAI_Bloodsucker::vfAssignBones()
 {
-	// Установка callback на кости
+	// ????????? callback ?? ?????
 
 	bone_spine =	&smart_cast<CKinematics*>(Visual())->LL_GetBoneInstance(smart_cast<CKinematics*>(Visual())->LL_BoneID("bip01_spine"));
 	bone_head =		&smart_cast<CKinematics*>(Visual())->LL_GetBoneInstance(smart_cast<CKinematics*>(Visual())->LL_BoneID("bip01_head"));
-	if(!PPhysicsShell())//нельзя ставить колбеки, если создан физ шел - у него стоят свои колбеки!!!
+	if(!PPhysicsShell())//?????? ??????? ???????, ???? ?????? ??? ??? - ? ???? ????? ???? ???????!!!
 	{
 		bone_spine->set_callback(bctCustom,BoneCallback,this);
 		bone_head->set_callback(bctCustom,BoneCallback,this);
@@ -241,15 +265,15 @@ void CAI_Bloodsucker::vfAssignBones()
 
 void CAI_Bloodsucker::LookDirection(Fvector to_dir, float bone_turn_speed)
 {
-	//// получаем вектор направления к источнику звука и его мировые углы
+	//// ???????? ?????? ??????????? ? ????????? ????? ? ??? ??????? ????
 	//float		yaw,pitch;
 	//to_dir.getHP(yaw,pitch);
 
-	//// установить параметры вращения по yaw
-	//float cur_yaw = -movement().m_body.current.yaw;						// текущий мировой угол монстра
-	//float bone_angle;											// угол для боны	
+	//// ?????????? ????????? ???????? ?? yaw
+	//float cur_yaw = -movement().m_body.current.yaw;						// ??????? ??????? ???? ???????
+	//float bone_angle;											// ???? ??? ????	
 
-	//float dy = _abs(angle_normalize_signed(yaw - cur_yaw));		// дельта, на которую нужно поворачиваться
+	//float dy = _abs(angle_normalize_signed(yaw - cur_yaw));		// ??????, ?? ??????? ????? ??????????????
 
 	//if (angle_difference(cur_yaw,yaw) <= MAX_BONE_ANGLE) {		// bone turn only
 	//	bone_angle = dy;
@@ -265,7 +289,7 @@ void CAI_Bloodsucker::LookDirection(Fvector to_dir, float bone_turn_speed)
 	//Bones.SetMotion(bone_spine, AXIS_X, bone_angle, bone_turn_speed, 100);
 	//Bones.SetMotion(bone_head,	AXIS_X, bone_angle, bone_turn_speed, 100);
 
-	//// установить параметры вращения по pitch
+	//// ?????????? ????????? ???????? ?? pitch
 	//clamp(pitch, -MAX_BONE_ANGLE, MAX_BONE_ANGLE);
 	//pitch /= 2; 
 
@@ -316,8 +340,25 @@ void CAI_Bloodsucker::UpdateCL()
 	// update vampire need
 	m_vampire_want_value += m_vampire_want_speed * client_update_fdelta();
 	clamp(m_vampire_want_value,0.f,1.f);
+
+	if (state_invisible && control().path_builder().is_moving_on_path()) 
+	{
+		if (m_last_invisible_run_play + m_run_particles_freq < Device.dwTimeGlobal) 
+		{
+			m_last_invisible_run_play = Device.dwTimeGlobal + Random.randI(m_run_particles_freq - m_run_particles_freq / 2, m_run_particles_freq + m_run_particles_freq / 2);
+			play_hidden_run_particles();
+		}
+	}
 }
 
+void CAI_Bloodsucker::play_hidden_run_particles()
+{
+	Fvector pos;
+	pos.set(Position());
+	pos.y += 0.05f;
+
+	PlayParticles(invisible_run_particles_name, pos, Direction());
+}
 
 void CAI_Bloodsucker::shedule_Update(u32 dt)
 {
@@ -340,7 +381,7 @@ void CAI_Bloodsucker::post_fsm_update()
 	
 	//EMonsterState state = StateMan->get_state_type();
 	//
-	// установить агрессивность
+	// ?????????? ?????????????
 	//bool aggressive =	(is_state(state, eStateAttack)) || 
 	//					(is_state(state, eStatePanic))	|| 
 	//					(is_state(state, eStateHitted));
@@ -450,6 +491,23 @@ void CAI_Bloodsucker::manual_deactivate()
 	setVisible		(TRUE);
 }
 
+void CAI_Bloodsucker::play_aggresive_anim()
+{
+	anim().SetCurAnim(eAnimThreaten);
+	//Msg("bloodsucker aggressive");
+}
+
+void CAI_Bloodsucker::play_panic_anim()
+{
+	anim().SetCurAnim(eAnimScared);
+	//Msg("bloodsucker panic");
+}
+
+void CAI_Bloodsucker::play_LookAround_anim()
+{
+	anim().SetCurAnim(eAnimLookAround);
+	//Msg("bloodsucker eAnimLookAround");
+}
 
 
 #ifdef DEBUG
@@ -484,4 +542,3 @@ void CAI_Bloodsucker::debug_on_key(int key)
 
 
 #endif
-

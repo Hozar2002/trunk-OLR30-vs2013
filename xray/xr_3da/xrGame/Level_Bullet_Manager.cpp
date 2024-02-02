@@ -87,7 +87,7 @@ CBulletManager::CBulletManager()
 #endif // PROFILE_CRITICAL_SECTIONS
 {
 	m_Bullets.clear			();
-	m_Bullets.reserve		(100);
+	m_Bullets.reserve		(1000);   // 100
 }
 
 CBulletManager::~CBulletManager()
@@ -365,10 +365,10 @@ void CBulletManager::Render	()
 
 	for(BulletVecIt it = m_BulletsRendered.begin(); it!=m_BulletsRendered.end(); it++){
 		SBullet* bullet					= &(*it);
-		if(!bullet->flags.allow_tracer)	continue;
+		if (!bullet->flags.allow_tracer)   continue;
 		if (!bullet->flags.skipped_frame)  continue;
 
-		float length	= bullet->speed*float(m_dwStepTime)/1000.f;//dist.magnitude();
+		float length	= bullet->speed*float(m_dwStepTime)/1000.f; //dist.magnitude();  // скорость апдейта рендеринга срикошеченого трассера
 
 		if(length<m_fTracerLengthMin) continue;
 
@@ -406,10 +406,18 @@ void CBulletManager::Render	()
 //		Msg("dist - [%f]", dist);
 		//---------------------------------------------
 
+	//if (Device.vCameraPosition.distance_to_sqr(bullet->pos)>(100))
+	//{
 
+
+		if(!bullet->flags.ricochet_was)	// рикошеты не трасерят
+		{
 		Fvector center;
 		center.mad				(bullet->pos, bullet->dir,  -length*.5f);
 		tracers.Render			(verts, bullet->pos, center, bullet->dir, length, width, bullet->m_u8ColorID);
+		}
+
+	//}
 	}
 
 	u32 vCount					= (u32)(verts-start);

@@ -200,14 +200,16 @@ Fvector2 CMapLocation::Direction()
 	res.set(0.0f,0.0f);
 
 	if(Level().CurrentViewEntity()&&Level().CurrentViewEntity()->ID()==m_objectID ){
-		res.set(Device.vCameraDirection.x,Device.vCameraDirection.z);
+		//res.set(Device.vCameraDirection.x,Device.vCameraDirection.z);
+		res.set(0.0f, 0.0f); // cut direction of spot hf
 	}else{
 		CObject* pObject =  Level().Objects.net_Find(m_objectID);
 		if(!pObject)
 			res.set(0.0f, 0.0f);
 		else{
 			const Fvector& op = pObject->Direction();
-			res.set(op.x, op.z);
+			res.set(0.0f, 0.0f); // cut direction of spot hf
+			//res.set(op.x, op.z);
 		}
 	}
 
@@ -215,7 +217,8 @@ Fvector2 CMapLocation::Direction()
 		CObject* pObject =  Level().Objects.net_Find(m_objectID);
 		if(pObject){
 			Fvector2 dcp,obj_pos;
-			dcp.set(Device.vCameraPosition.x, Device.vCameraPosition.z);
+			//dcp.set(Device.vCameraPosition.x, Device.vCameraPosition.z);
+			dcp.set(0.0f, 0.0f);  // cut direction of spot hf
 			obj_pos.set(pObject->Position().x, pObject->Position().z);
 			res.sub(obj_pos, dcp);
 			res.normalize_safe();
@@ -446,24 +449,24 @@ void CMapLocation::UpdateSpot(CUICustomMap* map, CMapSpot* sp )
 
 void CMapLocation::UpdateSpotPointer(CUICustomMap* map, CMapSpotPointer* sp )
 {
-	if(sp->GetParent()) return ;// already is child
-	float		heading;
-	Fvector2	pointer_pos;
-	if( map->GetPointerTo(m_position_on_map, sp->GetWidth()/2, pointer_pos, heading) )
-	{
-		sp->SetWndPos(pointer_pos);
-		sp->SetHeading(heading);
+	//if(sp->GetParent()) return ;// already is child
+	//float		heading;
+	//Fvector2	pointer_pos;
+	//if( map->GetPointerTo(m_position_on_map, sp->GetWidth()/2, pointer_pos, heading) )
+	//{
+	//	sp->SetWndPos(pointer_pos);
+	//	sp->SetHeading(heading);
 
-		Frect clip_rect = map->GetClipperRect();
-		sp->SetClipRect( clip_rect );
-		map->AttachChild(sp);
+	//	Frect clip_rect = map->GetClipperRect();
+	//	sp->SetClipRect( clip_rect );
+	//	map->AttachChild(sp);
 
-		Fvector2 tt = map->ConvertLocalToReal(m_position_on_map);
-		Fvector ttt;
-		ttt.set		(tt.x, 0.0f, tt.y);
-		float dist_to_target = Level().CurrentEntity()->Position().distance_to(ttt);
-		map->SetPointerDistance	(dist_to_target);
-	}
+	//	Fvector2 tt = map->ConvertLocalToReal(m_position_on_map);
+	//	Fvector ttt;
+	//	ttt.set		(tt.x, 0.0f, tt.y);
+	//	float dist_to_target = Level().CurrentEntity()->Position().distance_to(ttt);
+	//	map->SetPointerDistance	(dist_to_target);
+	//}
 }
 
 void CMapLocation::UpdateMiniMap(CUICustomMap* map)

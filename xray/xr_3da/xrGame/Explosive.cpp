@@ -374,7 +374,8 @@ void CExplosive::Explode()
 		cartridge.m_kPierce					= 1.f;
 		cartridge.fWallmarkSize				= fWallmarkSize;
 		cartridge.bullet_material_idx		= GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME);
-		cartridge.m_flags.set				(CCartridge::cfTracer,FALSE);
+		cartridge.m_flags.set				(CCartridge::cfTracer,TRUE);  /// HF
+		cartridge.m_flags.set				(CCartridge::cfRicochet,TRUE);  /// HF
 
 		Level().BulletManager().AddBullet(	pos, frag_dir, m_fFragmentSpeed,
 											m_fFragHit, m_fFragHitImpulse, Initiator(),

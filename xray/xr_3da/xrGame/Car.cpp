@@ -29,6 +29,12 @@
 #include "CharacterPhysicsSupport.h"
 #include "car_memory.h"
 
+#include "pch_script.h"
+#include "game_object_space.h"
+#include "script_callback_ex.h"
+#include "script_game_object.h"
+
+
 BONE_P_MAP CCar::bone_map=BONE_P_MAP();
 
 extern CPHWorld*	ph_world;
@@ -86,6 +92,8 @@ CCar::CCar()
 	m_car_weapon=NULL;
 	m_power_neutral_factor=0.25f;
 	m_steer_angle=0.f;
+	m_loaded = false;
+	m_pHud = xr_new<CCarHud>(this);
 #ifdef DEBUG
 	InitDebug();
 #endif
@@ -101,6 +109,7 @@ CCar::~CCar(void)
 	xr_delete			(inventory);
 	xr_delete			(m_car_weapon);
 	xr_delete			(m_memory);
+	xr_delete			(m_pHud);
  //	xr_delete			(l_tpEntityAction);
 }
 
@@ -144,7 +153,9 @@ void	CCar::Load					( LPCSTR section )
 	inherited::Load					(section);
 	//CPHSkeleton::Load(section);
 	ISpatial*		self				=	smart_cast<ISpatial*> (this);
-	if (self)		self->spatial.type	|=	STYPE_VISIBLEFORAI;	
+	if (self)		self->spatial.type	|=	STYPE_VISIBLEFORAI;
+	
+	m_pHud->Load(section);
 }
 
 BOOL	CCar::net_Spawn				(CSE_Abstract* DC)
@@ -158,6 +169,19 @@ BOOL	CCar::net_Spawn				(CSE_Abstract* DC)
 
 	PKinematics(Visual())->CalculateBones_Invalidate();
 	PKinematics(Visual())->CalculateBones();
+	
+	
+	CKinematics* K = smart_cast<CKinematics*>(Visual());
+	CInifile* pUserData = K->LL_UserData();
+	if(pUserData->line_exist("car_definition","driver_place"))
+		driver_place_bone_id = K->LL_BoneID(pUserData->r_string("car_definition","driver_place"));
+	else {	
+		//Owner()->setVisible(0);
+		driver_place_bone_id = K->LL_GetBoneRoot();
+	}
+	//CBoneInstance& instance=K->LL_GetBoneInstance(u16(id));
+	//m_sits_transforms.clear();
+	//m_sits_transforms.push_back(instance.mTransform);
 
 	CPHSkeleton::Spawn(e);
 	setEnabled						(TRUE);
@@ -173,7 +197,6 @@ BOOL	CCar::net_Spawn				(CSE_Abstract* DC)
 	CDamagableItem::RestoreEffect();
 	
 	
-	CInifile* pUserData		= PKinematics(Visual())->LL_UserData(); 
 	if(pUserData->section_exist("destroyed"))
 		CPHDestroyable::Load(pUserData,"destroyed");
 	if(pUserData->section_exist("mounted_weapon_definition"))
@@ -185,16 +208,22 @@ BOOL	CCar::net_Spawn				(CSE_Abstract* DC)
 		m_memory->reload	(pUserData->r_string("visual_memory_definition", "section"));
 	}
 
-	// Real Wolf: 10.10.2014
 #ifdef CAR_SAVE_FUEL
-	if (co->m_fuel > 0) // Немного кривовато, так как я не нашел возможности получить эти значения в серверном объекте.
-	{
-		m_fuel				= co->m_fuel;
-		m_fuel_consumption	= co->m_fuel_consumption;
-		m_fuel_tank			= co->m_fuel_tank;
+	if (m_loaded) {
+		if (co->m_fuel > 0) // Немного кривовато, так как я не нашел возможности получить эти значения в серверном объекте.
+		{
+			m_fuel				= co->m_fuel;
+			m_fuel_consumption	= co->m_fuel_consumption;
+			m_fuel_tank			= co->m_fuel_tank;
+		}
 	}
 #endif
 	return							(CScriptEntity::net_Spawn(DC) && R);
+}
+
+void CCar::load(IReader &input_packet) {
+	inherited::load		(input_packet);
+	m_loaded = true;
 }
 
 void CCar::ActorObstacleCallback					(bool& do_colide,bool bo1,dContact& c,SGameMtl* material_1,SGameMtl* material_2)	
@@ -219,6 +248,8 @@ void CCar::SpawnInitPhysics	(CSE_Abstract	*D)
 	//PPhysicsShell()->add_ObjectContactCallback(ActorObstacleCallback);
 	SetDefaultNetState				(so);
 	CPHUpdateObject::Activate       ();
+
+	m_pPhysicsShell->applyImpulse(Fvector().set(0,-1.f,0), 0.1); // fix in air
 }
 
 void	CCar::net_Destroy()
@@ -436,6 +467,9 @@ void CCar::UpdateCL				( )
 			m_memory->set_camera(m_car_weapon->ViewCameraPos(), m_car_weapon->ViewCameraDir(), m_car_weapon->ViewCameraNorm());
 	}
 	ASCUpdate			();
+	
+	m_pHud->Update();
+	
 	if(Owner()) return;
 //	UpdateEx			(g_fov);
 	VisualUpdate(90);
@@ -456,12 +490,13 @@ void CCar::UpdateCL				( )
 	V.set		(lin_vel);
 
 	m_car_sound->Update();
-	if(Owner())
-	{
+	if (Owner()) {
 		
-		if(m_pPhysicsShell->isEnabled())
-		{
-			Owner()->XFORM().mul_43	(XFORM(),m_sits_transforms[0]);
+		if (m_pPhysicsShell->isEnabled()) {
+			CKinematics* K = smart_cast<CKinematics*>(Visual());
+			K->CalculateBones	();
+			//smart_cast<CKinematics*>(Owner()->Visual())->CalculateBones_Invalidate();
+			Owner()->XFORM().mul_43(XFORM(), K->LL_GetTransform(static_cast<u16>(driver_place_bone_id)));
 		}
 /*
 		if(OwnerActor() && OwnerActor()->IsMyCamera()) 
@@ -487,8 +522,11 @@ void CCar::UpdateCL				( )
 void	CCar::renderable_Render				( )
 {
 	inherited::renderable_Render			();
-	if(m_car_weapon)
+	if(m_car_weapon) {
 		m_car_weapon->Render_internal();
+	}
+	
+	m_pHud->renderable_Render();
 }
 
 void	CCar::net_Export			(NET_Packet& P)
@@ -637,23 +675,23 @@ void CCar::detach_Actor()
 #endif
 }
 
-bool CCar::attach_Actor(CGameObject* actor)
-{
+bool CCar::attach_Actor(CGameObject* actor) {
 	if(Owner()||CPHDestroyable::Destroyed()) return false;
 	CHolderCustom::attach_Actor(actor);
 
-	CKinematics* K	= smart_cast<CKinematics*>(Visual());
-	CInifile* ini	= K->LL_UserData();
-	int id;
-	if(ini->line_exist("car_definition","driver_place"))
-		id=K->LL_BoneID(ini->r_string("car_definition","driver_place"));
-	else
-	{	
-		Owner()->setVisible(0);
-		id=K->LL_GetBoneRoot();
-	}
-	CBoneInstance& instance=K->LL_GetBoneInstance				(u16(id));
-	m_sits_transforms.push_back(instance.mTransform);
+	//CKinematics* K	= smart_cast<CKinematics*>(Visual());
+	//CInifile* ini	= K->LL_UserData();
+	//int id;
+	//if(ini->line_exist("car_definition","driver_place"))
+	//	id=K->LL_BoneID(ini->r_string("car_definition","driver_place"));
+	//else
+	//{	
+	//	Owner()->setVisible(0);
+	//	id=K->LL_GetBoneRoot();
+	//}
+	//CBoneInstance& instance=K->LL_GetBoneInstance				(u16(id));
+	//m_sits_transforms.push_back(instance.mTransform);
+	
 	OnCameraChange(ectFirst);
 	PPhysicsShell()->Enable();
 	PPhysicsShell()->add_ObjectContactCallback(ActorObstacleCallback);
@@ -662,7 +700,7 @@ bool CCar::attach_Actor(CGameObject* actor)
 	ReleaseHandBreak();
 //	HUD().GetUI()->UIMainIngameWnd->CarPanel().Show(true);
 //	HUD().GetUI()->UIMainIngameWnd->CarPanel().SetCarHealth(fEntityHealth/100.f);
-	//HUD().GetUI()->UIMainIngameWnd.ShowBattery(true);
+//	HUD().GetUI()->UIMainIngameWnd.ShowBattery(true);
 	//CBoneData&	bone_data=K->LL_GetData(id);
 	//Fmatrix driver_pos_tranform;
 	//driver_pos_tranform.setHPB(bone_data.bind_hpb.x,bone_data.bind_hpb.y,bone_data.bind_hpb.z);
@@ -810,14 +848,17 @@ void CCar::ParseDefinitions()
 		gear_rat[2]*=(1.f/60.f*2.f*M_PI);
 		m_gear_ratious.push_back(gear_rat);
 	}
-
+	
+	
 	///////////////////////////////sound///////////////////////////////////////////////////////
 	m_car_sound->Init();
-	///////////////////////////////fuel///////////////////////////////////////////////////
-	m_fuel_tank=ini->r_float("car_definition","fuel_tank");
-	m_fuel=m_fuel_tank;
-	m_fuel_consumption=ini->r_float("car_definition","fuel_consumption");
-	m_fuel_consumption/=100000.f;
+	
+	// Real Wolf: 10.10.2014
+	m_fuel_tank = ini->r_float("car_definition","fuel_tank");
+	m_fuel = m_fuel_tank;
+	m_fuel_consumption = ini->r_float("car_definition","fuel_consumption");
+	m_fuel_consumption /= 100000.f;
+	
 	if(ini->line_exist("car_definition","exhaust_particles"))
 		m_exhaust_particles = ini->r_string("car_definition","exhaust_particles");
 	///////////////////////////////lights///////////////////////////////////////////////////
@@ -854,6 +895,8 @@ void CCar::CreateSkeleton(CSE_Abstract	*po)
 	// by Real Wolf 11.07.2014.
 	m_pPhysicsShell = P_build_Shell(this, true, &bone_map);
 	m_pPhysicsShell->SetPrefereExactIntegration();
+
+	m_pPhysicsShell->Enable();
 
 	ApplySpawnIniToPhysicShell(&po->spawn_ini(),m_pPhysicsShell,false);
 	ApplySpawnIniToPhysicShell(smart_cast<CKinematics*>(Visual())->LL_UserData(),m_pPhysicsShell,false);
@@ -1036,6 +1079,7 @@ void CCar::StartEngine()
 	b_engine_on=true;
 	m_current_rpm=0.f;
 	b_starting=true;
+	//g_actor->callback(GameObject::eOnCarEngineStart)();
 }
 void CCar::StopEngine()
 {
@@ -1093,7 +1137,7 @@ void CCar::UpdatePower()
 {
 	m_current_rpm=EngineDriveSpeed();
 	m_current_engine_power=EnginePower();
-	if(b_auto_switch_transmission&&!b_transmission_switching) 
+	if(b_auto_switch_transmission&&!b_transmission_switching&&b_engine_on) // fix add b_engine_on
 	{
 		VERIFY2(CurrentTransmission()<m_gear_ratious.size(),"wrong transmission");
 		if(m_current_rpm<m_gear_ratious[CurrentTransmission()][1]) TransmissionDown();
@@ -1190,6 +1234,8 @@ void CCar::PressRight()
 	else
 		SteerRight();
 	rsp=true;
+	
+	m_pHud->PlayAnimRotateRight();
 }
 void CCar::PressLeft()
 {
@@ -1200,6 +1246,8 @@ void CCar::PressLeft()
 	else
 		SteerLeft();
 	lsp=true;
+	
+	m_pHud->PlayAnimRotateLeft();
 }
 void CCar::PressForward()
 {
@@ -1257,6 +1305,8 @@ void CCar::ReleaseRight()
 	else
 		SteerIdle();
 	rsp=false;
+	
+	m_pHud->PlayAnimReturnRight();
 }
 void CCar::ReleaseLeft()
 {
@@ -1265,6 +1315,8 @@ void CCar::ReleaseLeft()
 	else
 		SteerIdle();
 	lsp=false;
+	
+	m_pHud->PlayAnimReturnLeft();
 }
 void CCar::ReleaseForward()
 {

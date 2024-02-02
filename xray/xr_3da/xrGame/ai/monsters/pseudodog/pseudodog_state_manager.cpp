@@ -32,6 +32,7 @@ CStateManagerPseudodog::CStateManagerPseudodog(CAI_PseudoDog *monster) : inherit
 #define MIN_ANGRY_TIME		10000
 #define MAX_GROWLING_TIME	20000
 
+// исполняетсятся один раз при срабатывании условия 
 void CStateManagerPseudodog::execute()
 {
 	u32 state_id = u32(-1);
@@ -43,12 +44,16 @@ void CStateManagerPseudodog::execute()
 				case eStrong:	state_id = eStatePanic; break;
 				case eWeak:		state_id = eStateAttack; break;
 		}
+
 	} else if (object->HitMemory.is_hit()) {
 		state_id = eStateHitted;
+
 	} else if (object->hear_interesting_sound) {
 		state_id = eStateHearInterestingSound;
+
 	} else if (object->hear_dangerous_sound) {
-		state_id = eStateHearDangerousSound;	
+		state_id = eStateHearDangerousSound;
+
 	} else {
 		if (can_eat())	state_id = eStateEat;
 		else			state_id = eStateRest;

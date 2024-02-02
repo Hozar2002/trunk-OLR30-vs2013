@@ -2,6 +2,8 @@
 
 #include "../../../build_config_defines.h"
 
+//#undef INV_NEW_SLOTS_SYSTEM
+
 //////////////////////////////////////////////////////////////////////////
 
 enum EUIMessages
@@ -23,9 +25,7 @@ enum EUIMessages
 	WINDOW_KEY_RELEASED,
 	WINDOW_MOUSE_CAPTURE_LOST, 
 	WINDOW_KEYBOARD_CAPTURE_LOST,
-	WINDOW_FOCUS_RECEIVED,
-	WINDOW_FOCUS_LOST,
-	
+
 	// CUIStatic
 	STATIC_FOCUS_RECEIVED,
 	STATIC_FOCUS_LOST,
@@ -50,7 +50,6 @@ enum EUIMessages
 	DRAG_DROP_ITEM_DB_CLICK,
 	DRAG_DROP_ITEM_RBUTTON_CLICK,
 	DRAG_DROP_ITEM_SELECTED,
-	DRAG_DROP_ITEM_FOCUSED_UPDATE,
 	
 	// CUIScrollBox
 	SCROLLBOX_MOVE,

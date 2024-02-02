@@ -179,7 +179,14 @@ void CStalkerActionSmartTerrain::initialize				()
 	object().movement().game_selector().set_selection_type		(eSelectionTypeMask);
 	object().movement().set_detail_path_type		(DetailPathManager::eDetailPathTypeSmooth);
 	object().movement().set_body_state				(eBodyStateStand);
-	object().movement().set_movement_type			(eMovementTypeWalk);
+	if (Random.randI(100) > 50){
+		object().movement().set_movement_type			(eMovementTypeWalk);
+		//Msg("eMovementTypeWalk");
+	}
+	else{
+		object().movement().set_movement_type			(eMovementTypeRun);
+		//Msg("eMovementTypeRun");
+	};
 	object().movement().set_mental_state			(eMentalStateFree);
 	object().sight().setup							(CSightAction(SightManager::eSightTypePathDirection));
 

@@ -29,7 +29,7 @@
 
 #include "map_manager.h"
 #include "HUDManager.h"
-#include "ui/UIArtefactPanel.h"
+//#include "ui/UIArtefactPanel.h"
 #include "ui/UIMainIngameWnd.h"
 #include "gamepersistent.h"
 #include "game_object_space.h"
@@ -42,11 +42,16 @@
 #include "game_cl_base_weapon_usage_statistic.h"
 #include "clsid_game.h"
 
+#include "UIZoneMap.h"
+
 #include "../x_ray.h" 
 
 #ifdef DEBUG
 #	include "debug_renderer.h"
 #endif
+
+#include "ui\UIInventoryWnd.h"
+#include "UIGameSp.h"
 
 int			g_cl_InterpolationType		= 0;
 u32			g_cl_InterpolationMaxPoints = 0;
@@ -360,15 +365,16 @@ void		CActor::net_Import_Base				( NET_Packet& P)
 	P.r_u8				(ActiveSlot);
 	
 	//----------- for E3 -----------------------------
-	if (OnClient())
+	if (OnClient()) {
 	//------------------------------------------------
-	{
-		if (ActiveSlot == 0xff) inventory().SetActiveSlot(NO_ACTIVE_SLOT);
-		else 
-		{
-			if (inventory().GetActiveSlot() != u32(ActiveSlot))
+		if (this->m_holderID == u16(-1)) {
+			if (ActiveSlot == 0xff) {
+				inventory().SetActiveSlot(NO_ACTIVE_SLOT);
+			}
+			else if (inventory().GetActiveSlot() != u32(ActiveSlot)) {
 				inventory().Activate(u32(ActiveSlot));
-		};
+			}
+		}
 	}
 
 	//----------- for E3 -----------------------------
@@ -493,6 +499,8 @@ void	CActor::net_Import_Physic_proceed	( )
 	CrPr_SetActivationStep(0);
 };
 
+#define NEWS_TO_SHOW 5000
+
 BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 {
 	g_pGamePersistent->LoadTitle		("st_actor_netspawn");   // alpet: для отображения дополнительной длительной фазы загрузки, после короткого этапа "Синхронизации"
@@ -532,6 +540,16 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 	// инициализация реестров, используемых актером
 	encyclopedia_registry->registry().init(ID());
 	game_news_registry->registry().init(ID());
+
+
+	{
+	  auto news = game_news_registry->registry().objects();
+	  if ( news.size() > NEWS_TO_SHOW )
+	    news.erase(
+	      news.begin(),
+	      news.begin() + ( news.size() - NEWS_TO_SHOW )
+            );
+	}
 
 
 	if (!CInventoryOwner::net_Spawn(DC)) return FALSE;
@@ -689,6 +707,23 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 		setLocal(FALSE);
 	};
 
+#if defined(HIDE_WEAPON_IN_CAR)
+	if (m_holder && inventory().ActiveItem()) {
+		u32 ActiveSlot = inventory().GetActiveSlot();
+		if (inventory().Activate(NO_ACTIVE_SLOT)) {
+			inventory().SetPrevActiveSlot(ActiveSlot);
+		}
+	}
+#endif
+	auto game_sp = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+	if (game_sp) (game_sp->InventoryMenu)->OutfitStaticUpdate();
+
+	if (game_sp) {
+		auto visual = smart_cast<CKinematics*>((game_sp->InventoryMenu)->OutfitStaticVisual());
+		if (visual) visual->CalculateBones();
+		else Msg("visual = NULL");
+	}
+	
 	pApp->LoadEnd();
 	return					TRUE;
 }
@@ -734,9 +769,11 @@ void CActor::net_Destroy	()
 	
 	m_ArtefactsOnBelt.clear();
 	if (Level().CurrentViewEntity() == this)
-		HUD().GetUI()->UIMainIngameWnd->m_artefactPanel->InitIcons(m_ArtefactsOnBelt);	
+		//HUD().GetUI()->UIMainIngameWnd->m_artefactPanel->InitIcons(m_ArtefactsOnBelt);	
 
 	SetDefaultVisualOutfit(NULL);
+	auto game_sp = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+	if (game_sp) (game_sp->InventoryMenu)->OutfitStaticDestroy();
 	
 
 	if(g_actor == this) g_actor= NULL;
@@ -849,6 +886,7 @@ void	CActor::OnChangeVisual()
 		m_current_legs_blend		= NULL;
 		m_current_torso_blend		= NULL;
 		m_current_jump_blend		= NULL;
+		CStepManager::reload(*cNameSect());
 	}
 };
 
@@ -861,10 +899,17 @@ void	CActor::ChangeVisual			( shared_str NewVisual )
 	}
 
 	cNameVisual_set(NewVisual);
+	auto game_sp = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+	if (game_sp) (game_sp->InventoryMenu)->OutfitStaticUpdate();
 
 	g_SetAnimation			(mstate_real);
 	Visual()->dcast_PKinematics()->CalculateBones_Invalidate();
 	Visual()->dcast_PKinematics()->CalculateBones();
+	
+	if (game_sp) {
+		(game_sp->InventoryMenu)->OutfitStaticVisual()->dcast_PKinematics()->CalculateBones_Invalidate();
+		(game_sp->InventoryMenu)->OutfitStaticVisual()->dcast_PKinematics()->CalculateBones();
+	}
 };
 
 void ACTOR_DEFS::net_update::lerp(ACTOR_DEFS::net_update& A, ACTOR_DEFS::net_update& B, float f)
@@ -1324,6 +1369,7 @@ void CActor::save(NET_Packet &output_packet)
 {
 	inherited::save(output_packet);
 	CInventoryOwner::save(output_packet);
+	HUD().GetUI()->UIMainIngameWnd->GetUIZoneMap()->save(output_packet);
 	output_packet.w_u8(u8(m_bOutBorder));
 }
 
@@ -1331,6 +1377,7 @@ void CActor::load(IReader &input_packet)
 {
 	inherited::load(input_packet);
 	CInventoryOwner::load(input_packet);
+	HUD().GetUI()->UIMainIngameWnd->GetUIZoneMap()->load(input_packet);
 	m_bOutBorder=!!(input_packet.r_u8());
 }
 
@@ -1751,7 +1798,7 @@ void	CActor::Check_for_AutoPickUp()
 		{
 			if (GameID() == GAME_DEATHMATCH || GameID() == GAME_TEAMDEATHMATCH)
 			{
-				if (pIItem->GetSlot() == PISTOL_SLOT || pIItem->GetSlot() == RIFLE_SLOT )
+				if (pIItem->GetSlot() == PISTOL_SLOT || pIItem->GetSlot() == RIFLE_SLOT || pIItem->GetSlot() == GREN_SLOT )
 				{
 					if (inventory().ItemFromSlot(pIItem->GetSlot()))
 					{
@@ -1938,18 +1985,12 @@ void				CActor::OnCriticalRadiationHealthLoss	()
 bool				CActor::Check_for_BackStab_Bone			(u16 element)
 {
 	if (element == m_head) return true;
-	else
-		if (element == m_neck) return true;
-		else
-			if (element == m_spine2) return true;
-			else
-				if (element == m_l_clavicle) return true;
-				else
-					if (element == m_r_clavicle) return true;
-					else
-						if (element == m_spine1) return true;
-						else 
-							if (element == m_spine) return true;
+	else if (element == m_neck) return true;
+	else if (element == m_spine2) return true;
+	else if (element == m_l_clavicle) return true;
+	else if (element == m_r_clavicle) return true;
+	else if (element == m_spine1) return true;
+	else if (element == m_spine) return true;
 	return false;
 }
 

@@ -55,5 +55,12 @@ void CUIPdaListItem::Init(float x, float y, float width, float height)
 void CUIPdaListItem::InitCharacter(CInventoryOwner* pInvOwner)
 {
 	VERIFY										(pInvOwner);
-	UIInfo->InitCharacter						(pInvOwner->object_id());
+	//UIInfo->InitCharacter						(pInvOwner->object_id());
+	try {
+		UIInfo->InitCharacter						(pInvOwner->object_id());
+    }
+    catch(...) {
+		//UIInfo->InitCharacter						(0);
+        Msg                    ("!!!catch Error try InitCharacter ");
+    }
 }

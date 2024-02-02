@@ -147,9 +147,17 @@ void CControl_Manager::notify(ControlCom::EEventType event, ControlCom::IEventDa
 {
 	CONTROLLERS_VECTOR &vect = m_listeners[event];
 
-	for (u32 i = 0; i < vect.size(); i++) {
-		VERIFY(vect[i]->cing());
-		vect[i]->cing()->on_event(event, data);
+	//for (u32 i = 0; i < vect.size(); i++) {
+	//	VERIFY(vect[i]->cing());
+	//	vect[i]->cing()->on_event(event, data);
+	//}
+	if (vect.size())
+	{
+		for (u32 i = 0; i < vect.size(); ++i)
+		{
+			VERIFY(vect[i]->cing());
+			vect[i]->cing()->on_event(event, data);
+		}
 	}
 }
 

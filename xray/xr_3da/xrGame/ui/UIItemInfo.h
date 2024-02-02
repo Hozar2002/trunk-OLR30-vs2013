@@ -1,13 +1,14 @@
 #pragma once
 #include "uiwindow.h"
+#include "UI3dStatic.h"
 
 
 class CInventoryItem;
 class CUIStatic;
 class CUIScrollView;
 class CUIProgressBar;
-class CUIWpnParams;
-class CUIArtefactParams;
+//class CUIWpnParams;
+//class CUIArtefactParams;
 
 extern const char * const 		fieldsCaptionColor;
 
@@ -30,20 +31,36 @@ public:
 	void				Init				(float x, float y, float width, float height, LPCSTR xml_name);
 	void				Init				(LPCSTR xml_name);
 	void				InitItem			(CInventoryItem* pInvItem);
-	void				TryAddWpnInfo		(const shared_str& wpn_section);
-	void				TryAddArtefactInfo	(const shared_str& af_section);
+	//void				TryAddWpnInfo		(const shared_str& wpn_section);
+	//void				TryAddArtefactInfo	(const shared_str& af_section);
 
 	virtual void		Draw				();
+	
 	bool				m_b_force_drawing;
 	CUIStatic*			UIName;
 	CUIStatic*			UIWeight;
 	CUIStatic*			UICost;
 	CUIStatic*			UICondition;
+	CUIStatic*			UIConditionStr;
 	CUIScrollView*		UIDesc;
 	CUIProgressBar*		UICondProgresBar;
-	CUIWpnParams*		UIWpnParams;
-	CUIArtefactParams*	UIArtefactParams;
+	//CUIWpnParams*		UIWpnParams;
+	//CUIArtefactParams*	UIArtefactParams;
 
 	Fvector2			UIItemImageSize; 
-	CUIStatic*			UIItemImage;
+	CUI3dStatic*			UIItemImage;
+	
+	void Draw3DStatic() 
+	{
+		if (::Render->get_generation() != ::Render->GENERATION_R1) 
+		{
+			if (UIItemImage) 
+				UIItemImage->Draw3D();
+		}
+		
+	}
+	void				SetItemImageDefaultValues	() {
+		if (UIItemImage) UIItemImage->Destroy();
+	}
 };
+

@@ -38,8 +38,6 @@ CUIPdaWnd::CUIPdaWnd()
 	UIPdaContactsWnd		= NULL;
 	UIEncyclopediaWnd		= NULL;
 	UIDiaryWnd				= NULL;
-	UIActorInfo				= NULL;
-	UIStalkersRanking		= NULL;
 	UIEventsWnd				= NULL;
 	m_updatedSectionImage	= NULL;
 	m_oldSectionImage		= NULL;
@@ -52,8 +50,6 @@ CUIPdaWnd::~CUIPdaWnd()
 	delete_data		(UIPdaContactsWnd);
 	delete_data		(UIEncyclopediaWnd);
 	delete_data		(UIDiaryWnd);
-	delete_data		(UIActorInfo);
-	delete_data		(UIStalkersRanking);
 	delete_data		(UIEventsWnd);
 	delete_data		(m_updatedSectionImage);
 	delete_data		(m_oldSectionImage);
@@ -86,11 +82,6 @@ void CUIPdaWnd::Init()
 	UIMainPdaFrame->AttachChild(UIMainButtonsBackground);
 	xml_init.InitFrameLine	(uiXml, "mbbackground_frame_line", 0, UIMainButtonsBackground);
 
-	// Timer background
-	UITimerBackground		= xr_new<CUIFrameLineWnd>(); UITimerBackground->SetAutoDelete(true);
-	UIMainPdaFrame->AttachChild(UITimerBackground);
-	xml_init.InitFrameLine	(uiXml, "timer_frame_line", 0, UITimerBackground);
-
 	// Oкно карты
 	UIMapWnd				= xr_new<CUIMapWnd>();
 	UIMapWnd->Init			("pda_map.xml","map_wnd");
@@ -109,14 +100,6 @@ void CUIPdaWnd::Init()
 		// Окно энциклопедии
 		UIEncyclopediaWnd		= xr_new<CUIEncyclopediaWnd>();
 		UIEncyclopediaWnd->Init	();
-
-		// Окно статистики о актере
-		UIActorInfo				= xr_new<CUIActorInfoWnd>();
-		UIActorInfo->Init		();
-
-		// Окно рейтинга сталкеров
-		UIStalkersRanking		= xr_new<CUIStalkersRankingWnd>();
-		UIStalkersRanking->Init	();
 
 		UIEventsWnd				= xr_new<CUIEventsWnd>();
 		UIEventsWnd->Init		();
@@ -176,36 +159,37 @@ void CUIPdaWnd::Hide()
 
 }
 
-void CUIPdaWnd::UpdateDateTime()
-{
-	static shared_str prevStrTime = " ";
-	xr_string strTime = *InventoryUtilities::GetGameTimeAsString(InventoryUtilities::etpTimeToMinutes);
-				strTime += " ";
-				strTime += *InventoryUtilities::GetGameDateAsString(InventoryUtilities::edpDateToDay);
-
-	if (xr_strcmp(strTime.c_str(), prevStrTime))
-	{
-		UITimerBackground->UITitleText.SetText(strTime.c_str());
-		prevStrTime = strTime.c_str();
-	}
-}
-
-#include "../../build_config_defines.h"
-#if defined(UI_LOCK_PDA_WITHOUT_PDA_IN_SLOT)
-	#include "../Actor.h"
-	#include "../Inventory.h"
-#endif
+//#include "../../build_config_defines.h"
+//#if defined(UI_LOCK_PDA_WITHOUT_PDA_IN_SLOT)
+#	include "../Actor.h"
+#include "../hudmanager.h"
+#include "../UI/UIStatic.h"
+#include "../UIGameCustom.h"
+//#	include "../Inventory.h"
+//#endif
 
 void CUIPdaWnd::Update()
 {
 	inherited::Update		();
-	UpdateDateTime			();
-
-	// Real Wolf: если предмет убрали, когда окно было открыто, то закрываем его. 07.08.2014.
-#if defined(UI_LOCK_PDA_WITHOUT_PDA_IN_SLOT)
-	if (!g_actor->inventory().m_slots[PDA_SLOT].m_pIItem && IsShown() )
+	//Msg("pdaaaa");
+	const bool isActorEat = g_actor->IsEat();
+	if (isActorEat)
+	{
 		GetHolder()->StartStopMenu(this, true);
-#endif
+	}
+
+	if (g_actor->inventory().m_slots[PDA_SLOT].m_pIItem && g_actor->inventory().m_slots[PDA_SLOT].m_pIItem->GetCondition() <=0.01f && IsShown() ){
+		GetHolder()->StartStopMenu(this, true);
+		//SDrawStaticStruct* s = HUD().GetUI()->UIGame()->AddCustomStatic("pda_dead", false);
+		//s->m_endTime = Device.fTimeGlobal+3.0f;// 3sec
+	}
+
+	if (g_actor->inventory().m_slots[PDA_SLOT].m_pIItem->GetCondition() <=0.01f){
+		SDrawStaticStruct* _s		= HUD().GetUI()->UIGame()->AddCustomStatic("custom_sms_text", true);
+		_s->m_endTime				= Device.fTimeGlobal+3.0f;// 3sec
+		_s->wnd()->SetTextST			("st_pda_dead");
+	}
+
 }
 
 void CUIPdaWnd::SetActiveSubdialog(EPdaTabs section)
@@ -222,6 +206,8 @@ void CUIPdaWnd::SetActiveSubdialog(EPdaTabs section)
 	case eptDiary:
 		m_pActiveDialog			= smart_cast<CUIWindow*>(UIDiaryWnd);
 		InventoryUtilities::SendInfoToActor("ui_pda_events");
+		//Msg("diary open");
+		OpenBloknot();
 		g_pda_info_state		&= ~pda_section::diary;
 		break;
 	case eptContacts:
@@ -236,17 +222,8 @@ void CUIPdaWnd::SetActiveSubdialog(EPdaTabs section)
 	case eptEncyclopedia:
 		m_pActiveDialog			= smart_cast<CUIWindow*>(UIEncyclopediaWnd);
 		InventoryUtilities::SendInfoToActor("ui_pda_encyclopedia");
+		//Msg("encil open");
 		g_pda_info_state		&= ~pda_section::encyclopedia;
-		break;
-	case eptActorStatistic:
-		m_pActiveDialog			= smart_cast<CUIWindow*>(UIActorInfo);
-		InventoryUtilities::SendInfoToActor("ui_pda_actor_info");
-		g_pda_info_state		&= ~pda_section::statistics;
-		break;
-	case eptRanking:
-		m_pActiveDialog			= smart_cast<CUIWindow*>(UIStalkersRanking);
-		g_pda_info_state		&= ~pda_section::ranking;
-		InventoryUtilities::SendInfoToActor("ui_pda_ranking");
 		break;
 	case eptQuests:
 		m_pActiveDialog			= smart_cast<CUIWindow*>(UIEventsWnd);
@@ -264,6 +241,11 @@ void CUIPdaWnd::SetActiveSubdialog(EPdaTabs section)
 	m_pActiveSection = section;
 }
 
+void CUIPdaWnd::OpenBloknot()
+{
+	InventoryUtilities::SendInfoToActor("pda_script_bloknot_start_info");
+	//Msg("diary open 2");
+}
 
 void CUIPdaWnd::Draw()
 {
@@ -312,9 +294,27 @@ void CUIPdaWnd::DrawUpdatedSections				()
 
 	Fvector2 pos;
 
-	pos = m_sign_places_main[eptQuests];
+	//////////////////////////////////////////////////
+	//	pos = m_sign_places_main[eptContacts];
+
+
+	//	pos = m_sign_places_main[eptMap];
+
+
+	//pos = m_sign_places_main[eptQuests];
+
+
+	//	pos = m_sign_places_main[eptDiary];
+
+
+	//pos = m_sign_places_main[eptEncyclopedia];
+
+
+	//////////////////////////////////////////////////
+
+	pos = m_sign_places_main[eptContacts];
 	pos.add(tab_pos);
-	if(g_pda_info_state&pda_section::quests)
+	if(g_pda_info_state&pda_section::contacts)
 		draw_sign								(m_updatedSectionImage, pos);
 	else
 		draw_sign								(m_oldSectionImage, pos);
@@ -326,30 +326,16 @@ void CUIPdaWnd::DrawUpdatedSections				()
 	else
 		draw_sign								(m_oldSectionImage, pos);
 
+	pos = m_sign_places_main[eptQuests];
+	pos.add(tab_pos);
+	if(g_pda_info_state&pda_section::quests)
+		draw_sign								(m_updatedSectionImage, pos);
+	else
+		draw_sign								(m_oldSectionImage, pos);
+
 	pos = m_sign_places_main[eptDiary];
 	pos.add(tab_pos);
 	if(g_pda_info_state&pda_section::diary)
-		draw_sign								(m_updatedSectionImage, pos);
-	else
-		draw_sign								(m_oldSectionImage, pos);
-
-	pos = m_sign_places_main[eptContacts];
-	pos.add(tab_pos);
-	if(g_pda_info_state&pda_section::contacts)
-		draw_sign								(m_updatedSectionImage, pos);
-	else
-		draw_sign								(m_oldSectionImage, pos);
-
-	pos = m_sign_places_main[eptRanking];
-	pos.add(tab_pos);
-	if(g_pda_info_state&pda_section::ranking)
-		draw_sign								(m_updatedSectionImage, pos);
-	else
-		draw_sign								(m_oldSectionImage, pos);
-
-	pos = m_sign_places_main[eptActorStatistic];
-	pos.add(tab_pos);
-	if(g_pda_info_state&pda_section::statistics)
 		draw_sign								(m_updatedSectionImage, pos);
 	else
 		draw_sign								(m_oldSectionImage, pos);
@@ -370,8 +356,6 @@ void CUIPdaWnd::Reset()
 	if (UIPdaContactsWnd)	UIPdaContactsWnd->Reset	();
 	if (UIEncyclopediaWnd)	UIEncyclopediaWnd->Reset();
 	if (UIDiaryWnd)			UIDiaryWnd->Reset		();
-	if (UIActorInfo)		UIActorInfo->Reset		();
-	if (UIStalkersRanking)	UIStalkersRanking->Reset();
 	if (UIEventsWnd)		UIEventsWnd->Reset		();
 }
 
@@ -386,7 +370,7 @@ void RearrangeTabButtons(CUITabControl* pTab, xr_vector<Fvector2>& vec_sign_plac
 	Fvector2					pos;
 	pos.set						((*it)->GetWndPos());
 	Fvector2					sign_sz;
-	sign_sz.set					(9.0f+3.0f, 11.0f);
+	sign_sz.set					(25.0f, 21.0f);
 	u32 idx						= 0;
 	float	btn_text_len		= 0.0f;
 	CUIStatic* st				= NULL;
@@ -398,7 +382,7 @@ void RearrangeTabButtons(CUITabControl* pTab, xr_vector<Fvector2>& vec_sign_plac
 			st = xr_new<CUIStatic>(); st->SetAutoDelete(true);pTab->AttachChild(st);
 			st->SetFont((*it)->GetFont());
 			st->SetTextColor	(color_rgba(90,90,90,255));
-			st->SetText("//");
+			st->SetText("");
 			st->SetWndSize		((*it)->GetWndSize());
 			st->AdjustWidthToText();
 			st->SetWndPos		(pos);
@@ -406,14 +390,14 @@ void RearrangeTabButtons(CUITabControl* pTab, xr_vector<Fvector2>& vec_sign_plac
 		}
 
 		vec_sign_places[idx].set(pos);
-		vec_sign_places[idx].y	+= iFloor(((*it)->GetWndSize().y - sign_sz.y)/2.0f);
+		vec_sign_places[idx].y	+= iFloor(((*it)->GetWndSize().y - sign_sz.y));
 		vec_sign_places[idx].y	= (float)iFloor(vec_sign_places[idx].y);
 		pos.x					+= sign_sz.x;
 
 		(*it)->SetWndPos		(pos);
 		(*it)->AdjustWidthToText();
 		btn_text_len			= (*it)->GetWndSize().x;
-		pos.x					+= btn_text_len+3.0f;
+		pos.x					+= btn_text_len+0.01f;
 	}
 
 }

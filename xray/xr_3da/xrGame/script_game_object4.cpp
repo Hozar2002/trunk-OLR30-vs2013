@@ -216,6 +216,26 @@ bool CScriptGameObject::IsInvBoxEmpty()
 		return			ib->IsEmpty		();
 }
 
+CScriptGameObject *CScriptGameObject::ObjectFromInvBox(int _i)
+{
+	CInventoryBox						*e = smart_cast<CInventoryBox*>(&object());
+	if (!e) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "IInventoryBox : cannot access class member ObjectFromInvBox!");
+		return nullptr;
+	}
+	return e->GetObjectByIndex( _i );
+}
+
+u32 CScriptGameObject::InvBoxCount()
+{
+	CInventoryBox						*e = smart_cast<CInventoryBox*>(&object());
+	if (!e) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "IInventoryBox : cannot access class member InvBoxCount!");
+		return 0;
+	}
+	return e->GetSize();
+}
+
 // KD
 // functions for testing object class
 
@@ -286,4 +306,3 @@ TEST_OBJECT_CLASS(CScriptGameObject::IsTorch,				CTorch)
 TEST_OBJECT_CLASS(CScriptGameObject::IsWeaponGL,			CWeaponMagazinedWGrenade)
 TEST_OBJECT_CLASS(CScriptGameObject::IsInventoryBox,		CInventoryBox)
 
-// KD

@@ -61,6 +61,12 @@ void CPda::shedule_Update(u32 dt)
 
 	if(!H_Parent()) return;
 	Position().set	(H_Parent()->Position());
+	//if( GetCondition()<=0.01f ) return;
+
+	if( Level().CurrentEntity() && Level().CurrentEntity()->ID()==H_Parent()->ID() )
+	{
+		ChangeCondition			(- 0.0000085f);
+	}
 
 	if( IsOn() && Level().CurrentEntity() && Level().CurrentEntity()->ID()==H_Parent()->ID() )
 	{

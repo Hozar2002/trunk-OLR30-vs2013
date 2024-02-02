@@ -141,7 +141,7 @@ void CControlManagerCustom::update_schedule()
 	if (m_threaten)			check_threaten		();
 	if (m_jump)	{
 		check_attack_jump		();
-		//check_jump_over_physics	();
+		check_jump_over_physics	();
 	}
 	if (m_rotation_jump)	check_rotation_jump	();
 	if (m_run_attack)		check_run_attack	();
@@ -416,6 +416,9 @@ void CControlManagerCustom::check_jump_over_physics()
 	if (!m_man->check_start_conditions(ControlCom::eControlJump)) return;
 	if (!m_object->check_start_conditions(ControlCom::eControlJump)) return;
 	if (m_object->GetScriptControl()) return;
+
+	bool is_indoor = m_object->renderable_ROS()->get_luminocity_hemi() < 0.05f;
+	if (is_indoor) return; // add - if not in indoor
 
 	Fvector prev_pos	= m_object->Position();
 	float	dist_sum	= 0.f;

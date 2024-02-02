@@ -57,6 +57,8 @@ CController::CController()
 
 	m_psy_hit			= xr_new<CControllerPsyHit>();
 
+	com_man().add_ability(ControlCom::eControlJump);
+	com_man().add_ability			(ControlCom::eControlRunAttack);
 	control().add		(m_psy_hit,  ControlCom::eComCustom1);
 
 	m_aura				= xr_new<CControllerAura>(this);
@@ -88,8 +90,8 @@ void CController::Load(LPCSTR section)
 	m_controlled_objects.reserve	(m_max_controlled_number);
 
 	anim().accel_load			(section);
-	//anim().accel_chain_add		(eAnimWalkFwd,		eAnimRun);
-	//anim().accel_chain_add		(eAnimWalkDamaged,	eAnimRunDamaged);
+	anim().accel_chain_add		(eAnimWalkFwd,		eAnimRun);
+	anim().accel_chain_add		(eAnimWalkDamaged,	eAnimRunDamaged);
 
 	::Sound->create(control_start_sound,pSettings->r_string(section,"sound_control_start"),	st_Effect,SOUND_TYPE_WORLD);
 	::Sound->create(control_hit_sound,	pSettings->r_string(section,"sound_control_hit"),	st_Effect,SOUND_TYPE_WORLD);
@@ -125,11 +127,11 @@ void CController::Load(LPCSTR section)
 	SVelocityParam &velocity_none		= move().get_velocity(MonsterMovement::eVelocityParameterIdle);	
 	SVelocityParam &velocity_turn		= move().get_velocity(MonsterMovement::eVelocityParameterStand);
 	SVelocityParam &velocity_walk		= move().get_velocity(MonsterMovement::eVelocityParameterWalkNormal);
-	//SVelocityParam &velocity_run		= move().get_velocity(MonsterMovement::eVelocityParameterRunNormal);
-	//SVelocityParam &velocity_walk_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterWalkDamaged);
-	//SVelocityParam &velocity_run_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterRunDamaged);
+	SVelocityParam &velocity_run		= move().get_velocity(MonsterMovement::eVelocityParameterRunNormal);
+	SVelocityParam &velocity_walk_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterWalkDamaged);
+	SVelocityParam &velocity_run_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterRunDamaged);
 	SVelocityParam &velocity_steal		= move().get_velocity(MonsterMovement::eVelocityParameterSteal);
-	//SVelocityParam &velocity_drag		= move().get_velocity(MonsterMovement::eVelocityParameterDrag);
+	SVelocityParam &velocity_drag		= move().get_velocity(MonsterMovement::eVelocityParameterDrag);
 
 
 	anim().AddAnim(eAnimStandIdle,		"stand_idle_",			-1, &velocity_none,		PS_STAND);
@@ -139,9 +141,9 @@ void CController::Load(LPCSTR section)
 	anim().AddAnim(eAnimSitIdle,		"sit_idle_",			-1, &velocity_none,		PS_SIT);
 	anim().AddAnim(eAnimEat,			"sit_eat_",				-1, &velocity_none,		PS_SIT);
 	anim().AddAnim(eAnimWalkFwd,		"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND);
-	anim().AddAnim(eAnimWalkDamaged,	"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND);
-	anim().AddAnim(eAnimRun,			"stand_walk_fwd_",		-1,	&velocity_walk,		PS_STAND);
-	anim().AddAnim(eAnimRunDamaged,		"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND);
+	anim().AddAnim(eAnimWalkDamaged,	"stand_walk_dmg_",		-1, &velocity_walk,		PS_STAND);
+	anim().AddAnim(eAnimRun,			"stand_run_fwd_",		-1,	&velocity_run,		PS_STAND);       // замена
+	anim().AddAnim(eAnimRunDamaged,		"stand_run_dmg_",		-1, &velocity_run_dmg,		PS_STAND);   // замена
 	anim().AddAnim(eAnimAttack,			"stand_attack_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimSteal,			"stand_steal_",			-1, &velocity_steal,	PS_STAND);
 	anim().AddAnim(eAnimCheckCorpse,	"stand_check_corpse_",	-1,	&velocity_none,		PS_STAND);
@@ -150,7 +152,9 @@ void CController::Load(LPCSTR section)
 	anim().AddAnim(eAnimSitStandUp,		"sit_stand_up_",		-1, &velocity_none,		PS_SIT);
 	anim().AddAnim(eAnimSleep,			"sit_sleep_",			-1, &velocity_none,		PS_SIT);
 
+	anim().AddAnim(eAnimJumpGlide,		"jump_glide_",			-1, &velocity_none,		PS_STAND);
 
+	anim().AddAnim(eAnimAttackRun,		"stand_attack_",		-1, &velocity_run,		PS_STAND);
 
 	//anim().AddAnim(eAnimStandIdle,		"new_torso_steal_",			-1, &velocity_none,		PS_STAND);
 	//anim().AddAnim(eAnimStandTurnLeft,	"new_torso_steal_",			-1, &velocity_turn,		PS_STAND);
@@ -239,6 +243,18 @@ void CController::Load(LPCSTR section)
 	m_aura->load		(section);
 }
 
+
+bool CController::check_start_conditions(ControlCom::EControlType type)
+{
+	if (!inherited::check_start_conditions(type))	return false;
+
+	if (type == ControlCom::eControlRunAttack)		
+		return true;
+
+	return true;
+}
+
+
 void CController::load_friend_community_overrides(LPCSTR section)
 {
 	LPCSTR src = pSettings->r_string(section,"Friend_Community_Overrides");
@@ -291,6 +307,7 @@ void CController::UpdateControlled()
 				entity->set_under_control	(this);
 				entity->set_task_follow		(this);
 				m_controlled_objects.push_back(const_cast<CEntityAlive *>(EnemyMan.get_enemy()));
+				//Msg("controller update controlled");
 			}
 		}
 	}
@@ -306,6 +323,7 @@ void CController::set_controlled_task(u32 task)
 		CControlledEntityBase *entity = smart_cast<CControlledEntityBase *>(m_controlled_objects[i]);		
 		entity->get_data().m_object = object;
 		entity->get_data().m_task	= (ETask)task;
+		//Msg("controller update controlled task");
 	}
 }
 
@@ -366,11 +384,27 @@ void CController::reinit()
 
 	control().path_builder().detail().add_velocity(MonsterMovement::eControllerVelocityParameterMoveFwd,	CDetailPathManager::STravelParams(m_velocity_move_fwd.velocity.linear,	m_velocity_move_fwd.velocity.angular_path,	m_velocity_move_fwd.velocity.angular_real));
 	control().path_builder().detail().add_velocity(MonsterMovement::eControllerVelocityParameterMoveBkwd,	CDetailPathManager::STravelParams(m_velocity_move_bkwd.velocity.linear,	m_velocity_move_bkwd.velocity.angular_path, m_velocity_move_bkwd.velocity.angular_real));
-
 	m_sndShockEffector		 = 0;
 	active_control_fx		 = false;
-
 	m_time_last_tube		= 0;
+
+	//move().load_velocity(*cNameSect(), "Velocity_JumpPrepare",MonsterMovement::eGiantVelocityParameterJumpPrepare);
+	//move().load_velocity(*cNameSect(), "Velocity_JumpGround",MonsterMovement::eGiantVelocityParameterJumpGround);
+	//com_man().load_jump_data(0,"jump_prepare_0", "jump_glide_0", "jump_finish_0", MonsterMovement::eGiantVelocityParameterJumpPrepare, MonsterMovement::eGiantVelocityParameterJumpGround,0);
+
+	//com_man().load_jump_data			(0,"jump_prepare_0", "jump_glide_0", "jump_finish_0", MonsterMovement::eVelocityParameterStand,MonsterMovement::eVelocityParameterStand,0);
+	//com_man().add_rotation_jump_data("1","2","3","4", PI_DIV_2);
+	//com_man().add_rotation_jump_data("5","6","7","8", deg(179));
+
+
+	com_man().load_jump_data("jump_prepare_0",0, "jump_glide_0", "jump_finish_0", u32(-1), MonsterMovement::eVelocityParameterWalkNormal,0);
+
+}
+
+void CController::HitEntityInJump		(const CEntity *pEntity) 
+{
+	SAAParam &params	= anim().AA_GetParams("z_jamp_2");
+	HitEntity			(pEntity, params.hit_power, params.impulse, params.impulse_dir);
 }
 
 void CController::control_hit()
@@ -385,6 +419,8 @@ void CController::control_hit()
 	Actor()->Cameras().AddPPEffector(xr_new<CMonsterEffector>(m_control_effector.ppi, m_control_effector.time, m_control_effector.time_attack, m_control_effector.time_release));
 
 	play_control_sound_hit		();
+	//Msg("controller control hit");
+
 /*
 	active_control_fx			= true;
 	time_control_hit_started	= Device.dwTimeGlobal;
@@ -523,6 +559,8 @@ void CController::draw_fire_particles()
 		play_control_sound_hit		();
 	}
 
+	//Msg("controller update draw fire particles");
+
 	//m_sound_hit_fx.set_volume(10.0f);
 	//if(!m_sndShockEffector)
 	//	m_sndShockEffector = xr_new<SndShockEffector>();
@@ -536,6 +574,8 @@ void CController::psy_fire()
 	if (!EnemyMan.get_enemy())	return;
 	
 	draw_fire_particles			();
+
+	//Msg("controller psy fire");
 /*	
 	active_control_fx			= true;
 	time_control_hit_started	= Device.dwTimeGlobal;
@@ -544,17 +584,26 @@ void CController::psy_fire()
 
 bool CController::can_psy_fire()
 {
-	if (m_psy_fire_start_time + m_psy_fire_delay > time ())			return false;
-	if (!EnemyMan.get_enemy())										return false;
-	if (!EnemyMan.see_enemy_now())									return false;
+	try {
 
-	float cur_yaw	= custom_dir().get_head_orientation().current.yaw;
-	float dir_yaw	= Fvector().sub(EnemyMan.get_enemy()->Position(), Position()).getH();
-	dir_yaw			= angle_normalize(-dir_yaw);
-	if (angle_difference(cur_yaw,dir_yaw) > _pmt_psy_attack_min_angle) return false;
+		if (m_psy_fire_start_time + m_psy_fire_delay > time())			return false;
+		if (!EnemyMan.get_enemy())										return false;
+		if (!EnemyMan.see_enemy_now())									return false;
 
-	m_psy_fire_start_time		= time();
-	return true;
+		float cur_yaw = custom_dir().get_head_orientation().current.yaw;
+		float dir_yaw = Fvector().sub(EnemyMan.get_enemy()->Position(), Position()).getH();
+		dir_yaw = angle_normalize(-dir_yaw);
+		if (angle_difference(cur_yaw, dir_yaw) > _pmt_psy_attack_min_angle) return false;
+
+		m_psy_fire_start_time = time();
+		return true;
+
+	}
+	catch (...) {
+		Msg("!!!catch canps ");
+		return false;
+	}
+
 }
 
 void CController::set_psy_fire_delay_zero()
@@ -583,6 +632,8 @@ void CController::tube_fire()
 	if (!m_tube_at_once && (Random.randI(100) > TUBE_PROBABILITY)) return;
 
 	control().activate	(ControlCom::eComCustom1);
+
+	//Msg("controller fire tube");
 }
 
 
@@ -640,19 +691,19 @@ void CController::TranslateActionToPathParams()
 	//}
 	//custom_anim().set_path_params();
 
-	if ((anim().m_tAction != ACT_RUN) && (anim().m_tAction != ACT_WALK_FWD)) {
+	//if ((anim().m_tAction != ACT_RUN) && (anim().m_tAction != ACT_WALK_FWD)) {
 		inherited::TranslateActionToPathParams();
 		return;
-	}
+	//}
 	
-	u32 vel_mask = (m_bDamaged ? MonsterMovement::eVelocityParamsWalkDamaged : MonsterMovement::eVelocityParamsWalk);
-	u32 des_mask = (m_bDamaged ? MonsterMovement::eVelocityParameterWalkDamaged : MonsterMovement::eVelocityParameterWalkNormal);
+	//u32 vel_mask = (m_bDamaged ? MonsterMovement::eVelocityParamsWalkDamaged : MonsterMovement::eVelocityParamsWalk);
+	//u32 des_mask = (m_bDamaged ? MonsterMovement::eVelocityParameterWalkDamaged : MonsterMovement::eVelocityParameterWalkNormal);
 
-	if (m_force_real_speed) vel_mask = des_mask;
+	//if (m_force_real_speed) vel_mask = des_mask;
 
-	path().set_velocity_mask	(vel_mask);
-	path().set_desirable_mask	(des_mask);
-	path().enable_path			();
+	//path().set_velocity_mask	(vel_mask);
+	//path().set_desirable_mask	(des_mask);
+	//path().enable_path			();
 
 }
 
@@ -670,6 +721,7 @@ void CController::set_mental_state(EMentalState state)
 	if (m_mental_state == state) return;
 	
 	m_mental_state = state;
+	//Msg("m_mental_state: %s", state);
 	
 	m_custom_anim_base->on_switch_controller	();
 }

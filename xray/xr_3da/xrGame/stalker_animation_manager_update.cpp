@@ -184,6 +184,8 @@ void CStalkerAnimationManager::update_impl					()
 	torso().synchronize		(m_skeleton_animated,m_legs);
 }
 
+/* 
+// original code
 void CStalkerAnimationManager::update						()
 {
 	START_PROFILE("stalker/client_update/animations")
@@ -195,4 +197,24 @@ void CStalkerAnimationManager::update						()
 		throw;
 	}
 	STOP_PROFILE
+}
+*/
+
+
+// Исправление вылета типа "! error in stalker with visual" от lvg_brest
+void CStalkerAnimationManager::update                        ()
+{
+    START_PROFILE("stalker/client_update/animations")
+    try {
+        update_impl            ();
+    }
+    catch(...) {
+        Msg                    ("Error in stalker with visual [%s]", object().cNameVisual());
+        global().reset            ();
+        head().reset            ();
+        torso().reset            ();
+        legs().reset            ();
+        return;
+    }
+    STOP_PROFILE
 }

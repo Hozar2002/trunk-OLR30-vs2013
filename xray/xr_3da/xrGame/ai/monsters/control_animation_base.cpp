@@ -457,14 +457,44 @@ MotionID CControlAnimationBase::get_motion_id(EMotionAnim a, u32 index)
 	VERIFY(anim_it);
 
 	// определить необходимый индекс
-	if (index == u32(-1)) {
-		if (-1 != anim_it->spec_id) index = anim_it->spec_id;
-		else {
-			VERIFY(anim_it->count != 0);
-			index = ::Random.randI(anim_it->count);
-		}
-	}
+	//__try { 
 
+	// оригинальный код
+	//if (index == u32(-1)) {
+	//	if (-1 != anim_it->spec_id) index = anim_it->spec_id;
+	//	else {
+	//		VERIFY(anim_it->count != 0);
+	//		index = ::Random.randI(anim_it->count);
+	//	}
+	//}
+	// оригинальный код
+
+    try {
+        if (index == u32(-1)) {
+			//Msg("  index is - [%s]", index)
+			if (-1 != anim_it->spec_id) 
+				index = anim_it->spec_id;
+			else {
+				VERIFY(anim_it->count != 0);
+				index = ::Random.randI(anim_it->count);
+				if (index == -1){
+					Msg("Error in monster try anim  !index == -1!");
+				}
+				if (index == NULL){
+					//Msg("Error in monster try anim  !index == NULL! set index = 0");
+					index = 0;
+				}
+			}
+		}
+
+    }
+    catch(...) {
+        Msg                    ("!!!catch Error in monster try anim");
+		return				(smart_cast<CKinematicsAnimated*>(m_object->Visual())->ID_Cycle_Safe("stand_idle_0"));
+    }
+
+
+	// ошибка в следущем - тут пишется строка анимации (смотри выше) которой нет
 	string128			s1,s2;
 	return				(smart_cast<CKinematicsAnimated*>(m_object->Visual())->ID_Cycle_Safe(strconcat(sizeof(s2),s2,*anim_it->target_name,itoa(index,s1,10))));
 }

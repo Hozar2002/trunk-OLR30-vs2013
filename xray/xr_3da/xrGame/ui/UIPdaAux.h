@@ -9,14 +9,14 @@
 #pragma once
 
 enum EPdaTabs
-{
-	eptQuests			= 0,
-	eptMap,
-	eptDiary,
-	eptContacts,
-	eptRanking,
-	eptActorStatistic,
-	eptEncyclopedia,
+{												// build 
+	eptContacts			= 0,  // eptQuests		// eptContacts
+	eptMap,						// eptMap		// eptMap
+	eptQuests,					// eptDiary		// eptQuests
+	eptDiary,				// eptContacts	// eptDiary
+	//eptRanking,
+	//eptActorStatistic,
+	eptEncyclopedia,				// eptEncyclopedia   // eptEncyclopedia
 	eptNoActiveTab		= u16(-1)
 };
 
@@ -25,13 +25,13 @@ extern const char * const ALL_PDA_HEADER_PREFIX;
 
 namespace pda_section{
 	enum part{
-		quests			=(1<<8),
-		map				=(1<<9),
-		diary			=(1<<10),
-		contacts		=(1<<11),
-		ranking			=(1<<12),
-		statistics		=(1<<13),
-		encyclopedia	=(1<<14),
+		contacts			=(1<<8),		// quests	// contacts
+		map				=(1<<9),		// map		// map
+		quests			=(1<<10),		// diary	// quests
+		diary		=(1<<11),		// contacts	// diary
+		//ranking			=(1<<12),
+		//statistics		=(1<<13),
+		encyclopedia	=(1<<12),		//encyclopedia		//encyclopedia
 
 		news			=diary|(1<<1),
 		info			=diary|(1<<2),

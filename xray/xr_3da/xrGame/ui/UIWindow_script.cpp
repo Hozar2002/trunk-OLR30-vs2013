@@ -46,6 +46,8 @@ CGameFont* GetFontGraffiti50Russian()
 {return mngr().pFontGraffiti50Russian;}
 CGameFont* GetFontLetterica25()
 {return mngr().pFontLetterica25;}
+CGameFont* GetFontStartup()
+{return mngr().pFontStartup;}
 
 
 int GetARGB(u16 a, u16 r, u16 g, u16 b)
@@ -93,6 +95,7 @@ void CUIWindow::script_register(lua_State *L)
 		def("GetFontGraffiti32Russian",	&GetFontGraffiti32Russian),
 		def("GetFontGraffiti50Russian",	&GetFontGraffiti50Russian),
 		def("GetFontLetterica25",		&GetFontLetterica25),
+		def("GetFontStartup",			&GetFontStartup),
 
 		class_<TEX_INFO>("TEX_INFO")
 		.def("get_file_name",	 			&TEX_INFO::get_file_name)
@@ -188,12 +191,6 @@ void CUIWindow::script_register(lua_State *L)
 		.def("GetMinScrollPos",			&CUIScrollView::GetMinScrollPos)
 		.def("GetMaxScrollPos",			&CUIScrollView::GetMaxScrollPos)
 		.def("GetCurrentScrollPos",		&CUIScrollView::GetCurrentScrollPos)
-		.def("InitScrollView",			(void(CUIScrollView::*)(void))&CUIScrollView::Init)
-		.def("ShowScroll",				&CUIScrollView::ShowScroll)
-		.def("SetScrollStepSize",		&CUIScrollView::SetScrollStepSize)
-		.def("UpdateScroll",			&CUIScrollView::UpdateScroll)
-		.def("RecalcSize",				&CUIScrollView::RecalcSize)
-		.def("SetScrollRange",			&CUIScrollView::SetScrollRange)
 		.def("SetScrollPos",			&CUIScrollView::SetScrollPos),
 
 		class_<CUIDragDropListEx, CUIWindow>("CUIDragDropListEx")
@@ -211,10 +208,8 @@ void CUIWindow::script_register(lua_State *L)
 	// CUIWindow
 				value("WINDOW_LBUTTON_DOWN",			int(WINDOW_LBUTTON_DOWN)),
 				value("WINDOW_RBUTTON_DOWN",			int(WINDOW_RBUTTON_DOWN)),
-				value("WINDOW_CBUTTON_DOWN",			int(WINDOW_CBUTTON_DOWN)),
 				value("WINDOW_LBUTTON_UP",				int(WINDOW_LBUTTON_UP)),
 				value("WINDOW_RBUTTON_UP",				int(WINDOW_RBUTTON_UP)),
-				value("WINDOW_CBUTTON_UP",				int(WINDOW_CBUTTON_UP)),
 				value("WINDOW_MOUSE_MOVE",				int(WINDOW_MOUSE_MOVE)),
 				value("WINDOW_LBUTTON_DB_CLICK",		int(WINDOW_LBUTTON_DB_CLICK)),
 				value("WINDOW_KEY_PRESSED",				int(WINDOW_KEY_PRESSED)),
@@ -245,7 +240,7 @@ void CUIWindow::script_register(lua_State *L)
 
 	// CUIdragDropItem
 				value("DRAG_DROP_ITEM_DRAG",			int(DRAG_DROP_ITEM_DRAG)),
-				value("DRAG_DROP_ITEM_DROP",			int(DRAG_DROP_ITEM_DROP)),
+				value("DRAG_DROP_ITEM_DROP ",			int(DRAG_DROP_ITEM_DROP )),
 				value("DRAG_DROP_ITEM_DB_CLICK",		int(DRAG_DROP_ITEM_DB_CLICK)),
 				value("DRAG_DROP_ITEM_RBUTTON_CLICK",	int(DRAG_DROP_ITEM_RBUTTON_CLICK)),
 

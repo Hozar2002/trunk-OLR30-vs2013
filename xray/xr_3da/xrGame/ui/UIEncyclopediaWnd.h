@@ -49,7 +49,7 @@ protected:
 	CUIFrameWindow*		UIEncyclopediaInfoBkg;
 	CUIFrameLineWnd*	UIEncyclopediaIdxHeader;
 	CUIFrameLineWnd*	UIEncyclopediaInfoHeader;
-	CUIAnimatedStatic*	UIAnimation;
+	//CUIAnimatedStatic*	UIAnimation;
 	CUIStatic*			UIArticleHeader;
 
 	// Хранилище статей

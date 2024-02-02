@@ -41,19 +41,33 @@ void CStateManagerDog::execute()
 				case eStrong:	state_id = eStatePanic; break;
 				case eWeak:		state_id = eStateAttack; break;
 			}
+
 		} else if (object->HitMemory.is_hit()) {
 			state_id = eStateHitted;
-		} else if (check_state(eStateHearHelpSound)) {
+			//Msg("dog eState - eStateHitted");
+		} 
+		else if (check_state(eStateHearHelpSound)) {
 			state_id = eStateHearHelpSound;
-		} else if (object->hear_interesting_sound) {
+			//Msg("dog eState - eStateHearHelpSound");
+		} 
+		else if (object->hear_interesting_sound) {
 			state_id = eStateHearInterestingSound;
-		} else if (object->hear_dangerous_sound) {
+			//Msg("dog eState - eStateHearInterestingSound");
+		} 
+		else if (object->hear_dangerous_sound) {
 			state_id = eStateHearDangerousSound;	
-		} else {
-			if (can_eat())	state_id = eStateEat;
-			else			state_id = eStateRest;
+			//Msg("dog eState - eStateHearDangerousSound");
+		} 
+		else {
+			if (can_eat())	
+				state_id = eStateEat;
+			else			
+				state_id = eStateRest;
+				//Msg("dog eState - eStateRest");
 		}
-	} else state_id = eStateControlled;
+	} 
+	else state_id = eStateControlled;
+	//Msg("dog eState - eStateControlled");
 
 	select_state		(state_id); 
 

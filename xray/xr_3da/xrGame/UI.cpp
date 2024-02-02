@@ -117,8 +117,6 @@ bool CUI::Render()
 
 	return false;
 }
-//.		if(HUD().GetUI())HUD().GetUI()->HideGameIndicators();
-//.		if(HUD().GetUI())HUD().GetUI()->ShowGameIndicators();
 
 bool	CUI::IR_OnMouseWheel			(int direction)
 {

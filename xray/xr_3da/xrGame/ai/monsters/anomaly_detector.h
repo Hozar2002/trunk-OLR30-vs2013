@@ -1,9 +1,9 @@
 #pragma once
 
-class CBaseMonster;
+class CCustomMonster;
 
 class CAnomalyDetector {
-	CBaseMonster			*m_object;
+	CCustomMonster			*m_object;
 
 	float					m_radius;
 	u32						m_time_to_rememeber;
@@ -32,7 +32,7 @@ class CAnomalyDetector {
 	ANOMALY_INFO_VEC		m_storage;
 
 public:
-				CAnomalyDetector	(CBaseMonster *monster);
+				CAnomalyDetector	(CCustomMonster *monster);
 	virtual		~CAnomalyDetector	();
 
 	void		load				(LPCSTR section);

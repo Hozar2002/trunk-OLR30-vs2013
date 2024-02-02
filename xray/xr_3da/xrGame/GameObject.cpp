@@ -111,11 +111,11 @@ void CGameObject::Load(LPCSTR section)
 	}
 
 	
-#ifdef OBJECTS_RADIOACTIVE
+//#ifdef OBJECTS_RADIOACTIVE
 	m_fRadiationAccumFactor		=	READ_IF_EXISTS ( pSettings, r_float, section,	"radiation_accum_factor",  0.f );	
 	m_fRadiationAccumLimit		=	READ_IF_EXISTS ( pSettings, r_float, section,	"radiation_accum_limit",   0.f );	
 	m_fRadiationRestoreSpeed	=	READ_IF_EXISTS ( pSettings, r_float, section,	"radiation_restore_speed", 0.f );
-#endif
+//#endif
 }
 
 void CGameObject::reinit()
@@ -141,6 +141,10 @@ void CGameObject::net_Destroy()
 #endif
 
 	VERIFY(m_spawned);
+
+	if (!m_spawned)
+		Msg("!![%s] Already destroyed object detected: [%s]", __FUNCTION__, this->cName().c_str());
+
 	if (animation_movement_controlled())
 		destroy_anim_mov_ctrl();
 
@@ -251,6 +255,10 @@ void VisualCallback(CKinematics *tpKinematics);
 BOOL CGameObject::net_Spawn(CSE_Abstract*	DC)
 {
 	VERIFY(!m_spawned);
+
+	if (m_spawned)
+		Msg("!![%s] Already spawned object detected: [%s]", __FUNCTION__, this->cName().c_str());
+
 	m_spawned = true;
 	m_spawn_time = Device.dwFrame;
 	CSE_Abstract					*E = (CSE_Abstract*)DC;
@@ -375,6 +383,15 @@ BOOL CGameObject::net_Spawn(CSE_Abstract*	DC)
 
 			if (l_tpALifeObject && ai().game_graph().valid_vertex_id(l_tpALifeObject->m_tGraphID))
 				ai_location().game_vertex(l_tpALifeObject->m_tGraphID);
+
+			if ( !_valid( Position() ) ) {
+			  Fvector vertex_pos = ai().level_graph().vertex_position( ai_location().level_vertex_id() );
+			  Msg( "! [%s]: %s has invalid Position[%f,%f,%f] level_vertex_id[%u][%f,%f,%f]", __FUNCTION__, cName().c_str(), Position().x, Position().y, Position().z, ai_location().level_vertex_id(), vertex_pos.x, vertex_pos.y, vertex_pos.z  );
+			  Position().set( vertex_pos );
+			  auto se_obj = alife_object();
+			  if ( se_obj )
+			    se_obj->o_Position.set( Position() );
+			}
 
 			validate_ai_locations(false);
 

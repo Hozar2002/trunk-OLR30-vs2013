@@ -19,9 +19,9 @@ class CUIDiaryWnd: public CUIWindow, public CUIWndCallback
 {
 	typedef CUIWindow inherited;
 	enum EDiaryFilter{
-//			eInfo,
 			eJournal=0,
 			eNews,
+			eInfo,
 			eNone
 	};
 protected:
@@ -35,7 +35,7 @@ protected:
 	CUIFrameLineWnd*	m_UILeftHeader;
 	CUIFrameWindow*		m_UIRightFrame;
 	CUIFrameLineWnd*	m_UIRightHeader;
-	CUIAnimatedStatic*	m_UIAnimation;
+	//CUIAnimatedStatic*	m_UIAnimation;
 	CUITabControl*		m_FilterTab;
 	CUIListWnd*			m_SrcListWnd;
 	CUIScrollView*		m_DescrView;

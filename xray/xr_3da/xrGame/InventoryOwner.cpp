@@ -174,19 +174,24 @@ void	CInventoryOwner::save	(NET_Packet &output_packet)
 	save_data	(m_game_name, output_packet);
 	save_data	(m_money,	output_packet);
 }
-void	CInventoryOwner::load	(IReader &input_packet)
-{
+void CInventoryOwner::load(IReader &input_packet) {
+	CActor* pOurActor = smart_cast<CActor*>(this);
 	u8 active_slot = input_packet.r_u8();
-	if(active_slot == u8(-1))
-		inventory().SetActiveSlot(NO_ACTIVE_SLOT);
-	else
-		inventory().Activate_deffered(active_slot, Device.dwFrame);
+	
+	if (pOurActor && pOurActor->GetHolderID() == u16(-1)) {
+		if(active_slot == u8(-1)) {
+			inventory().SetActiveSlot(NO_ACTIVE_SLOT);
+		}
+		else {
+			inventory().Activate_deffered(active_slot, Device.dwFrame);
+		}
+	}
 
-	m_tmp_active_slot_num		 = active_slot;
+	m_tmp_active_slot_num = active_slot;
 
 	CharacterInfo().load(input_packet);
-	load_data		(m_game_name, input_packet);
-	load_data		(m_money,	input_packet);
+	load_data(m_game_name, input_packet);
+	load_data(m_money, input_packet);
 }
 
 
@@ -218,9 +223,7 @@ CPda* CInventoryOwner::GetPDA() const
 	return (CPda*)(m_inventory->m_slots[PDA_SLOT].m_pIItem);
 }
 
-CTrade* CInventoryOwner::GetTrade() 
-{
-	R_ASSERT2(m_pTrade, "trade for object does not init yet");
+CTrade* CInventoryOwner::GetTrade() {
 	return m_pTrade;
 }
 
@@ -235,10 +238,10 @@ bool CInventoryOwner::OfferTalk(CInventoryOwner* talk_partner)
 	if(!IsTalkEnabled()) return false;
 
 	//проверить отношение к собеседнику
-	CEntityAlive* pOurEntityAlive = smart_cast<CEntityAlive*>(this);
+	auto pOurEntityAlive = smart_cast<CEntityAlive*>(this);
 	R_ASSERT(pOurEntityAlive);
 
-	CEntityAlive* pPartnerEntityAlive = smart_cast<CEntityAlive*>(talk_partner);
+	auto pPartnerEntityAlive = smart_cast<CEntityAlive*>(talk_partner);
 	R_ASSERT(pPartnerEntityAlive);
 	
 //	ALife::ERelationType relation = RELATION_REGISTRY().GetRelationType(this, talk_partner);
@@ -258,8 +261,9 @@ void CInventoryOwner::StartTalk(CInventoryOwner* talk_partner, bool start_trade)
 	m_pTalkPartner = talk_partner;
 
 	//тут же включаем торговлю
-	if(start_trade)
+	if(start_trade && GetTrade()) {
 		GetTrade()->StartTrade(talk_partner);
+	}
 }
 #include "UIGameSP.h"
 #include "HUDmanager.h"
@@ -270,7 +274,9 @@ void CInventoryOwner::StopTalk()
 	m_pTalkPartner			= NULL;
 	m_bTalking				= false;
 
-	GetTrade()->StopTrade	();
+	if (GetTrade()) {
+		GetTrade()->StopTrade();
+	}
 
 	CUIGameSP* ui_sp = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
 	if(ui_sp && ui_sp->TalkMenu->IsShown())
@@ -350,6 +356,21 @@ LPCSTR	CInventoryOwner::Name () const
 {
 //	return CharacterInfo().Name();
 	return m_game_name.c_str();
+}
+
+LPCSTR	CInventoryOwner::Icon () const
+{
+	return CharacterInfo().IconName().c_str();
+}
+
+LPCSTR	CInventoryOwner::Bio () const
+{
+	return CharacterInfo().Bio().c_str();
+}
+
+const DIALOG_ID_VECTOR& CInventoryOwner::ActorDialogs () const
+{
+	return CharacterInfo().ActorDialogs();
 }
 
 
@@ -446,7 +467,7 @@ void CInventoryOwner::OnItemBelt	(CInventoryItem *inventory_item, EItemPlace pre
 	object->callback(GameObject::eOnItemBelt)(inventory_item->object().lua_game_object());
 	/*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
 
-//.	attach		(inventory_item);
+	attach		(inventory_item);
 }
 void CInventoryOwner::OnItemRuck	(CInventoryItem *inventory_item, EItemPlace previous_place)
 {

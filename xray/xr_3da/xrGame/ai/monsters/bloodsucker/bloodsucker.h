@@ -29,6 +29,10 @@ public:
 	virtual bool			ability_invisibility	() {return true;}
 	virtual bool			ability_pitch_correction() {return false;}
 	virtual	void			post_fsm_update			();
+
+	virtual	void			play_aggresive_anim			();
+	virtual	void			play_panic_anim			();
+	virtual	void			play_LookAround_anim			();
 	
 	virtual bool			use_center_to_aim		() const {return true;}
 	virtual bool			check_start_conditions	(ControlCom::EControlType);
@@ -60,9 +64,15 @@ private:
 	SMotionVel				invisible_vel;
 	LPCSTR					invisible_particle_name;
 
+	LPCSTR					invisible_run_particles_name;
+	u32						m_run_particles_freq;
+	u32						m_last_invisible_run_play;
+
 public:
 			void			start_invisible_predator	();
 			void			stop_invisible_predator		();
+
+			void			play_hidden_run_particles	();
 
 	//--------------------------------------------------------------------
 	// Vampire

@@ -2,6 +2,7 @@
 
 #include "../SkeletonAnimated.h"
 #include "../../../build_config_defines.h"
+
 class CHudItem;
 
 #ifdef WPN_BOBBING
@@ -28,8 +29,12 @@ class CWeaponBobbing
 
 		u32		dwMState;
 		float	fReminderFactor;
+		float	fReminderFactorLand;
 		bool	is_limping;
 		bool	m_bZoomMode;
+
+		//bool	m_bShootStEff;
+		//float	m_bLandStEff;
 
 		float	m_fAmplitudeRun;
 		float	m_fAmplitudeWalk;
@@ -123,6 +128,7 @@ public:
 	const Fvector&		FirePoint		()	{return m_shared_data.get_value()->m_fp_offset;	}
 	const Fvector&		FirePoint2		()	{return m_shared_data.get_value()->m_fp2_offset;}
 	const Fvector&		ShellPoint		()	{return m_shared_data.get_value()->m_sp_offset;	}
+	const Fmatrix&		HudOffsetMatrix		()	{return m_shared_data.get_value()->m_offset;}
 
 	const Fvector&		ZoomOffset		()	const {return m_fZoomOffset;}
 	float				ZoomRotateX		()	const {return m_fZoomRotateX;}
@@ -158,6 +164,7 @@ public:
 	void				dbg_SetFirePoint	(const Fvector &fp)			{((weapon_hud_value*)m_shared_data.get_value())->m_fp_offset.set(fp);}
 	void				dbg_SetFirePoint2	(const Fvector &fp)			{((weapon_hud_value*)m_shared_data.get_value())->m_fp2_offset.set(fp);}
 	void				dbg_SetShellPoint	(const Fvector &sp)			{((weapon_hud_value*)m_shared_data.get_value())->m_sp_offset.set(sp);}
+	void				SetHudOffsetMatrix	(const Fmatrix &offset)			{((weapon_hud_value*)m_shared_data.get_value())->m_offset.set(offset);}
 
 #ifdef WPN_BOBBING
 private:

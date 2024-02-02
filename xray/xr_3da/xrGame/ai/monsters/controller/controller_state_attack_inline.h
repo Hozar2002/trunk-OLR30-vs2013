@@ -25,6 +25,7 @@ CStateControllerAttackAbstract::CStateControllerAttack(_Object *obj, state_ptr s
 	add_state	(eStateAttack_MoveOut,			xr_new<CStateControlMoveOut<_Object> >	(obj));
 	add_state	(eStateAttack_CampInCover,		xr_new<CStateControlCamp<_Object> >		(obj));
 	add_state	(eStateAttack_ControlFire,		xr_new<CStateControlFire<_Object> >		(obj));
+	//add_state	(eStateAttack,					xr_new<CStateMonsterAttack<_Object> >	(obj)); // flyer_new
 
 	add_state	(eStateAttack_ControlTube,		xr_new<CStateControllerTube<_Object> >	(obj));
 	
@@ -61,27 +62,27 @@ void CStateControllerAttackAbstract::execute()
 					state_id = eStateAttack_HideInCover;
 			}
 			
-			//// eStateAttack_ControlTube
-			//bool control_fire_can = get_state(eStateAttack_ControlFire)->check_start_conditions();
-			//bool control_tube_can = get_state(eStateAttack_ControlTube)->check_start_conditions();
+			// eStateAttack_ControlTube // uncoment
+			bool control_fire_can = get_state(eStateAttack_ControlFire)->check_start_conditions();
+			bool control_tube_can = get_state(eStateAttack_ControlTube)->check_start_conditions();
 
-			//if (control_fire_can && !control_tube_can) {
-			//	state_id = eStateAttack_ControlFire;
-			//} else if (!control_fire_can && control_tube_can) {
-			//	state_id = eStateAttack_ControlTube;
-			//} else if (control_fire_can && control_tube_can) {
-			//	s32 rand = Random.randI(CONTROL_FIRE_PERC + CONTROL_TUBE_PERC);
-			//	
-			//	if (rand < CONTROL_FIRE_PERC)
-			//		state_id = eStateAttack_ControlFire;
-			//	else 
-			//		state_id = eStateAttack_ControlTube;
-			//} else {
-			//	if (!get_state_current()->check_completion())
-			//		state_id = eStateAttack_MoveOut;
-			//	else 
-			//		state_id = eStateAttack_HideInCover;
-			//}
+			if (control_fire_can && !control_tube_can) {
+				state_id = eStateAttack_ControlFire;
+			} else if (!control_fire_can && control_tube_can) {
+				state_id = eStateAttack_ControlTube;
+			} else if (control_fire_can && control_tube_can) {
+				s32 rand = Random.randI(CONTROL_FIRE_PERC + CONTROL_TUBE_PERC);
+				
+				if (rand < CONTROL_FIRE_PERC)
+					state_id = eStateAttack_ControlFire;
+				else 
+					state_id = eStateAttack_ControlTube;
+			} else {
+				if (!get_state_current()->check_completion())
+					state_id = eStateAttack_MoveOut;
+				else 
+					state_id = eStateAttack_HideInCover;
+			} // uncoment
 		}
 	}
 

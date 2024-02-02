@@ -13,7 +13,7 @@
 #include "PhysicsCommon.h"
 #include "level_sounds.h"
 #include "GamePersistent.h"
-#include "../Rain.h"
+//#include "level_background.h"
 
 ENGINE_API	bool g_dedicated_server;
 
@@ -35,6 +35,8 @@ BOOL CLevel::Load_GameSpecific_Before()
 	return								(TRUE);
 }
 
+
+#include "../Rain.h"
 BOOL CLevel::Load_GameSpecific_After()
 {
 	// loading static particles
@@ -89,7 +91,6 @@ BOOL CLevel::Load_GameSpecific_After()
 			Sounds_Random_Enabled	= FALSE;
 		}
 
-		// Сбрасываем состояния дождя при загрузке уровня во избежание пропажи звука. Real Wolf.
 		if (g_pGamePersistent->pEnvironment)
 		{
 			if (auto rain = g_pGamePersistent->pEnvironment->eff_Rain)
@@ -97,16 +98,23 @@ BOOL CLevel::Load_GameSpecific_After()
 				rain->InvalidateState();
 			}
 		}
+
 	}	
 
 	if (!g_dedicated_server) {
 		// loading scripts
 		ai().script_engine().remove_script_process(ScriptEngine::eScriptProcessorLevel);
 
-		if (pLevel->section_exist("level_scripts") && pLevel->line_exist("level_scripts","script"))
+		if (pLevel->section_exist("level_scripts") && pLevel->line_exist("level_scripts","script")) {
 			ai().script_engine().add_script_process(ScriptEngine::eScriptProcessorLevel,xr_new<CScriptProcess>("level",pLevel->r_string("level_scripts","script")));
-		else
+		}
+		else {
 			ai().script_engine().add_script_process(ScriptEngine::eScriptProcessorLevel,xr_new<CScriptProcess>("level",""));
+		}
+		
+		//if (pLevel->section_exist("level_background") && pLevel->line_exist("level_background","background")) {
+		//	m_level_background->LoadVisual(pLevel->r_string("level_background","background"));
+		//}
 	}
 		
 	BlockCheatLoad();

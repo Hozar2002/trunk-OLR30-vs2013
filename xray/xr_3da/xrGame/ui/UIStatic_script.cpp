@@ -21,7 +21,6 @@ void CUIStatic::script_register(lua_State *L)
 		.def("GetTextY",				&CUIStatic::GetTextY)
 		
 		.def("SetColor",			&CUIStatic::SetColor)
-		.def("SetColorAll",			&CUIStatic::SetColorAll)
 		.def("GetColor",			&CUIStatic::GetColor)
 		.def("SetTextColor",		&CUIStatic::SetTextColor_script)
 		.def("Init",				(void(CUIStatic::*)(float,float,float,float))&CUIStatic::Init )
@@ -32,6 +31,7 @@ void CUIStatic::script_register(lua_State *L)
 		.def("AdjustWidthToText",	&CUIStatic::AdjustWidthToText)
 
 		.def("SetOriginalRect",		(void(CUIStatic::*)(float,float,float,float))&CUIStatic::SetOriginalRect)
+		.def("GetOriginalRect",		&CUIStatic::GetOriginalRect)
 		.def("SetStretchTexture",	&CUIStatic::SetStretchTexture)
 		.def("GetStretchTexture",	&CUIStatic::GetStretchTexture)
 

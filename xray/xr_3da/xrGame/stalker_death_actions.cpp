@@ -45,7 +45,7 @@ bool CStalkerActionDead::fire			() const
 	if (!object().hammer_is_clutched())
 		return							(false);
 
-	if (Device.dwTimeGlobal - object().GetLevelDeathTime() > 500)
+	if (Device.dwTimeGlobal - object().GetLevelDeathTime() > 1500) // 500
 		return							(false);
 
 	return								(true);
@@ -74,6 +74,9 @@ void CStalkerActionDead::initialize		()
 		if ((*I).m_pIItem->object().CLS_ID == CLSID_IITEM_BOLT)
 			continue;
 
+		if ((*I).m_pIItem->GetSlot() == TORCH_SLOT)
+			continue;
+
 		object().inventory().Ruck		((*I).m_pIItem);
 	}
 }
@@ -96,6 +99,9 @@ void CStalkerActionDead::execute		()
 			continue;
 		
 		if ((*I).m_pIItem->object().CLS_ID == CLSID_IITEM_BOLT)
+			continue;
+
+		if ((*I).m_pIItem->GetSlot() == TORCH_SLOT)
 			continue;
 
 		if ((I - B) == (int)object().inventory().GetActiveSlot()) {

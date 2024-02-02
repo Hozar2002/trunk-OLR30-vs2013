@@ -685,15 +685,22 @@ void CLevel::OnRender()
 	
 	Game().OnRender();
 	//отрисовать трассы пуль
-	//Device.Statistic->TEST1.Begin();
-	BulletManager().Render();
-	//Device.Statistic->TEST1.End();
-	//отрисовать интерфейc пользователя
-	HUD().RenderUI();
+	BulletManager().Render();  // комент оригинал
+	// flyer add
+	//if (::Render->get_generation() == ::Render->GENERATION_R2)
+	//{
+	//	BulletManager().Render();  // на р2 норм
+	//}
+	// flyer add
 
-	draw_wnds_rects();
-
-
+	// Отрисовать интерфейc пользователя на R1. При r__supersample > 1 пропадает модель.
+	// Если перенести в рендер, модель появляется, но появляются искажения UI
+	/*
+	if (::Render->get_generation() == ::Render->GENERATION_R1)
+	{
+		HUD().RenderUI();
+	}
+	*/
 #ifdef DEBUG
 	ph_world->OnRender	();
 #endif

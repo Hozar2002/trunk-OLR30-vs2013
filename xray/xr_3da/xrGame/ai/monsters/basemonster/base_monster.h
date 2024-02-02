@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../CustomMonster.h"
+#include "../../../AI_PhraseDialogManager.h"
 
 #include "../monster_enemy_memory.h"
 #include "../monster_corpse_memory.h"
@@ -44,7 +45,11 @@ class CMonsterCoverManager;
 
 class CMonsterHome;
 
-class CBaseMonster : public CCustomMonster, public CStepManager, public CInventoryOwner 
+class CBaseMonster :
+	public CCustomMonster,
+	public CAI_PhraseDialogManager,
+	public CStepManager,
+	public CInventoryOwner 
 {
 	typedef	CCustomMonster								inherited;
 	
@@ -130,7 +135,7 @@ public:
 	virtual	void			post_fsm_update					();
 			void			squad_notify					();
 
-	virtual bool			IsTalkEnabled					() {return false;}
+	virtual bool			IsTalkEnabled					() {return HasDialogs();}
 
 	virtual void			HitEntity						(const CEntity *pEntity, float fDamage, float impulse, Fvector &dir);
 	virtual	void			HitEntityInJump					(const CEntity *pEntity) {}
@@ -209,6 +214,9 @@ public:
 			bool			GetCoverFromEnemy				(const Fvector &enemy_pos, Fvector &position, u32 &vertex_id);
 			bool			GetCoverFromPoint				(const Fvector &pos, Fvector &position, u32 &vertex_id, float min_dist, float max_dist, float radius);
 			bool			GetCoverCloseToPoint			(const Fvector &dest_pos, float min_dist, float max_dist, float deviation, float radius ,Fvector &position, u32 &vertex_id);
+			bool			HasDialogs						()  {
+				return (spawn_ini() && spawn_ini()->section_exist("dialogs"));
+			}
 
 
 
@@ -285,11 +293,11 @@ public:
 
 	// -----------------------------------------------------------------------------
 	// Anomaly Detector
-private:
-	CAnomalyDetector		*m_anomaly_detector;
+//private:
+	//CAnomalyDetector		*m_anomaly_detector;
 
-public:
-	CAnomalyDetector		&anomaly_detector	() {return (*m_anomaly_detector);}
+//public:
+	//CAnomalyDetector		&anomaly_detector	() {return (*m_anomaly_detector);}
 	// -----------------------------------------------------------------------------
 
 

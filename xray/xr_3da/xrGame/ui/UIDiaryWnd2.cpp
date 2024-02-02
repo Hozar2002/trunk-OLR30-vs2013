@@ -15,8 +15,8 @@
 #include "../actor.h"
 #include "../alife_registry_wrappers.h"
 #include "../encyclopedia_article.h"
-//#include "UIVideoPlayerWnd.h"
 #include "UIPdaAux.h"
+#include "UIInventoryUtilities.h"
 
 extern u32			g_pda_info_state;
 
@@ -34,10 +34,24 @@ CUIDiaryWnd::~CUIDiaryWnd()
 	delete_data(m_updatedSectionImage);
 	delete_data(m_oldSectionImage);
 }
-
+// pda_notepad.StartNotepad
+#include "../pch_script.h"
+#include "../game_object_space.h"
+#include "../script_callback_ex.h"
 void CUIDiaryWnd::Show(bool status)
 {
+
+	luabind::functor<LPCSTR> fl;
+	R_ASSERT2(
+		ai().script_engine().functor<LPCSTR>("pda_notepad.StartNotepad", fl),
+		"Failed to get bloknot callback!"
+		);
+	fl();
+
 	inherited::Show		(status);
+	InventoryUtilities::SendInfoToActor("ui_pda_diary");
+
+
 	if(status)
 		Reload( (EDiaryFilter)m_FilterTab->GetActiveIndex() );
 }
@@ -67,11 +81,6 @@ void CUIDiaryWnd::Init()
 	m_FilterTab->SetWindowName		("filter_tab");
 	Register						(m_FilterTab);
     AddCallback						("filter_tab",TAB_CHANGED,CUIWndCallback::void_function(this,&CUIDiaryWnd::OnFilterChanged));
-
-	m_UIAnimation					= xr_new<CUIAnimatedStatic>(); m_UIAnimation->SetAutoDelete(true);
-	xml_init.InitAnimatedStatic		(uiXml, "main_wnd:left_frame:left_frame_header:anim_static", 0, m_UIAnimation);
-	m_UILeftHeader->AttachChild		(m_UIAnimation);
-
 
 	m_UILeftWnd						= xr_new<CUIWindow>(); m_UILeftWnd->SetAutoDelete(true);
 	xml_init.InitWindow				(uiXml, "main_wnd:left_frame:work_area", 0, m_UILeftWnd);
@@ -115,29 +124,31 @@ void CUIDiaryWnd::Init()
 	RearrangeTabButtons				(m_FilterTab, m_sign_places);
 }
 
-void	CUIDiaryWnd::SendMessage			(CUIWindow* pWnd, s16 msg, void* pData)
+void	CUIDiaryWnd::SendMessage			(CUIWindow* pWnd, s16 msg, void* pData)  // уже есть полностью аналогичная
 {
 	CUIWndCallback::OnEvent(pWnd, msg, pData);
+	//Msg("SendMessage");
 }
 
 void CUIDiaryWnd::OnFilterChanged			(CUIWindow* w, void*)
 {
 	Reload( (EDiaryFilter)m_FilterTab->GetActiveIndex() );
+	//Msg("OnFilterChanged");
 }
 
 void CUIDiaryWnd::Reload	(EDiaryFilter new_filter)
 {
 //.	if(m_currFilter==new_filter) return;
-
+	//Msg("Reload");
 	switch (m_currFilter){
 		case eJournal:
 			UnloadJournalTab	();
 			break;
-//		case eInfo:
-//			UnloadInfoTab	();
-//			break;
 		case eNews:
 			UnloadNewsTab	();
+			break;
+		case eInfo:
+			UnloadInfoTab	();
 			break;
 	};
 
@@ -147,27 +158,29 @@ void CUIDiaryWnd::Reload	(EDiaryFilter new_filter)
 		case eJournal:
 			LoadJournalTab	(ARTICLE_DATA::eJournalArticle);
 			break;
-//		case eInfo:
-//			LoadInfoTab		();
-//			break;
 		case eNews:
 			LoadNewsTab	();
+			break;
+		case eInfo:
+			LoadInfoTab		();
 			break;
 	};
 }
 
 void CUIDiaryWnd::AddNews	()
 {
+	//Msg("AddNews");
 	m_UINewsWnd->AddNews	();
 }
 
 void CUIDiaryWnd::MarkNewsAsRead (bool status)
 {
-
+	//Msg("MarkNewsAsRead");
 }
 
 void CUIDiaryWnd::UnloadJournalTab		()
 {
+	//Msg("UnloadJournalTab");
 	m_UILeftWnd->DetachChild	(m_SrcListWnd);
 	m_SrcListWnd->RemoveAll		();
 	m_SrcListWnd->Show			(false);
@@ -181,7 +194,7 @@ void CUIDiaryWnd::UnloadJournalTab		()
 void CUIDiaryWnd::LoadJournalTab			(ARTICLE_DATA::EArticleType _type)
 {
 	delete_data					(m_ArticlesDB);
-
+	//Msg("LoadJournalTab");
 	m_UILeftWnd->AttachChild	(m_SrcListWnd);
 	m_SrcListWnd->Show			(true);
 
@@ -201,9 +214,9 @@ void CUIDiaryWnd::LoadJournalTab			(ARTICLE_DATA::EArticleType _type)
 				a = xr_new<CEncyclopediaArticle>();
 				a->Load(it->article_id);
 
-				bool bReaded = false;
+				//bool bReaded = false;
 				CreateTreeBranch(a->data()->group, a->data()->name, m_SrcListWnd, m_ArticlesDB.size()-1, 
-					m_pTreeRootFont, m_uTreeRootColor, m_pTreeItemFont, m_uTreeItemColor, bReaded);
+					m_pTreeRootFont, m_uTreeRootColor, m_pTreeItemFont, m_uTreeItemColor, it->readed);
 			}
 		}
 	}
@@ -213,16 +226,16 @@ void CUIDiaryWnd::LoadJournalTab			(ARTICLE_DATA::EArticleType _type)
 
 void CUIDiaryWnd::UnloadInfoTab	()
 {
-//	m_UIRightWnd->DetachChild	(m_videoWnd);
-//	m_videoWnd->Hide			();
-	UnloadJournalTab	();
+	//Msg(" UnloadInfoTab");
+	//UnloadJournalTab	();
+	InventoryUtilities::SendInfoToActor("pda_btn_bloknot_hide");
 }
 
 void CUIDiaryWnd::LoadInfoTab	()
 {
-//	m_UIRightWnd->AttachChild	(m_videoWnd);
-//	m_videoWnd->Show			();
-	LoadJournalTab				(ARTICLE_DATA::eInfoArticle);
+	//Msg(" !!!!!! LoadInfoTab");
+	InventoryUtilities::SendInfoToActor("pda_btn_bloknot");
+	//LoadJournalTab				(ARTICLE_DATA::eInfoArticle);
 	g_pda_info_state			&= ~pda_section::info;
 }
 
@@ -231,6 +244,7 @@ void CUIDiaryWnd::UnloadNewsTab	()
 {
 	m_UIRightWnd->DetachChild	(m_UINewsWnd);
 	m_UINewsWnd->Show			(false);
+	//Msg(" !!!!!  UnloadNewsTab");
 }
 
 void CUIDiaryWnd::LoadNewsTab	()
@@ -238,10 +252,12 @@ void CUIDiaryWnd::LoadNewsTab	()
 	m_UIRightWnd->AttachChild	(m_UINewsWnd);
 	m_UINewsWnd->Show			(true);
 	g_pda_info_state			&= ~pda_section::news;
+	//Msg("LoadNewsTab");
 }
 
 void CUIDiaryWnd::OnSrcListItemClicked	(CUIWindow* w,void* p)
 {
+	//Msg("OnSrcListItemClicked");
 	CUITreeViewItem*	pSelItem	= (CUITreeViewItem*)p;
 	m_DescrView->Clear	();
 	if (!pSelItem->IsRoot())
@@ -250,6 +266,26 @@ void CUIDiaryWnd::OnSrcListItemClicked	(CUIWindow* w,void* p)
 		article_info->Init			("encyclopedia_item.xml","encyclopedia_wnd:objective_item");
 		article_info->SetArticle	(m_ArticlesDB[pSelItem->GetValue()]);
 		m_DescrView->AddWindow		(article_info, true);
+
+	if (!pSelItem->IsArticleReaded())
+		{
+			if(Actor()->encyclopedia_registry->registry().objects_ptr())
+			{
+				for(ARTICLE_VECTOR::iterator it = Actor()->encyclopedia_registry->registry().objects().begin();
+					it != Actor()->encyclopedia_registry->registry().objects().end(); it++)
+				{
+					if (ARTICLE_DATA::eJournalArticle == it->article_type &&
+						m_ArticlesDB[pSelItem->GetValue()]->Id() == it->article_id)
+					{
+						it->readed = true;
+						break;
+					}
+				}
+			}
+		}
+
+
+
 	}
 }
 
@@ -257,7 +293,7 @@ void draw_sign(CUIStatic* s, Fvector2& pos);
 void CUIDiaryWnd::Draw()
 {
 	inherited::Draw	();
-
+	//Msg("Draw"); // fast update
 	m_updatedSectionImage->Update				();
 	m_oldSectionImage->Update					();
 
@@ -271,8 +307,7 @@ void CUIDiaryWnd::Draw()
 	if(g_pda_info_state&pda_section::news)
 		draw_sign								(m_updatedSectionImage, pos);
 	else
-		draw_sign								(m_oldSectionImage, pos);
-	
+		draw_sign								(m_oldSectionImage, pos);	
 
 	pos		= m_sign_places[eJournal];
 	pos.add(tab_pos);
@@ -280,9 +315,18 @@ void CUIDiaryWnd::Draw()
 		draw_sign								(m_updatedSectionImage, pos);
 	else
 		draw_sign								(m_oldSectionImage, pos);
+
+	pos		= m_sign_places[eInfo];
+	pos.add(tab_pos);
+	if(g_pda_info_state&pda_section::info)
+		draw_sign								(m_updatedSectionImage, pos);
+	else
+		draw_sign								(m_oldSectionImage, pos);
+
 }
 
 void CUIDiaryWnd::Reset()
 {
 	inherited::Reset	();
+	//Msg("Reset");
 }

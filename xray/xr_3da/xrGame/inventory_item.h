@@ -37,6 +37,8 @@ class CInventoryOwner;
 
 struct SHit;
 
+//#undef INV_NEW_SLOTS_SYSTEM
+
 class CInventoryItem : 
 	public CAttachableItem,
 	public CHitImmunity
@@ -76,9 +78,9 @@ public:
 
 	virtual LPCSTR				Name				();
 	virtual LPCSTR				NameShort			();
-//.	virtual LPCSTR				NameComplex			();
+	virtual LPCSTR				NameComplex			();
 	shared_str					ItemDescription		() { return m_Description; }
-	virtual void				GetBriefInfo		(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count) {};
+	virtual void				GetBriefInfo		(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name) {};
 	
 	virtual void				OnEvent				(NET_Packet& P, u16 type);
 	
@@ -96,6 +98,8 @@ public:
 	virtual void				Deactivate			();								// !!! ѕереопределить. (см. в Inventory.cpp)
 	virtual bool				Action				(s32 cmd, u32 flags) {return false;}	// true если известна€ команда, иначе false
 
+	virtual void				SilentHide			()	{}
+	
 	virtual bool				IsHidden			()	const	{return true;}
 	virtual bool				IsHiding			()	const	{return false;}
 	virtual bool 				IsShowing			()  const	{return false;}
@@ -122,7 +126,34 @@ public:
 			BOOL				IsQuestItem			()	const	{return m_flags.test(FIsQuestItem);}			
 	virtual	u32					Cost				() const	{ return m_cost; }
 	virtual	void				SetCost				(u32 cost) 	{ m_cost = cost; }
-	virtual float				Weight				() 			{ return m_weight;}		
+	virtual float				Weight				() 			{ return m_weight;}
+	
+	
+	void				SetDefaultSprint () {
+		m_flags.set(FAllowSprint, m_start_allow_sprint);
+	}
+	void				DisableSprint () {
+		m_flags.set(FAllowSprint, FALSE);
+	}
+	void				EnableSprint () {
+		m_flags.set(FAllowSprint, TRUE);
+	}
+	
+	Fvector		Get3DStaticRotate () const {
+		Fvector value;
+		value.x = m_3d_static_rotate_x;
+		value.y = 0.f;
+		value.z = m_3d_static_rotate_z;
+		return value;
+	}
+
+	float				Get3DStaticScale () const {
+		return m_3d_static_scale;
+	}
+
+	LPCSTR	Get3DStaticVisualName () const {
+		return m_3d_static_visual_name.c_str();
+	}
 
 public:
 	CInventory*					m_pCurrentInventory;
@@ -130,6 +161,7 @@ public:
 	shared_str					m_name;
 	shared_str					m_nameShort;
 	shared_str					m_nameComplex;
+	//char						m_nameComplex[255];
 
 	u32							m_cost;
 	float						m_weight;
@@ -193,6 +225,8 @@ protected:
 	SLOT_ID						m_slot;
 #endif
 	float						m_fCondition;
+
+	bool			m_bUsingCondition;
 
 	ALife::_TIME_ID				m_dwItemRemoveTime;
 	ALife::_TIME_ID				m_dwItemIndependencyTime;
@@ -276,6 +310,14 @@ public:
 	virtual CHudItem			*cast_hud_item				()	{return 0;}
 	virtual CWeaponAmmo			*cast_weapon_ammo			()	{return 0;}
 	virtual CGameObject			*cast_game_object			()  {return 0;};
+	
+private:
+	BOOL m_start_allow_sprint;
+	
+	float m_3d_static_rotate_x, m_3d_static_rotate_z;
+	float m_3d_static_scale;
+	shared_str m_3d_static_visual_name;
+	
 };
 
 #include "inventory_item_inline.h"

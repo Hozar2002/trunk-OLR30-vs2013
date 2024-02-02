@@ -327,6 +327,12 @@ float CEntityCondition::HitPowerEffect(float power_loss)
 
 CWound* CEntityCondition::AddWound(float hit_power, ALife::EHitType hit_type, u16 element)
 {
+
+	if ( element == BI_NONE ) {
+	  Msg( "! [%s]: %s: BI_NONE -> 0", __FUNCTION__, m_object->cName().c_str() );
+	  element = 0;
+	}
+
 	//максимальное число косточек 64
 	VERIFY(element  < 64 || BI_NONE == element);
 
@@ -620,10 +626,12 @@ using namespace luabind;
 void set_entity_health	   (CEntityCondition *E, float h) { E->health() = h; }
 void set_entity_max_health (CEntityCondition *E, float h) { E->health() = h; }
 
-bool get_entity_crouch	(CEntity::SEntityState *S) { return S->bCrouch; }
-bool get_entity_fall	(CEntity::SEntityState *S) { return S->bFall; }
-bool get_entity_jump	(CEntity::SEntityState *S) { return S->bJump; }
-bool get_entity_sprint	(CEntity::SEntityState *S) { return S->bSprint; }
+bool get_entity_crouch		(CEntity::SEntityState *S) { return S->bCrouch; }
+bool get_entity_fall		(CEntity::SEntityState *S) { return S->bFall; }
+bool get_entity_jump		(CEntity::SEntityState *S) { return S->bJump; }
+bool get_entity_sprint		(CEntity::SEntityState *S) { return S->bSprint; }
+bool get_entity_walk		(CEntity::SEntityState *S) { return S->bWalk; }
+bool get_entity_accel		(CEntity::SEntityState *S) { return S->bAccel; }
 
 extern LPCSTR get_lua_class_name(luabind::object O);
 
@@ -636,6 +644,8 @@ void CEntityCondition::script_register(lua_State *L)
 			.property	  ("fall"				,				&get_entity_fall)
 			.property     ("jump"				,				&get_entity_jump)
 			.property	  ("sprint"				,				&get_entity_sprint)
+			.property	  ("walk"				,				&get_entity_walk)
+			.property	  ("accel"				,				&get_entity_accel)
 			.def_readonly ("velocity"			,				&CEntity::SEntityState::fVelocity)
 			.def_readonly ("a_velocity"			,				&CEntity::SEntityState::fAVelocity)		
 			.property     ("class_name"			,				&get_lua_class_name)

@@ -63,7 +63,7 @@ void CPHSkeleton::Init()
 	m_startup_anim=NULL;
 }
 
-bool CPHSkeleton::Spawn(CSE_Abstract *D)
+bool CPHSkeleton::Spawn(CSE_Abstract *D)  // вызывается и при спавне (живого нпс)
 {
 	
 	CSE_PHSkeleton *po		= smart_cast<CSE_PHSkeleton*>(D);
@@ -243,7 +243,8 @@ void CPHSkeleton::RestoreNetState(CSE_PHSkeleton* po)
 	}
 	for(u16 bone=0;e!=i;i++,bone++)
 	{
-		R_ASSERT(bone<obj->PHGetSyncItemsNumber());
+		//R_ASSERT(bone<obj->PHGetSyncItemsNumber());
+		R_ASSERT2(bone<obj->PHGetSyncItemsNumber(), make_string("bone>obj->PHGetSyncItemsNumber() - bone[%d], visual name[%s], id[%d]", bone, *obj->cNameVisual(), obj->ID()));
 		obj->PHGetSyncItem(bone)->set_State(*i);
 	}
 	saved_bones.clear();

@@ -35,6 +35,10 @@ CUIButton:: CUIButton()
 	SetTextAlignment			(CGameFont::alCenter); // this will create class instance for m_pLines
 	SetVTextAlignment			(valCenter);
 	m_bClickable				= true;
+	//
+	m_font_to_highlight 		= NULL;
+	m_font_after_highlight 		= NULL;
+	//
 }
 
  CUIButton::~ CUIButton()
@@ -168,7 +172,7 @@ void CUIButton::DrawTexture()
 			m_UIStaticItem.Render();		
 	}
 }
-
+//
 void CUIButton::DrawHighlightedText(){
 	float right_offset;
 	float down_offset;
@@ -186,37 +190,44 @@ void CUIButton::DrawHighlightedText(){
 
 	Frect					rect;
 	GetAbsoluteRect			(rect);
+	
 	u32 def_col = m_pLines->GetTextColor();
 	m_pLines->SetTextColor(m_HighlightColor);
-
-	m_pLines->Draw(	rect.left + right_offset + 0 +m_TextOffset.x + m_ShadowOffset.x, 
-					rect.top + down_offset   - 0 +m_TextOffset.y + m_ShadowOffset.y);
-
+	if ((m_font_after_highlight != NULL)&&(m_font_to_highlight != NULL)){
+		m_pLines->SetFont(m_font_after_highlight);
+		m_pLines->Draw(	rect.left + right_offset + 1 +m_TextOffset.x + m_ShadowOffset.x, 
+						rect.top + down_offset   + 1 +m_TextOffset.y + m_ShadowOffset.y);
+		m_pLines->SetFont(m_font_to_highlight);
+	}else{
+		CGameFont* OrigFont = m_pLines->GetFont();
+		m_pLines->SetFont(UI()->Font()->pFontGraffiti19Russian);
+		m_pLines->Draw(	rect.left + right_offset + 1 +m_TextOffset.x + m_ShadowOffset.x, 
+						rect.top + down_offset   + 1 +m_TextOffset.y + m_ShadowOffset.y);
+		
+		m_pLines->SetFont(OrigFont);	
+	}
 	m_pLines->SetTextColor(def_col);
-
 }
 
 void CUIButton::DrawText()
 {
-	float right_offset;
-	float down_offset;
-
-	if(m_eButtonState == BUTTON_UP || m_eButtonState == BUTTON_NORMAL)
+	if (m_pLines)
 	{
-		right_offset	= 0;
-		down_offset		= 0;
-	}
-	else
-	{
-		right_offset	= m_PushOffset.x;
-		down_offset		= m_PushOffset.y;
-	}
+		m_pLines->SetWndSize(m_wndSize);
 
-	CUIStatic::DrawText();
+		if(IsHighlightText() && xr_strlen(m_pLines->GetText())>0 && m_bEnableTextHighlighting)
+			DrawHighlightedText();				
+		else{
+			Fvector2			p;
+			GetAbsolutePos		(p);
+			m_pLines->Draw		(p.x + m_TextOffset.x, p.y + m_TextOffset.y);
+		}
+
+	}
 	if(g_btnHint->Owner()==this)
 		g_btnHint->Draw_();
 }
-
+//
 
 bool is_in2(const Frect& b1, const Frect& b2){
 	return (b1.x1<b2.x1)&&(b1.x2>b2.x2)&&(b1.y1<b2.y1)&&(b1.y2>b2.y2);

@@ -89,7 +89,7 @@ bool CInventoryOwner::OnReceiveInfo(shared_str info_id) const
 
 	return true;
 }
-#ifdef DEBUG
+//#ifdef DEBUG
 void CInventoryOwner::DumpInfo() const
 {
 	KNOWN_INFO_VECTOR& known_info = m_known_info_registry->registry().objects();
@@ -103,7 +103,7 @@ void CInventoryOwner::DumpInfo() const
 	Msg("------------------------------------------");	
 
 }
-#endif
+//#endif
 
 void CInventoryOwner::OnDisableInfo(shared_str info_id) const
 {

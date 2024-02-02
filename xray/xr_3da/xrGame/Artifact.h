@@ -68,12 +68,15 @@ public:
 
 	bool							m_bCanSpawnZone;
 	float							m_fHealthRestoreSpeed;
-#ifndef OBJECTS_RADIOACTIVE
+//#ifndef OBJECTS_RADIOACTIVE
 	float 							m_fRadiationRestoreSpeed;
-#endif
+//#endif
 	float 							m_fSatietyRestoreSpeed;
 	float							m_fPowerRestoreSpeed;
 	float							m_fBleedingRestoreSpeed;
+
+	float							m_fConditioRestore;
+
 	CHitImmunity 					m_ArtefactHitImmunities;
 
 protected:
@@ -101,6 +104,7 @@ public:
 	virtual void					OnAnimationEnd		(u32 state);
 	virtual bool					IsHidden			()	const	{return GetState()==eHidden;}
 	virtual u16						bone_count_to_synchronize	() const;
+	virtual void					SilentHide			()	{SwitchState(eHidden);}
 
 	// optimization FAST/SLOW mode
 public:						

@@ -6,7 +6,7 @@
 
 #include "ui/UIInventoryUtilities.h"
 
-#include "eatable_item.h"
+#include "eatable_item_object.h"
 #include "script_engine.h"
 #include "xrmessages.h"
 //#include "game_cl_base.h"
@@ -17,6 +17,9 @@
 #include "game_base_space.h"
 #include "clsid_game.h"
 #include "../../build_config_defines.h"
+
+#undef INV_NEW_SLOTS_SYSTEM
+//#undef INV_NO_ACTIVATE_APPARATUS_SLOT
 
 
 #include "HUDManager.h"
@@ -46,6 +49,8 @@ bool activate_slot(u32 slot)
 			return true;
 		case  ARTEFACT_SLOT:
 			return true;
+		case  GREN_SLOT:
+		return true;
 	}
 
 	return false;
@@ -53,26 +58,31 @@ bool activate_slot(u32 slot)
 #endif
 
 // what to block
-u32	INV_STATE_LADDER		= (1<<RIFLE_SLOT);
+u32	INV_STATE_LADDER_OR_CAR		= (1<<RIFLE_SLOT);
 u32	INV_STATE_BLOCK_ALL		= 0xffffffff;
 u32	INV_STATE_INV_WND		= INV_STATE_BLOCK_ALL;
 u32	INV_STATE_BUY_MENU		= INV_STATE_BLOCK_ALL;
+
 #if defined(HIDE_WEAPON_IN_CAR)
 u32	INV_STATE_CAR			= INV_STATE_BLOCK_ALL;
 #else
-u32	INV_STATE_CAR			= INV_STATE_LADDER;
+u32	INV_STATE_CAR			= INV_STATE_LADDER_OR_CAR;
 #endif
 
-CInventorySlot::CInventorySlot() 
-{
+#if defined(HIDE_WEAPON_IN_LADDER)
+u32	INV_STATE_LADDER		= INV_STATE_BLOCK_ALL;
+#else
+u32	INV_STATE_LADDER		= INV_STATE_LADDER_OR_CAR;
+#endif
+
+CInventorySlot::CInventorySlot() {
 	m_pIItem				= NULL;
 	m_bVisible				= true;
 	m_bPersistent			= false;
 	m_blockCounter			= 0;
 }
 
-CInventorySlot::~CInventorySlot() 
-{
+CInventorySlot::~CInventorySlot() {
 }
 
 bool CInventorySlot::CanBeActivated() const 
@@ -154,35 +164,35 @@ void CInventory::Clear()
 
 void CInventory::Take(CGameObject *pObj, bool bNotActivate, bool strict_placement)
 {
-	CInventoryItem *pIItem = smart_cast<CInventoryItem*>(pObj);
-	VERIFY(pIItem);
-
-	if (pIItem->m_pCurrentInventory)
+	CInventoryItem *pIItem				= smart_cast<CInventoryItem*>(pObj);
+	VERIFY								(pIItem);
+	
+	if(pIItem->m_pCurrentInventory)
 	{
 		Msg("! ERROR CInventory::Take but object has m_pCurrentInventory");
 		Msg("! Inventory Owner is [%d]", GetOwner()->object_id());
 		Msg("! Object Inventory Owner is [%d]", pIItem->m_pCurrentInventory->GetOwner()->object_id());
 
-		CObject* p = pObj->H_Parent();
-		if (p)
+		CObject* p	= pObj->H_Parent();
+		if(p)
 			Msg("! object parent is [%s] [%d]", p->Name_script(), p->ID());
 	}
 
-	R_ASSERT(CanTakeItem(pIItem));
+	R_ASSERT							(CanTakeItem(pIItem));
+	
+	pIItem->m_pCurrentInventory			= this;
+	pIItem->SetDropManual				(FALSE);
 
-	pIItem->m_pCurrentInventory = this;
-	pIItem->SetDropManual(FALSE);
+	m_all.push_back						(pIItem);
 
-	m_all.push_back(pIItem);
+	if(!strict_placement)
+		pIItem->m_eItemPlace			= eItemPlaceUndefined;
 
-	if (!strict_placement)
-		pIItem->m_eItemPlace = eItemPlaceUndefined;
-
-	bool result = false;
-	switch (pIItem->m_eItemPlace)
+	bool result							= false;
+	switch(pIItem->m_eItemPlace)
 	{
 	case eItemPlaceBelt:
-		result = Belt(pIItem);
+		result							= Belt(pIItem); 
 #ifdef DEBUG
 		if(!result) 
 			Msg("cant put in belt item %s", *pIItem->object().cName());
@@ -190,7 +200,7 @@ void CInventory::Take(CGameObject *pObj, bool bNotActivate, bool strict_placemen
 
 		break;
 	case eItemPlaceRuck:
-		result = Ruck(pIItem);
+		result							= Ruck(pIItem);
 #ifdef DEBUG
 		if(!result) 
 			Msg("cant put in ruck item %s", *pIItem->object().cName());
@@ -198,40 +208,39 @@ void CInventory::Take(CGameObject *pObj, bool bNotActivate, bool strict_placemen
 
 		break;
 	case eItemPlaceSlot:
-		result = Slot(pIItem, bNotActivate);
+		result							= Slot(pIItem, bNotActivate); 
 #ifdef DEBUG
 		if(!result) 
 			Msg("cant slot in ruck item %s", *pIItem->object().cName());
 #endif
-	}
 
-	// Если расположение не установлено или не удалось установить, то пробуем по-умолчанию. Real Wolf.
-	if (!result)
-	{
-#ifdef RUCK_FLAG_PREFERRED
+		break;
+	default:
+
+//#ifdef RUCK_FLAG_PREFERRED
 		bool def_to_slot = !pIItem->RuckDefault();
-#else
-		bool def_to_slot = true;
-#endif
+//#else
+//		bool def_to_slot = true;
+//#endif
 
 #if defined(GRENADE_FROM_BELT)
-		if (CanPutInSlot(pIItem) && pIItem->GetSlot() != GRENADE_SLOT && def_to_slot)
+		if(CanPutInSlot(pIItem) && pIItem->GetSlot() != GRENADE_SLOT && def_to_slot)
 #else
-		if (CanPutInSlot(pIItem) && def_to_slot)
+		if(CanPutInSlot(pIItem) && def_to_slot)
 #endif
 		{
-			result = Slot(pIItem, bNotActivate); VERIFY(result);
-		}
-		else if (!pIItem->RuckDefault() && CanPutInBelt(pIItem))
+			result						= Slot(pIItem, bNotActivate); VERIFY(result);
+		} 
+		else if ( !pIItem->RuckDefault() && CanPutInBelt(pIItem))
 		{
-			result = Belt(pIItem); VERIFY(result);
+			result						= Belt(pIItem); VERIFY(result);
 		}
 		else
 		{
-			result = Ruck(pIItem); VERIFY(result);
+			result						= Ruck(pIItem); VERIFY(result);
 		}
 	}
-
+	
 	m_pOwner->OnItemTake				(pIItem);
 
 	CalcTotalWeight						();
@@ -241,14 +250,16 @@ void CInventory::Take(CGameObject *pObj, bool bNotActivate, bool strict_placemen
 	VERIFY								(pIItem->m_eItemPlace != eItemPlaceUndefined);
 }
 
-bool CInventory::DropItem(CGameObject *pObj) 
-{
-	CInventoryItem *pIItem				= smart_cast<CInventoryItem*>(pObj);
-	VERIFY								(pIItem);
-	if( !pIItem )						return false;
+bool CInventory::DropItem(CGameObject* pObj)  {
+	CInventoryItem* pIItem				= smart_cast<CInventoryItem*>(pObj);
+	CEatableItemObject* pEatable		= smart_cast<CEatableItemObject*>(pObj);
+	
+	
+	if (!pIItem) {
+		return false;
+	}
 
-	if(pIItem->m_pCurrentInventory!=this)
-	{
+	if (pIItem->m_pCurrentInventory!=this) {
 		Msg("ahtung !!! [%d]", Device.dwFrame);
 		Msg("CInventory::DropItem pIItem->m_pCurrentInventory!=this");
 		Msg("this = [%d]", GetOwner()->object_id());
@@ -281,17 +292,8 @@ bool CInventory::DropItem(CGameObject *pObj)
 								item->object().Name_script(), item->object().ID(), 
 								item->object().H_Parent()->Name_script());
 
-			// Real Wolf: Что-то где-то пошло не так. Будем верить, что все будет хорошо.
-			// Есть подозрение на гранаты.
-			if (item != pIItem)
-			{
-				Msg("! Warning! Attempt to drop item [%s] from slot [%d] failed.", pIItem->object().cName().c_str(), pIItem->GetSlot());
-				return false;
-			}
-
-			//R_ASSERT			(item == pIItem);
-			//R_ASSERT			(InSlot(pIItem));
-
+			R_ASSERT			(item == pIItem);
+			R_ASSERT			(InSlot(pIItem));
 			if(m_iActiveSlot == slot) 
 				Activate	(NO_ACTIVE_SLOT);
 
@@ -364,11 +366,9 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate)
 	m_slots[pIItem->GetSlot()].m_pIItem = pIItem;
 	//удалить из рюкзака или пояса
 	TIItemContainer::iterator it = std::find(m_ruck.begin(), m_ruck.end(), pIItem);
-	if(m_ruck.end() != it) 
-		m_ruck.erase(it);
+	if(m_ruck.end() != it) m_ruck.erase(it);
 	it = std::find(m_belt.begin(), m_belt.end(), pIItem);
-	if(m_belt.end() != it) 
-		m_belt.erase(it);
+	if(m_belt.end() != it) m_belt.erase(it);
  
 	if (( (m_iActiveSlot==pIItem->GetSlot())||(m_iActiveSlot==NO_ACTIVE_SLOT) && m_iNextActiveSlot==NO_ACTIVE_SLOT) && (!bNotActivate))
 		#if defined(INV_NO_ACTIVATE_APPARATUS_SLOT)
@@ -420,8 +420,8 @@ bool CInventory::Belt(PIItem pIItem)
 	pIItem->object().processing_activate();
 
 #if defined(GRENADE_FROM_BELT)
-	if (pIItem->GetSlot() == GRENADE_SLOT && !m_slots[GRENADE_SLOT].m_pIItem)
-		Slot(pIItem);
+		if (pIItem->GetSlot() == GRENADE_SLOT && !m_slots[GRENADE_SLOT].m_pIItem)
+			return !Slot(pIItem);
 #endif
 
 	return true;
@@ -455,11 +455,10 @@ bool CInventory::Ruck(PIItem pIItem)
 	pIItem->m_eItemPlace							= eItemPlaceRuck;
 
 	
-
+	if (pIItem->GetSlot() != OUTFIT_SLOT || (smart_cast<CActor*>(GetOwner()) && in_slot))
 	pIItem->OnMoveToRuck							();
 
-	if(in_slot)
-		pIItem->object().processing_deactivate();
+	if(in_slot) pIItem->object().processing_deactivate();
 
 	return true;
 }
@@ -675,12 +674,12 @@ bool CInventory::Action(s32 cmd, u32 flags)
 			{
 			}break;
 		
-		case kDROP:		
-		
-			{
+		case kDROP: {
+			if (!pActor->IsEat()) {
 				SendActionEvent(cmd, flags);
 				return true;
-			}break;
+			}
+		} break;
 
 		case kWPN_NEXT:
 		case kWPN_RELOAD:
@@ -742,7 +741,7 @@ bool CInventory::Action(s32 cmd, u32 flags)
 				{
 					b_send_event = Activate(NO_ACTIVE_SLOT);
 				}else {
-					b_send_event = Activate(ARTEFACT_SLOT);
+					b_send_event = Activate(NO_ACTIVE_SLOT);
 				}
 			}
 		}break;
@@ -1006,18 +1005,20 @@ bool CInventory::Eat(PIItem pIItem)
 {
 	R_ASSERT(pIItem->m_pCurrentInventory==this);
 	//устанаовить съедобна ли вещь
-	CEatableItem* pItemToEat = smart_cast<CEatableItem*>(pIItem);
+	CEatableItemObject* pItemToEat = smart_cast<CEatableItemObject*>(pIItem);
 	R_ASSERT				(pItemToEat);
 
 	CEntityAlive *entity_alive = smart_cast<CEntityAlive*>(m_pOwner);
 	R_ASSERT				(entity_alive);
-	
-	pItemToEat->UseBy		(entity_alive);
+
+	if(!pItemToEat->DontEnd()){
+		pItemToEat->UseBy		(entity_alive);
+	}
 
 	if(IsGameTypeSingle() && Actor()->m_inventory == this)
 		Actor()->callback(GameObject::eUseObject)((smart_cast<CGameObject*>(pIItem))->lua_game_object());
 
-	if(pItemToEat->Empty() && entity_alive->Local())
+	if(!pItemToEat->DontEnd() && pItemToEat->Empty() && entity_alive->Local())
 	{
 		NET_Packet					P;
 		CGameObject::u_EventGen		(P,GE_OWNERSHIP_REJECT,entity_alive->ID());
@@ -1068,6 +1069,7 @@ bool CInventory::CanPutInSlot(PIItem pIItem) const
 //при этом реально ничего не меняется
 bool CInventory::CanPutInBelt(PIItem pIItem)
 {
+
 	if(InBelt(pIItem))					return false;
 	if(!m_bBeltUseful)					return false;
 	if(!pIItem || !pIItem->Belt())		return false;

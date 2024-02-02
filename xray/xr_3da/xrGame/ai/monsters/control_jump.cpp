@@ -358,7 +358,14 @@ void CControlJump::on_event(ControlCom::EEventType type, ControlCom::IEventData 
 			ctrl_data_dir->linear_dependency		= false;
 			//---------------------------------------------------------------------------------
 
-			ctrl_data->set_speed	(m_man->animation().current_blend()->timeTotal/ m_man->animation().current_blend()->speed / m_jump_time);
+
+			//Msg("[m_man->animation().current_blend()->timeTotal]: --- %f",m_man->animation().current_blend()->timeTotal); // nil //  0.666667
+			//Msg("[m_man->animation().current_blend()->speed]: --- %f",m_man->animation().current_blend()->speed);  // nil	// 0.999466
+			//Msg("[m_jump_time]: --- %f",m_jump_time); // OK have var
+
+			ctrl_data->set_speed	(0.666667f / 0.999466f / m_jump_time);
+
+			//ctrl_data->set_speed	(m_man->animation().current_blend()->timeTotal / m_man->animation().current_blend()->speed / m_jump_time);
 
 		} else 
 			ctrl_data->set_speed	(-1.f);

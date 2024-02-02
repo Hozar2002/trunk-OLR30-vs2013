@@ -41,6 +41,8 @@ CActorCondition::CActorCondition(CActor *object) :
 	m_fSprintK					= 0.f;
 	m_fAlcohol					= 0.f;
 	m_fSatiety					= 1.0f;
+	m_fWater					= 1.0f;
+	m_fSleep					= 1.0f;
 
 	VERIFY						(object);
 	m_object					= object;
@@ -65,8 +67,8 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 	m_fWalkWeightPower			= pSettings->r_float(section,"walk_weight_power");
 	m_fOverweightWalkK			= pSettings->r_float(section,"overweight_walk_k");
 	m_fOverweightJumpK			= pSettings->r_float(section,"overweight_jump_k");
-	m_fAccelK					= pSettings->r_float(section,"accel_k");
-	m_fSprintK					= pSettings->r_float(section,"sprint_k");
+	m_fAccelK					=	-3;    //pSettings->r_float(section,"accel_k");  hf
+	m_fSprintK					=	-145;  //pSettings->r_float(section,"sprint_k"); hf 
 
 	//порог силы и здоровья меньше которого актер начинает хромать
 	m_fLimpingHealthBegin		= pSettings->r_float(section,	"limping_health_begin");
@@ -90,11 +92,13 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 	m_fV_Alcohol				= pSettings->r_float(section,"alcohol_v");
 
 //. ???	m_fSatietyCritical			= pSettings->r_float(section,"satiety_critical");
-	m_fV_Satiety				= pSettings->r_float(section,"satiety_v");		
+	m_fV_Satiety				= 0.000016; // pSettings->r_float(section,"satiety_v");	hf	
 	m_fV_SatietyPower			= pSettings->r_float(section,"satiety_power_v");
 	m_fV_SatietyHealth			= pSettings->r_float(section,"satiety_health_v");
 	
 	m_MaxWalkWeight					= pSettings->r_float(section,"max_walk_weight");
+	m_fV_Water					= 0.000010; //	0.000030 - много
+	m_fV_Sleep					= 0.000005; //  0.000020 - много
 }
 
 
@@ -218,6 +222,55 @@ void CActorCondition::UpdateSatiety()
 				radiation_power_k*
 				satiety_power_k*
 				m_fDeltaTime;
+
+
+	// sleep
+	float ksl = 1.0f;
+	if(m_fSleep>0)
+	{
+		m_fSleep -=	m_fV_Sleep*ksl*m_fDeltaTime;
+		clamp			(m_fSleep,		0.0f,		1.0f);
+	}
+	//Msg("actor sleep: %f",m_fSleep);
+	if(m_fSleep<0.10f)
+	{
+			m_fDeltaHealth -= 0.00001;
+	}
+	// sleep
+
+	// thirst 
+	float kw = 1.0f;
+	if(m_fWater>0)
+	{
+		m_fWater -=	m_fV_Water*kw*m_fDeltaTime;
+		clamp			(m_fWater,		0.0f,		1.0f);
+	}
+	//CEffectorCam* cew = Actor()->Cameras().GetCamEffector((ECamEffectorType)effWater);
+	//	if	((m_fWater<0.30f))
+	//	{
+	//		if(!cew)
+	//		{
+	//			AddEffector(m_object,effWater, "effector_water", 1.0f - m_fWater);  // GET_KOEFF_FUNC(this, &CActorCondition::GetWater)
+	//		}
+	//	}
+	//	else
+	//	{
+	//		if(m_fWater>0.30f)
+	//		{
+	//			RemoveEffector(m_object,effWater);
+	//			//Msg("remove water eff");
+	//		}
+	//	}
+	//float kwh = 1.0f;
+	if(m_fWater<0.10f)
+	{
+		//if(m_fDeltaHealth>0.01f){ 
+			m_fDeltaHealth -= 0.00005;//m_fWater*kwh*m_fDeltaTime/10000.0f;
+			//Msg("thirst hit %f",m_fDeltaHealth);
+		//}
+	}
+	//Msg("actor water: %f",m_fWater);
+	// thirst 
 }
 
 
@@ -306,6 +359,8 @@ void CActorCondition::save(NET_Packet &output_packet)
 	save_data			(m_fAlcohol, output_packet);
 	save_data			(m_condition_flags, output_packet);
 	save_data			(m_fSatiety, output_packet);
+	save_data			(m_fWater, output_packet);
+	save_data			(m_fSleep, output_packet);
 }
 
 void CActorCondition::load(IReader &input_packet)
@@ -314,6 +369,8 @@ void CActorCondition::load(IReader &input_packet)
 	load_data			(m_fAlcohol, input_packet);
 	load_data			(m_condition_flags, input_packet);
 	load_data			(m_fSatiety, input_packet);
+	load_data			(m_fWater, input_packet);
+	load_data			(m_fSleep, input_packet);
 }
 
 void CActorCondition::reinit	()
@@ -321,6 +378,8 @@ void CActorCondition::reinit	()
 	inherited::reinit	();
 	m_bLimping					= false;
 	m_fSatiety					= 1.f;
+	m_fWater					= 1.f;
+	m_fSleep					= 1.f;
 }
 
 void CActorCondition::ChangeAlcohol	(float value)
@@ -332,6 +391,18 @@ void CActorCondition::ChangeSatiety(float value)
 {
 	m_fSatiety += value;
 	clamp		(m_fSatiety, 0.0f, 1.0f);
+}
+
+void CActorCondition::ChangeWater(float value)
+{
+	m_fWater += value;
+	clamp		(m_fWater, 0.0f, 1.0f);
+}
+
+void CActorCondition::ChangeSleep(float value)
+{
+	m_fSleep += value;
+	clamp		(m_fSleep, 0.0f, 1.0f);
 }
 
 void CActorCondition::UpdateTutorialThresholds()

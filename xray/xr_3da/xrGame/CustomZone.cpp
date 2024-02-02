@@ -624,6 +624,7 @@ void CCustomZone::feel_touch_new	(CObject* O)
 		PlayEntranceParticles(pGameObject);
 		PlayObjectIdleParticles(pGameObject);
 	}
+	//Msg("custom zone touch new zone_name[%s] object_name[%s]",Name_script(), O->Name_script() );
 };
 
 void CCustomZone::feel_touch_delete(CObject* O) 

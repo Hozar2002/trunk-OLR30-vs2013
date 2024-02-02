@@ -1576,6 +1576,7 @@ void game_sv_Deathmatch::OnDetach(u16 eid_who, u16 eid_what)
 			case CLSID_DEVICE_PDA			:
 
 			case CLSID_DEVICE_TORCH			:
+			case CLSID_DEVICE_HANDTORCH		:
 			case CLSID_IITEM_MEDKIT			:
 			case CLSID_IITEM_ANTIRAD		:
 				// Grenades

@@ -107,6 +107,21 @@ void CHudItemObject::UpdateCL			()
 	CHudItem::UpdateCL				();
 }
 
+void CHudItemObject::UpdateHudPosition()
+{
+	CHudItem::UpdateHudPosition();
+}
+
+void CHudItemObject::UpdateHudInertion(Fmatrix& hud_trans)
+{
+	CHudItem::UpdateHudInertion(hud_trans);
+}
+
+void CHudItemObject::UpdateHudAdditonal(Fmatrix &m)
+{
+	CHudItem::UpdateHudAdditonal(m);
+}
+
 void CHudItemObject::renderable_Render	()
 {
 	CHudItem::renderable_Render	();

@@ -66,7 +66,7 @@ CArtefact::CArtefact(void)
 	m_pTrailLight				= NULL;
 	m_activationObj				= NULL;
 	m_class_name				= get_class_name<CArtefact>(this);
-	SetSlot (ARTEFACT_SLOT);
+	SetSlot (NO_ACTIVE_SLOT);
 }
 
 
@@ -99,6 +99,9 @@ void CArtefact::Load(LPCSTR section)
 			m_ArtefactHitImmunities.LoadImmunities(pSettings->r_string(section,"hit_absorbation_sect"),pSettings);
 	}
 	m_bCanSpawnZone = !!pSettings->line_exist("artefact_spawn_zones", section);
+
+
+	m_fConditioRestore	= READ_IF_EXISTS(pSettings, r_float,section,"art_condition_restore",	0.0f);
 
 
 	animGet				(m_anim_idle,					pSettings->r_string(*hud_sect,"anim_idle"));
@@ -255,6 +258,7 @@ void CArtefact::StartLights()
 
 	m_pTrailLight->set_range(m_fTrailLightRange);
 	m_pTrailLight->set_position(Position()); 
+	//m_pTrailLight->set_virtual_size(0.01);  /// ---- виртуальный радиус  hi_flyer
 	m_pTrailLight->set_active(true);
 }
 

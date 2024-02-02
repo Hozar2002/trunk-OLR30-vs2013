@@ -116,6 +116,7 @@ public:
 
 	TASK_ID					m_ID;
 	shared_str				m_Title;
+	shared_str				m_textDesc;
 	OBJECTIVE_VECTOR		m_Objectives;
 	ALife::_TIME_ID			m_ReceiveTime;
 	ALife::_TIME_ID			m_FinishTime;

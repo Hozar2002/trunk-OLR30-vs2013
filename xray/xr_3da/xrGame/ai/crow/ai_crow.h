@@ -13,6 +13,9 @@ class CMotionDef;
 class CBlend;
 class CKinematicsAnimated;
 
+#define MAX_ANIM_COUNT 8
+#define MAX_SND_COUNT 8
+
 class CAI_Crow : public CEntity
 {
 	typedef	CEntity inherited;
@@ -25,8 +28,8 @@ class CAI_Crow : public CEntity
 	};
 
 	// constants and types
-	enum			{ MAX_ANIM_COUNT = 8	};
-	enum			{ MAX_SND_COUNT = 8		};
+	//enum			{ MAX_ANIM_COUNT = 8	};
+	//enum			{ MAX_SND_COUNT = 8		};
 
 	// animations
 	struct SAnim

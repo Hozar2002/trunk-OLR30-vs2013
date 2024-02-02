@@ -12,6 +12,10 @@
 #include "actor.h"
 #include "ActorCondition.h"
 #include "../../../build_config_defines.h"
+
+#include "CharacterPhysicsSupport.h"
+#include "phmovementcontrol.h"
+
 weapon_hud_container* g_pWeaponHUDContainer=0;
 
 BOOL weapon_hud_value::load(const shared_str& section, CHudItem* owner)
@@ -244,6 +248,7 @@ void CWeaponBobbing::Load()
 	m_fSpeedRun			= pSettings->r_float(BOBBING_SECT, "run_speed");
 	m_fSpeedWalk		= pSettings->r_float(BOBBING_SECT, "walk_speed");
 	m_fSpeedLimp		= pSettings->r_float(BOBBING_SECT, "limp_speed");
+
 }
 
 void CWeaponBobbing::CheckState()
@@ -251,12 +256,16 @@ void CWeaponBobbing::CheckState()
 	dwMState		= Actor()->get_state();
 	is_limping		= Actor()->conditions().IsLimping();
 	m_bZoomMode		= Actor()->IsZoomAimingMode();
+	//m_bShootStEff		= Actor()->IsActorShoot();
+	//m_bLandStEff        = Actor()->IsLanded(); //IsActorLanded();
 	fTime			+= Device.fTimeDelta;
 }
+
 
 void CWeaponBobbing::Update(Fmatrix &m)
 {
 	CheckState();
+
 	if (dwMState&ACTOR_DEFS::mcAnyMove)
 	{
 		if (fReminderFactor < 1.f)
@@ -271,6 +280,7 @@ void CWeaponBobbing::Update(Fmatrix &m)
 		else			
 			fReminderFactor = 0.f;
 	}
+
 	if (!fsimilar(fReminderFactor, 0))
 	{
 		Fvector dangle;
@@ -296,14 +306,13 @@ void CWeaponBobbing::Update(Fmatrix &m)
 		}
 	
 		float _sinA	= _abs(_sin(ST) * A) * fReminderFactor;
-		float _cosA	= _cos(ST) * A * fReminderFactor;
+		float _cosA	= _sin(ST) * A * fReminderFactor;
+		                                  // bobcam
+		m.c.y		+=	_sinA; 
+		dangle.x	=	_cosA; 
+		dangle.z	=	_sinA; 
+		dangle.y	=	_sinA; 
 
-		m.c.y		+=	_sinA;
-		dangle.x	=	_cosA;
-		dangle.z	=	_cosA;
-		dangle.y	=	_sinA;
-
-		
 		R.setHPB(dangle.x, dangle.y, dangle.z);
 		
 		mR.mul		(m, R);
@@ -311,5 +320,62 @@ void CWeaponBobbing::Update(Fmatrix &m)
 		m.k.set(mR.k);
 		m.j.set(mR.j);
 	}
+
+	///// landing
+	//if (m_bLandStEff > 0.1f)
+	//{
+	//	if (fReminderFactorLand < 1.f)
+	//		fReminderFactorLand += SPEED_REMINDER * Device.fTimeDelta; 
+	//		//Msg("WeaponHUD - fReminderFactorLand > 0.f - [%f]", fReminderFactorLand);
+	//	else						
+	//		fReminderFactorLand = 1.f;
+	//}
+	//else
+	//{
+	//	if (fReminderFactorLand > 0.f)
+	//		fReminderFactorLand -= SPEED_REMINDER * Device.fTimeDelta;
+	//		//Msg("WeaponHUD - fReminderFactorLand < 0.f - [%f]", fReminderFactorLand);
+	//	else			
+	//		fReminderFactorLand = 0.f;
+	//}
+	////Msg("WeaponHUD - fReminderFactorLand - [%f]", fReminderFactorLand);
+	///// landing
+	//// СДЕЛАТЬ КАК В EffectorFall
+	//if (!fsimilar(fReminderFactorLand, 0)) // m_bLandStEff -- если он то что то похожее
+	//{
+	//	float A, ST;
+	//	float k		= 1.0f;
+	//	Fvector dangle;
+	//	//Fmatrix		R, mR;
+
+	//	A	= m_fAmplitudeRun * k;
+	//	ST	= m_fSpeedRun * fTime * k;
+
+	//	float _sinA	= _abs(_sin(ST) * A) * fReminderFactorLand;  // m_bLandStEff * 100 -- также
+	//	float _cosA	= _sin(ST) * A * fReminderFactorLand;		// m_bLandStEff * 100 -- также
+
+	//	//m.c.z		+=	dangle.z + m_bLandStEff * 2; 
+	//	//dangle.x	=	dangle.x; 
+	//	//dangle.z	=	dangle.z + m_bLandStEff * 2; // высота
+	//	//dangle.y	=	dangle.y;
+
+
+	//	//m.c.y	=	dangle.y = - m_bLandStEff * fReminderFactorLand;
+	//
+
+	//	//SetHudOffsetMatrix(m);
+	//	//SetZoomRotateY(ZoomRotateY() - m_bLandStEff);
+
+	//	///R.setHPB(dangle.x, dangle.y, dangle.z);  // setXYZ
+	//	
+	//	///mR.mul		(m, R); // надо?
+	//	
+	//	///m.k.set(mR.k);
+	//	///m.j.set(mR.j);
+	//	//Msg("WeaponHUD - IsLanded power - [%f]", m_bLandStEff);
+	//	//Msg("WeaponHUD - dangle.y - [%f]", dangle.y);
+	//}
+	////Msg("WeaponHUD - fReminderFactorLand power - [%f]", fReminderFactorLand);
+	///// landing
 }
 #endif

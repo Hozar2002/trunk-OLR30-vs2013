@@ -19,9 +19,9 @@
 extern CPHWorld*	ph_world;
 CBlackGraviArtefact::CBlackGraviArtefact(void) 
 {
-	m_fImpulseThreshold = 10.f;
-	m_fRadius = 10.f;
-	m_fStrikeImpulse = 50.f;
+	m_fImpulseThreshold = 1.f; // 10
+	m_fRadius = 1000.f; // 10
+	m_fStrikeImpulse = 500.f; // 50
 
 	m_bStrike = false;
 }
@@ -105,8 +105,8 @@ void CBlackGraviArtefact::UpdateCLChild()
 			Fmatrix pos; 
 			pos.set(XFORM()); 
 			Fvector vel; 
-			//vel.sub(Position(),ps_Element(0).vPosition); 
-			//vel.div((Level().timeServer()-ps_Element(0).dwTime)/1000.f);
+			vel.sub(Position(),ps_Element(0).vPosition); 
+			vel.div((Level().timeServer()-ps_Element(0).dwTime)/1000.f);
 			vel.set(0,0,0);
 			pStaticPG->UpdateParent(pos, vel); 
 			pStaticPG->Play();

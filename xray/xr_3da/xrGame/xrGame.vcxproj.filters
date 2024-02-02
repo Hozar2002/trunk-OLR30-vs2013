@@ -2089,9 +2089,6 @@
     <Filter Include="AI\AScript\ScriptClasses\UI\Common\ItemInfo">
       <UniqueIdentifier>{8e7229ba-4bb3-4b1d-b0d1-5855c9d74615}</UniqueIdentifier>
     </Filter>
-    <Filter Include="AI\AScript\ScriptClasses\UI\Common\OutfitInfo">
-      <UniqueIdentifier>{cc430822-3497-44cc-88af-2f02a3eb44d5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="AI\AScript\ScriptClasses\UI\Common\TimeWnd">
       <UniqueIdentifier>{bfc8e247-653a-4c56-a39a-d1cc97abf45d}</UniqueIdentifier>
     </Filter>
@@ -2295,6 +2292,9 @@
     </Filter>
     <Filter Include="AI\AScript\ScriptClasses\DerivedClientClasses">
       <UniqueIdentifier>{2aa1b359-c9e1-44ab-ad25-d228887bebb4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\M134">
+      <UniqueIdentifier>{8f66283a-b483-4dbf-8057-e8f3bff9321b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -5196,9 +5196,6 @@
     <ClInclude Include="WeaponBinoculars.h">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Binocular</Filter>
     </ClInclude>
-    <ClInclude Include="WeaponBinocularsVision.h">
-      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Binocular</Filter>
-    </ClInclude>
     <ClInclude Include="WeaponShotgun.h">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Weapon Shotgun</Filter>
     </ClInclude>
@@ -6111,9 +6108,6 @@
     <ClInclude Include="ui\UINewsWnd.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\Diary</Filter>
     </ClInclude>
-    <ClInclude Include="ui\UIArtefactPanel.h">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
-    </ClInclude>
     <ClInclude Include="ui\UICarPanel.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClInclude>
@@ -6124,9 +6118,6 @@
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClInclude>
     <ClInclude Include="ui\UIMoneyIndicator.h">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\UIMotionIcon.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClInclude>
     <ClInclude Include="ui\UIPdaMsgListItem.h">
@@ -6186,17 +6177,8 @@
     <ClInclude Include="ui\UICharacterInfo.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\CharacterInfo</Filter>
     </ClInclude>
-    <ClInclude Include="ui\ui_af_params.h">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClInclude>
     <ClInclude Include="ui\UIItemInfo.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\UIWpnParams.h">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\UIOutfitInfo.h">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\OutfitInfo</Filter>
     </ClInclude>
     <ClInclude Include="ui\UITimeWnd.h">
       <Filter>AI\AScript\ScriptClasses\UI\Common\TimeWnd</Filter>
@@ -6571,8 +6553,33 @@
     <ClInclude Include="derived_client_classes.h">
       <Filter>AI\AScript\ScriptClasses\DerivedClientClasses</Filter>
     </ClInclude>
-    <ClInclude Include="script_vars_storage.h">
-      <Filter>AI\AScript\ScriptClasses\ScriptVarsStorage</Filter>
+    <ClInclude Include="script_vars_storage.h" />
+    <ClInclude Include="CarHud.h">
+      <Filter>Core\Client\Objects\vehicles\Car</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\3d_static_shaders.h">
+      <Filter>AI\AScript\ScriptClasses\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\UI3dStatic.h">
+      <Filter>AI\AScript\ScriptClasses\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\UIHelper.h">
+      <Filter>AI\AScript\ScriptClasses\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="WeaponHandTorch.h">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Knife</Filter>
+    </ClInclude>
+    <ClInclude Include="WeaponM134.h">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\M134</Filter>
+    </ClInclude>
+    <ClInclude Include="Fireball.h">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Knife</Filter>
+    </ClInclude>
+    <ClInclude Include="AcidFog.h">
+      <Filter>Core\Client\Objects\zones\AcidFog</Filter>
+    </ClInclude>
+    <ClInclude Include="ShootingHitEffector.h">
+      <Filter>Core\Client\Effectors\Actor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -8322,9 +8329,6 @@
     <ClCompile Include="WeaponBinoculars_script.cpp">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Binocular</Filter>
     </ClCompile>
-    <ClCompile Include="WeaponBinocularsVision.cpp">
-      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Binocular</Filter>
-    </ClCompile>
     <ClCompile Include="WeaponShotgun.cpp">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Weapon Shotgun</Filter>
     </ClCompile>
@@ -9234,9 +9238,6 @@
     <ClCompile Include="ui\UINewsWnd.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\Diary</Filter>
     </ClCompile>
-    <ClCompile Include="ui\UIArtefactPanel.cpp">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
-    </ClCompile>
     <ClCompile Include="ui\UICarPanel.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClCompile>
@@ -9247,9 +9248,6 @@
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClCompile>
     <ClCompile Include="ui\UIMoneyIndicator.cpp">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\UIMotionIcon.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\MainIngame</Filter>
     </ClCompile>
     <ClCompile Include="ui\UIPdaMsgListItem.cpp">
@@ -9309,17 +9307,8 @@
     <ClCompile Include="ui\UICharacterInfo.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\CharacterInfo</Filter>
     </ClCompile>
-    <ClCompile Include="ui\UIWpnParams.cpp">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\ui_af_params.cpp">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClCompile>
     <ClCompile Include="ui\UIItemInfo.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\ItemInfo</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\UIOutfitInfo.cpp">
-      <Filter>AI\AScript\ScriptClasses\UI\Common\OutfitInfo</Filter>
     </ClCompile>
     <ClCompile Include="ui\UITimeWnd.cpp">
       <Filter>AI\AScript\ScriptClasses\UI\Common\TimeWnd</Filter>
@@ -9736,8 +9725,30 @@
     <ClCompile Include="derived_client_classes.cpp">
       <Filter>AI\AScript\ScriptClasses\DerivedClientClasses</Filter>
     </ClCompile>
-    <ClCompile Include="script_vars_storage.cpp">
-      <Filter>AI\AScript\ScriptClasses\ScriptVarsStorage</Filter>
+    <ClCompile Include="script_vars_storage.cpp" />
+    <ClCompile Include="CarHud.cpp">
+      <Filter>Core\Client\Objects\vehicles\Car</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\UI3dStatic.cpp">
+      <Filter>AI\AScript\ScriptClasses\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\UIHelper.cpp">
+      <Filter>AI\AScript\ScriptClasses\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="WeaponHandTorch.cpp">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Knife</Filter>
+    </ClCompile>
+    <ClCompile Include="WeaponM134.cpp">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\M134</Filter>
+    </ClCompile>
+    <ClCompile Include="Fireball.cpp">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Various weapons\Knife</Filter>
+    </ClCompile>
+    <ClCompile Include="AcidFog.cpp">
+      <Filter>Core\Client\Objects\zones\AcidFog</Filter>
+    </ClCompile>
+    <ClCompile Include="ShootingHitEffector.cpp">
+      <Filter>Core\Client\Effectors\Actor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -9753,5 +9764,8 @@
     <CustomBuildStep Include="dRayMotions.h">
       <Filter>Core\Client\Objects\physics\Colliders\RayMotions-Collider</Filter>
     </CustomBuildStep>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
 </Project>

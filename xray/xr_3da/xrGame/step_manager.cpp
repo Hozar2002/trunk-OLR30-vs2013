@@ -9,6 +9,7 @@
 #include "profiler.h"
 #include "IKLimbsController.h"
 
+
 CStepManager::CStepManager()
 {
 }
@@ -37,6 +38,8 @@ void CStepManager::reload(LPCSTR section)
 
 	LPCSTR				anim_name, val;
 	string16			cur_elem;
+
+	m_steps_map.clear();
 
 	CKinematicsAnimated	*skeleton_animated = smart_cast<CKinematicsAnimated*>(m_object->Visual());
 
@@ -134,7 +137,7 @@ void CStepManager::update()
 			}
 
 			// Играть партиклы
-			if (!mtl_pair->CollideParticles.empty())	{
+			if (!mtl_pair->CollideParticles.empty() && g_pGamePersistent->Environment().CurrentEnv.rain_density < EPS_L)	{
 				LPCSTR ps_name = *mtl_pair->CollideParticles[::Random.randI(0,mtl_pair->CollideParticles.size())];
 
 				//отыграть партиклы столкновения материалов

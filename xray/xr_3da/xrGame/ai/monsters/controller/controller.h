@@ -104,6 +104,10 @@ public:
 
 	virtual bool	ability_pitch_correction () {return false;}
 
+	virtual void	HitEntityInJump		(const CEntity *pEntity);
+
+	virtual bool	check_start_conditions	(ControlCom::EControlType);
+
 	//-------------------------------------------------------------------
 
 	virtual	bool	is_relation_enemy	(const CEntityAlive *tpEntityAlive) const;

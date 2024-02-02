@@ -65,6 +65,7 @@ public:
 	void				AddAnswer				(const shared_str& text, LPCSTR SpeakerName);
 
 	CUITradeWnd*		GetTradeWnd				()	{return UITradeWnd;}
+	IC CInventoryOwner*		GetSecondTalker			() { return m_pOthersInvOwner; }
 protected:
 	//для режима торговли
 	CUITradeWnd*			UITradeWnd;

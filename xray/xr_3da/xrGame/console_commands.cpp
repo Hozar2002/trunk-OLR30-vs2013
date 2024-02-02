@@ -423,6 +423,13 @@ public:
 			return;
 		}
 
+		CObject *e = g_pGameLevel->CurrentViewEntity();
+		if(g_SingleGameDifficulty == egdMaster && e->renderable_ROS()->get_luminocity_hemi() > 0.05f)
+		{
+			Msg("cannot make saved game here");
+			return;
+		}
+
 		string_path				S,S1;
 		S[0]					= 0;
 //.		sscanf					(args ,"%s",S);
@@ -685,6 +692,20 @@ public:
 };
 //#endif // MASTER_GOLD
 
+class CCC_DumpInfos : public IConsole_Command {
+public:
+	CCC_DumpInfos	(LPCSTR N) : IConsole_Command(N)  { bEmptyArgsHandled = true; };
+	virtual void	Execute				(LPCSTR args) {
+		CActor* A =smart_cast<CActor*>(Level().CurrentEntity());
+		if(A)
+			A->DumpInfo();
+	}
+	virtual void	Info	(TInfo& I)		
+	{
+		strcpy_s(I,"dumps all infoportions that actor have"); 
+	}
+};
+
 #ifdef DEBUG
 
 class CCC_DrawGameGraphAll : public IConsole_Command {
@@ -931,7 +952,7 @@ public:
 	  }
 };
 
-#ifdef DEBUG
+//#ifdef DEBUG
 class CCC_PHGravity : public IConsole_Command {
 public:
 		CCC_PHGravity(LPCSTR N) :
@@ -959,7 +980,7 @@ public:
 	}
 	
 };
-#endif // DEBUG
+//#endif // DEBUG
 
 class CCC_PHFps : public IConsole_Command {
 public:
@@ -1103,6 +1124,27 @@ struct CCC_TimeFactorSingle : public CCC_Float {
 			return;
 
 		Level().Server->game->SetGameTimeFactor(g_fTimeFactor);
+	}
+};
+
+
+class CCC_Spawn : public IConsole_Command {
+public:
+	CCC_Spawn(LPCSTR N) : IConsole_Command(N) {}
+
+	void Execute(LPCSTR args)
+	{
+		if (!g_pGameLevel)
+			return;
+
+		if (!pSettings->section_exist(args))
+		{
+			Msg("! Can't find section: %s", args);
+			return;
+		}
+
+		if (auto tpGame = smart_cast<game_sv_Single*>(Level().Server->game))
+			tpGame->alife().spawn_item(args, Actor()->Position(), Actor()->ai_location().level_vertex_id(), Actor()->ai_location().game_vertex_id(), ALife::_OBJECT_ID(-1));
 	}
 };
 
@@ -1351,6 +1393,7 @@ public:
 	  }
 };
 
+#include "../../build_config_defines.h"
 
 void CCC_RegisterCommands()
 {
@@ -1372,7 +1415,7 @@ void CCC_RegisterCommands()
 	
 	CMD1(CCC_ALifeSave,			"save"					);		// save game
 	CMD1(CCC_ALifeLoadFrom,		"load"					);		// load game from ...
-	CMD1(CCC_LoadLastSave,		"load_last_save"		);		// load last saved game from ...
+	//CMD1(CCC_LoadLastSave,		"load_last_save"		);		// load last saved game from ...
 
 	CMD1(CCC_FlushLog,			"flush"					);		// flush log
 	CMD1(CCC_ClearLog,			"clear_log"					);
@@ -1406,9 +1449,9 @@ void CCC_RegisterCommands()
 	CMD4(CCC_Float,				"fov",					&g_fov,			5.0f,	180.0f);
 #endif // DEBUG
 
-	// Demo
-	CMD1(CCC_DemoPlay,			"demo_play"				);
-	CMD1(CCC_DemoRecord,		"demo_record"			);
+	CMD4(CCC_Float,				"hud_fov",				&psHUD_FOV,		0.1f,	1.0f);
+	CMD4(CCC_Float,				"fov",					&g_fov,			5.0f,	180.0f);
+
 
 #ifndef MASTER_GOLD
 	// ai
@@ -1424,37 +1467,7 @@ void CCC_RegisterCommands()
 #endif // MASTER_GOLD
 
 #ifdef DEBUG
-	CMD4(CCC_Integer,			"lua_gcstep",			&psLUA_GCSTEP,	1, 1000);
-	CMD3(CCC_Mask,				"ai_debug",				&psAI_Flags,	aiDebug);
-	CMD3(CCC_Mask,				"ai_dbg_brain",			&psAI_Flags,	aiBrain);
-	CMD3(CCC_Mask,				"ai_dbg_motion",		&psAI_Flags,	aiMotion);
-	CMD3(CCC_Mask,				"ai_dbg_frustum",		&psAI_Flags,	aiFrustum);
-	CMD3(CCC_Mask,				"ai_dbg_funcs",			&psAI_Flags,	aiFuncs);
-	CMD3(CCC_Mask,				"ai_dbg_alife",			&psAI_Flags,	aiALife);
-	CMD3(CCC_Mask,				"ai_dbg_lua",			&psAI_Flags,	aiLua);
-	CMD3(CCC_Mask,				"ai_dbg_goap",			&psAI_Flags,	aiGOAP);
-	CMD3(CCC_Mask,				"ai_dbg_goap_script",	&psAI_Flags,	aiGOAPScript);
-	CMD3(CCC_Mask,				"ai_dbg_goap_object",	&psAI_Flags,	aiGOAPObject);
-	CMD3(CCC_Mask,				"ai_dbg_cover",			&psAI_Flags,	aiCover);
-	CMD3(CCC_Mask,				"ai_dbg_anim",			&psAI_Flags,	aiAnimation);
-	CMD3(CCC_Mask,				"ai_dbg_vision",		&psAI_Flags,	aiVision);
-	CMD3(CCC_Mask,				"ai_dbg_monster",		&psAI_Flags,	aiMonsterDebug);
-	CMD3(CCC_Mask,				"ai_dbg_stalker",		&psAI_Flags,	aiStalker);
-	CMD3(CCC_Mask,				"ai_stats",				&psAI_Flags,	aiStats);
-	CMD3(CCC_Mask,				"ai_dbg_destroy",		&psAI_Flags,	aiDestroy);
-	CMD3(CCC_Mask,				"ai_dbg_serialize",		&psAI_Flags,	aiSerialize);
-	CMD3(CCC_Mask,				"ai_dbg_dialogs",		&psAI_Flags,	aiDialogs);
-	CMD3(CCC_Mask,				"ai_dbg_infoportion",	&psAI_Flags,	aiInfoPortion);
-
-	CMD3(CCC_Mask,				"ai_draw_game_graph",				&psAI_Flags,	aiDrawGameGraph				);
-	CMD3(CCC_Mask,				"ai_draw_game_graph_stalkers",		&psAI_Flags,	aiDrawGameGraphStalkers		);
-	CMD3(CCC_Mask,				"ai_draw_game_graph_objects",		&psAI_Flags,	aiDrawGameGraphObjects		);
-
-	CMD3(CCC_Mask,				"ai_nil_object_access",	&psAI_Flags,	aiNilObjectAccess);
-
-	CMD3(CCC_Mask,				"ai_draw_visibility_rays",	&psAI_Flags,	aiDrawVisibilityRays);
-	CMD3(CCC_Mask,				"ai_animation_stats",		&psAI_Flags,	aiAnimationStats);
-
+	
 #ifdef DEBUG_MEMORY_MANAGER
 	CMD3(CCC_Mask,				"debug_on_frame_gather_stats",				&psAI_Flags,	aiDebugOnFrameAllocs);
 	CMD4(CCC_Float,				"debug_on_frame_gather_stats_frequency",	&debug_on_frame_gather_stats_frequency, 0.f, 1.f);
@@ -1462,130 +1475,176 @@ void CCC_RegisterCommands()
 	CMD1(CCC_MemAllocClearStats,"debug_on_frame_clear_stats");
 #endif // DEBUG_MEMORY_MANAGER
 
-	CMD1(CCC_DumpModelBones,	"debug_dump_model_bones");
 
-	CMD1(CCC_DrawGameGraphAll,		"ai_draw_game_graph_all");
-	CMD1(CCC_DrawGameGraphCurrent,	"ai_draw_game_graph_current_level");
-	CMD1(CCC_DrawGameGraphLevel,	"ai_draw_game_graph_level");
-
-	CMD4(CCC_Integer,			"ai_dbg_inactive_time",	&g_AI_inactive_time, 0, 1000000);
-	
-	CMD1(CCC_DebugNode,			"ai_dbg_node");
-	CMD1(CCC_ScriptDbg,			"script_debug_break");
-	CMD1(CCC_ScriptDbg,			"script_debug_stop");
-	CMD1(CCC_ScriptDbg,			"script_debug_restart");
-	
-	CMD1(CCC_ShowMonsterInfo,	"ai_monster_info");
-	CMD1(CCC_DebugFonts,		"debug_fonts");
-	CMD1(CCC_TuneAttachableItem,"dbg_adjust_attachable_item");
-
-	// adjust mode support
-	CMD4(CCC_Integer,			"hud_adjust_mode",		&g_bHudAdjustMode,	0, 5);
-	CMD4(CCC_Float,				"hud_adjust_value",		&g_fHudAdjustValue,	0.0f, 1.0f);
-
-	CMD1(CCC_ShowAnimationStats,"ai_show_animation_stats");
 #endif // DEBUG
 
 	CMD4(CCC_Integer,			"hud_adjust_mode",		&g_bHudAdjustMode,	0, 5);
 	CMD4(CCC_Float,				"hud_adjust_value",		&g_fHudAdjustValue,	0.0f, 1.0f);
 
-#ifndef MASTER_GOLD
-	CMD3(CCC_Mask,				"ai_ignore_actor",		&psAI_Flags,	aiIgnoreActor);
-#endif // MASTER_GOLD
 
 	// Physics
 	CMD1(CCC_PHFps,				"ph_frequency"																					);
 	CMD1(CCC_PHIterations,		"ph_iterations"																					);
 
-#ifdef DEBUG
+//#ifdef DEBUG
 	CMD1(CCC_PHGravity,			"ph_gravity"																					);
 	CMD4(CCC_FloatBlock,		"ph_timefactor",				&phTimefactor				,			0.0001f	,1000.f			);
 	CMD4(CCC_FloatBlock,		"ph_break_common_factor",		&phBreakCommonFactor		,			0.f		,1000000000.f	);
 	CMD4(CCC_FloatBlock,		"ph_rigid_break_weapon_factor",	&phRigidBreakWeaponFactor	,			0.f		,1000000000.f	);
 	CMD4(CCC_Integer,			"ph_tri_clear_disable_count",	&ph_tri_clear_disable_count	,			0,		255				);
 	CMD4(CCC_FloatBlock,		"ph_tri_query_ex_aabb_rate",	&ph_tri_query_ex_aabb_rate	,			1.01f	,3.f			);
-#endif // DEBUG
+//#endif // DEBUG
 
 
-//#ifndef MASTER_GOLD
+
+#ifndef DEBUG_FLYER
+
+	// NEED FOR OLR DEBUG
 	CMD1(CCC_JumpToLevel,	"jump_to_level"		);
 	CMD3(CCC_Mask,			"g_god",			&psActorFlags,	AF_GODMODE	);
 	CMD3(CCC_Mask,			"g_unlimitedammo",	&psActorFlags,	AF_UNLIMITEDAMMO);
 	CMD1(CCC_Script,		"run_script");
 	CMD1(CCC_ScriptCommand,	"run_string");
-	CMD1(CCC_TimeFactor,	"time_factor");		
-//#endif // MASTER_GOLD
+	CMD1(CCC_TimeFactor,	"time_factor");
+	CMD1(CCC_Spawn,			"g_spawn");
+	CMD1(CCC_DumpInfos,		"dump_infos");
+	CMD1(CCC_DemoPlay,			"demo_play"				);
+	CMD1(CCC_DemoRecord,		"demo_record"			);
+
+	//CMD3(CCC_Mask, "ai_ignore_actor", &psAI_Flags, aiIgnoreActor);
+
+	//CMD4(CCC_Integer,	"string_table_error_msg",	&CStringTable::m_bWriteErrorsToLog,	0,	1);
+
+	//CMD1(CCC_DumpMap,				"dump_map");
+	//CMD1(CCC_DumpCreatures,			"dump_creatures");
+
+	//CMD4(CCC_Integer, "lua_gcstep", &psLUA_GCSTEP, 1, 1000);
+	/*CMD3(CCC_Mask, "ai_debug", &psAI_Flags, aiDebug);
+	CMD3(CCC_Mask, "ai_dbg_brain", &psAI_Flags, aiBrain);
+	CMD3(CCC_Mask, "ai_dbg_motion", &psAI_Flags, aiMotion);
+	CMD3(CCC_Mask, "ai_dbg_frustum", &psAI_Flags, aiFrustum);
+	CMD3(CCC_Mask, "ai_dbg_funcs", &psAI_Flags, aiFuncs);
+	CMD3(CCC_Mask, "ai_dbg_alife", &psAI_Flags, aiALife);
+	CMD3(CCC_Mask, "ai_dbg_lua", &psAI_Flags, aiLua);
+	CMD3(CCC_Mask, "ai_dbg_goap", &psAI_Flags, aiGOAP);
+	CMD3(CCC_Mask, "ai_dbg_goap_script", &psAI_Flags, aiGOAPScript);
+	CMD3(CCC_Mask, "ai_dbg_goap_object", &psAI_Flags, aiGOAPObject);
+	CMD3(CCC_Mask, "ai_dbg_cover", &psAI_Flags, aiCover);
+	CMD3(CCC_Mask, "ai_dbg_anim", &psAI_Flags, aiAnimation);
+	CMD3(CCC_Mask, "ai_dbg_vision", &psAI_Flags, aiVision);
+	CMD3(CCC_Mask, "ai_dbg_monster", &psAI_Flags, aiMonsterDebug);
+	CMD3(CCC_Mask, "ai_dbg_stalker", &psAI_Flags, aiStalker);
+	CMD3(CCC_Mask, "ai_stats", &psAI_Flags, aiStats);
+	CMD3(CCC_Mask, "ai_dbg_destroy", &psAI_Flags, aiDestroy);
+	CMD3(CCC_Mask, "ai_dbg_serialize", &psAI_Flags, aiSerialize);
+	CMD3(CCC_Mask,				"ai_dbg_dialogs",		&psAI_Flags,	aiDialogs);
+	CMD3(CCC_Mask,				"ai_dbg_infoportion",	&psAI_Flags,	aiInfoPortion);*/
+
+	//CMD3(CCC_Mask,				"ai_draw_game_graph",				&psAI_Flags,	aiDrawGameGraph				);
+	//CMD3(CCC_Mask,				"ai_draw_game_graph_stalkers",		&psAI_Flags,	aiDrawGameGraphStalkers		);
+	//CMD3(CCC_Mask,				"ai_draw_game_graph_objects",		&psAI_Flags,	aiDrawGameGraphObjects		);
+
+	//CMD3(CCC_Mask,				"ai_nil_object_access",	&psAI_Flags,	aiNilObjectAccess);
+
+	//CMD3(CCC_Mask, "ai_draw_visibility_rays", &psAI_Flags, aiDrawVisibilityRays);
+	//CMD3(CCC_Mask, "ai_animation_stats", &psAI_Flags, aiAnimationStats);
+
+	//CMD1(CCC_DumpModelBones,	"debug_dump_model_bones");
+
+	//CMD1(CCC_DrawGameGraphAll,		"ai_draw_game_graph_all");
+	//CMD1(CCC_DrawGameGraphCurrent,	"ai_draw_game_graph_current_level");
+	//CMD1(CCC_DrawGameGraphLevel,	"ai_draw_game_graph_level");
+
+	//CMD4(CCC_Integer,			"ai_dbg_inactive_time",	&g_AI_inactive_time, 0, 1000000);
+
+	//CMD1(CCC_DebugNode,			"ai_dbg_node");
+	//CMD1(CCC_ScriptDbg,			"script_debug_break");
+	//CMD1(CCC_ScriptDbg,			"script_debug_stop");
+	//CMD1(CCC_ScriptDbg,			"script_debug_restart");
+
+	//CMD1(CCC_ShowMonsterInfo,	"ai_monster_info");
+	//CMD1(CCC_DebugFonts,		"debug_fonts");
+	//CMD1(CCC_TuneAttachableItem,"dbg_adjust_attachable_item");
+
+
+	//CMD1(CCC_ShowAnimationStats, "ai_show_animation_stats");
+
+	//CMD1(CCC_ShowSmartCastStats,	"show_smart_cast_stats");
+	//CMD1(CCC_ClearSmartCastStats, "clear_smart_cast_stats");
+
+	/*CMD3(CCC_Mask, "dbg_draw_actor_alive", &dbg_net_Draw_Flags, (1 << 0));
+	CMD3(CCC_Mask, "dbg_draw_actor_dead", &dbg_net_Draw_Flags, (1 << 1));
+	CMD3(CCC_Mask, "dbg_draw_customzone", &dbg_net_Draw_Flags, (1 << 2));
+	CMD3(CCC_Mask, "dbg_draw_teamzone", &dbg_net_Draw_Flags, (1 << 3));
+	CMD3(CCC_Mask, "dbg_draw_invitem", &dbg_net_Draw_Flags, (1 << 4));
+	CMD3(CCC_Mask, "dbg_draw_actor_phys", &dbg_net_Draw_Flags, (1 << 5));
+	CMD3(CCC_Mask, "dbg_draw_customdetector", &dbg_net_Draw_Flags, (1 << 6));
+	CMD3(CCC_Mask, "dbg_destroy", &dbg_net_Draw_Flags, (1 << 7));
+	CMD3(CCC_Mask, "dbg_draw_autopickupbox", &dbg_net_Draw_Flags, (1 << 8));
+	CMD3(CCC_Mask, "dbg_draw_rp", &dbg_net_Draw_Flags, (1 << 9));
+	CMD3(CCC_Mask, "dbg_draw_climbable", &dbg_net_Draw_Flags, (1 << 10));
+	CMD3(CCC_Mask, "dbg_draw_skeleton", &dbg_net_Draw_Flags, (1 << 11));*/
+
+
+	//CMD3(CCC_Mask, "dbg_draw_ph_contacts", &ph_dbg_draw_mask, phDbgDrawContacts);
+	//CMD3(CCC_Mask, "dbg_draw_ph_enabled_aabbs", &ph_dbg_draw_mask, phDbgDrawEnabledAABBS);
+	//CMD3(CCC_Mask, "dbg_draw_ph_intersected_tries", &ph_dbg_draw_mask, phDBgDrawIntersectedTries);
+	//CMD3(CCC_Mask, "dbg_draw_ph_saved_tries", &ph_dbg_draw_mask, phDbgDrawSavedTries);
+	//CMD3(CCC_Mask, "dbg_draw_ph_tri_trace", &ph_dbg_draw_mask, phDbgDrawTriTrace);
+	//CMD3(CCC_Mask, "dbg_draw_ph_positive_tries", &ph_dbg_draw_mask, phDBgDrawPositiveTries);
+	//CMD3(CCC_Mask, "dbg_draw_ph_negative_tries", &ph_dbg_draw_mask, phDBgDrawNegativeTries);
+	//CMD3(CCC_Mask, "dbg_draw_ph_tri_test_aabb", &ph_dbg_draw_mask, phDbgDrawTriTestAABB);
+	//CMD3(CCC_Mask, "dbg_draw_ph_tries_changes_sign", &ph_dbg_draw_mask, phDBgDrawTriesChangesSign);
+	//CMD3(CCC_Mask, "dbg_draw_ph_tri_point", &ph_dbg_draw_mask, phDbgDrawTriPoint);
+	//CMD3(CCC_Mask, "dbg_draw_ph_explosion_position", &ph_dbg_draw_mask, phDbgDrawExplosionPos);
+	//CMD3(CCC_Mask, "dbg_draw_ph_statistics", &ph_dbg_draw_mask, phDbgDrawObjectStatistics);
+	//CMD3(CCC_Mask, "dbg_draw_ph_mass_centres", &ph_dbg_draw_mask, phDbgDrawMassCenters);
+	//CMD3(CCC_Mask, "dbg_draw_ph_death_boxes", &ph_dbg_draw_mask, phDbgDrawDeathActivationBox);
+	//CMD3(CCC_Mask, "dbg_draw_ph_hit_app_pos", &ph_dbg_draw_mask, phHitApplicationPoints);
+	//CMD3(CCC_Mask, "dbg_draw_ph_cashed_tries_stats", &ph_dbg_draw_mask, phDbgDrawCashedTriesStat);
+	//CMD3(CCC_Mask, "dbg_draw_ph_car_dynamics", &ph_dbg_draw_mask, phDbgDrawCarDynamics);
+	//CMD3(CCC_Mask, "dbg_draw_ph_car_plots", &ph_dbg_draw_mask, phDbgDrawCarPlots);
+	//CMD3(CCC_Mask, "dbg_ph_ladder", &ph_dbg_draw_mask, phDbgLadder);
+	//CMD3(CCC_Mask, "dbg_draw_ph_explosions", &ph_dbg_draw_mask, phDbgDrawExplosions);
+	//CMD3(CCC_Mask, "dbg_draw_car_plots_all_trans", &ph_dbg_draw_mask, phDbgDrawCarAllTrnsm);
+	//CMD3(CCC_Mask, "dbg_draw_ph_zbuffer_disable", &ph_dbg_draw_mask, phDbgDrawZDisable);
+	//CMD3(CCC_Mask, "dbg_ph_obj_collision_damage", &ph_dbg_draw_mask, phDbgDispObjCollisionDammage);
+	//CMD_RADIOGROUPMASK2("dbg_ph_ai_always_phmove", &ph_dbg_draw_mask, phDbgAlwaysUseAiPhMove, "dbg_ph_ai_never_phmove", &ph_dbg_draw_mask, phDbgNeverUseAiPhMove);
+	//CMD3(CCC_Mask, "dbg_ph_ik", &ph_dbg_draw_mask, phDbgIK);
+	//CMD3(CCC_Mask, "dbg_ph_ik_off", &ph_dbg_draw_mask1, phDbgIKOff);
+	//CMD3(CCC_Mask, "dbg_draw_ph_ik_goal", &ph_dbg_draw_mask, phDbgDrawIKGoal);
+	//CMD3(CCC_Mask, "dbg_ph_ik_limits", &ph_dbg_draw_mask, phDbgIKLimits);
+	//CMD3(CCC_Mask, "dbg_ph_character_control", &ph_dbg_draw_mask, phDbgCharacterControl);
+	//CMD3(CCC_Mask, "dbg_draw_ph_ray_motions", &ph_dbg_draw_mask, phDbgDrawRayMotions);
+	//CMD4(CCC_Float, "dbg_ph_vel_collid_damage_to_display", &dbg_vel_collid_damage_to_display, 0.f, 1000.f);
+	//CMD4(CCC_DbgBullets, "dbg_draw_bullet_hit", &g_bDrawBulletHit, 0, 1);
+	//CMD1(CCC_DbgPhTrackObj, "dbg_track_obj");
+	//CMD3(CCC_Mask, "dbg_ph_actor_restriction", &ph_dbg_draw_mask1, ph_m1_DbgActorRestriction);
+	//CMD3(CCC_Mask, "dbg_draw_ph_hit_anims", &ph_dbg_draw_mask1, phDbgHitAnims);
+	//CMD3(CCC_Mask, "dbg_draw_ph_ik_limits", &ph_dbg_draw_mask1, phDbgDrawIKLimits);
+
+	//CMD1(CCC_DumpObjects, "dump_all_objects");
+	//CMD3(CCC_String, "stalker_death_anim", dbg_stalker_death_anim, 32);
+	//CMD4(CCC_Integer, "death_anim_velocity", &b_death_anim_velocity, FALSE, TRUE);
+	//CMD4(CCC_Integer, "show_wnd_rect", &g_show_wnd_rect, 0, 1);
+	//CMD4(CCC_Integer, "show_wnd_rect_all", &g_show_wnd_rect2, 0, 1);
+	//CMD1(CCC_Crash, "crash");
+	//CMD4(CCC_Integer, "dbg_show_ani_info", &g_ShowAnimationInfo, 0, 1);
+	//CMD4(CCC_Integer, "dbg_dump_physics_step", &g_bDebugDumpPhysicsStep, 0, 1);
+
+	//CMD4(CCC_Vector3, "psp_cam_offset", &CCameraLook2::m_cam_offset, Fvector().set(-1000, -1000, -1000), Fvector().set(1000, 1000, 1000));
+
+
+#endif // FLYER_DEBUG END
+
+
+
 
 	CMD3(CCC_Mask,		"g_autopickup",			&psActorFlags,	AF_AUTOPICKUP);
 	CMD1(CCC_LuaHelp,   "lua_help");
 
-#ifdef DEBUG
-	
-	CMD1(CCC_ShowSmartCastStats,	"show_smart_cast_stats");
-	CMD1(CCC_ClearSmartCastStats,	"clear_smart_cast_stats");
-
-	CMD3(CCC_Mask,		"dbg_draw_actor_alive",		&dbg_net_Draw_Flags,	(1<<0));
-	CMD3(CCC_Mask,		"dbg_draw_actor_dead",		&dbg_net_Draw_Flags,	(1<<1));
-	CMD3(CCC_Mask,		"dbg_draw_customzone",		&dbg_net_Draw_Flags,	(1<<2));
-	CMD3(CCC_Mask,		"dbg_draw_teamzone",		&dbg_net_Draw_Flags,	(1<<3));
-	CMD3(CCC_Mask,		"dbg_draw_invitem",			&dbg_net_Draw_Flags,	(1<<4));
-	CMD3(CCC_Mask,		"dbg_draw_actor_phys",		&dbg_net_Draw_Flags,	(1<<5));
-	CMD3(CCC_Mask,		"dbg_draw_customdetector",	&dbg_net_Draw_Flags,	(1<<6));
-	CMD3(CCC_Mask,		"dbg_destroy",				&dbg_net_Draw_Flags,	(1<<7));
-	CMD3(CCC_Mask,		"dbg_draw_autopickupbox",	&dbg_net_Draw_Flags,	(1<<8));
-	CMD3(CCC_Mask,		"dbg_draw_rp",				&dbg_net_Draw_Flags,	(1<<9));
-	CMD3(CCC_Mask,		"dbg_draw_climbable",		&dbg_net_Draw_Flags,	(1<<10));
-	CMD3(CCC_Mask,		"dbg_draw_skeleton",		&dbg_net_Draw_Flags,	(1<<11));
 
 
-	CMD3(CCC_Mask,		"dbg_draw_ph_contacts",			&ph_dbg_draw_mask,	phDbgDrawContacts);
-	CMD3(CCC_Mask,		"dbg_draw_ph_enabled_aabbs",	&ph_dbg_draw_mask,	phDbgDrawEnabledAABBS);
-	CMD3(CCC_Mask,		"dbg_draw_ph_intersected_tries",&ph_dbg_draw_mask,	phDBgDrawIntersectedTries);
-	CMD3(CCC_Mask,		"dbg_draw_ph_saved_tries",		&ph_dbg_draw_mask,	phDbgDrawSavedTries);
-	CMD3(CCC_Mask,		"dbg_draw_ph_tri_trace",		&ph_dbg_draw_mask,	phDbgDrawTriTrace);
-	CMD3(CCC_Mask,		"dbg_draw_ph_positive_tries",	&ph_dbg_draw_mask,	phDBgDrawPositiveTries);
-	CMD3(CCC_Mask,		"dbg_draw_ph_negative_tries",	&ph_dbg_draw_mask,	phDBgDrawNegativeTries);
-	CMD3(CCC_Mask,		"dbg_draw_ph_tri_test_aabb",	&ph_dbg_draw_mask,	phDbgDrawTriTestAABB);
-	CMD3(CCC_Mask,		"dbg_draw_ph_tries_changes_sign",&ph_dbg_draw_mask,	phDBgDrawTriesChangesSign);
-	CMD3(CCC_Mask,		"dbg_draw_ph_tri_point"			,&ph_dbg_draw_mask,	phDbgDrawTriPoint);
-	CMD3(CCC_Mask,		"dbg_draw_ph_explosion_position",&ph_dbg_draw_mask,	phDbgDrawExplosionPos);
-	CMD3(CCC_Mask,		"dbg_draw_ph_statistics"		,&ph_dbg_draw_mask,	phDbgDrawObjectStatistics);
-	CMD3(CCC_Mask,		"dbg_draw_ph_mass_centres"		,&ph_dbg_draw_mask,	phDbgDrawMassCenters);
-	CMD3(CCC_Mask,		"dbg_draw_ph_death_boxes"		,&ph_dbg_draw_mask,	phDbgDrawDeathActivationBox);
-	CMD3(CCC_Mask,		"dbg_draw_ph_hit_app_pos"		,&ph_dbg_draw_mask,	phHitApplicationPoints);
-	CMD3(CCC_Mask,		"dbg_draw_ph_cashed_tries_stats",&ph_dbg_draw_mask,	phDbgDrawCashedTriesStat);
-	CMD3(CCC_Mask,		"dbg_draw_ph_car_dynamics"		,&ph_dbg_draw_mask,	phDbgDrawCarDynamics);
-	CMD3(CCC_Mask,		"dbg_draw_ph_car_plots"			,&ph_dbg_draw_mask,	phDbgDrawCarPlots);
-	CMD3(CCC_Mask,		"dbg_ph_ladder"					,&ph_dbg_draw_mask,	phDbgLadder);
-	CMD3(CCC_Mask,		"dbg_draw_ph_explosions"		,&ph_dbg_draw_mask,	phDbgDrawExplosions);
-	CMD3(CCC_Mask,		"dbg_draw_car_plots_all_trans"	,&ph_dbg_draw_mask,	phDbgDrawCarAllTrnsm);
-	CMD3(CCC_Mask,		"dbg_draw_ph_zbuffer_disable"	,&ph_dbg_draw_mask,	phDbgDrawZDisable);
-	CMD3(CCC_Mask,		"dbg_ph_obj_collision_damage"	,&ph_dbg_draw_mask,	phDbgDispObjCollisionDammage);
-	CMD_RADIOGROUPMASK2("dbg_ph_ai_always_phmove",&ph_dbg_draw_mask,phDbgAlwaysUseAiPhMove,"dbg_ph_ai_never_phmove",&ph_dbg_draw_mask,phDbgNeverUseAiPhMove);
-	CMD3(CCC_Mask,		"dbg_ph_ik"						,&ph_dbg_draw_mask,	phDbgIK);
-	CMD3(CCC_Mask,		"dbg_ph_ik_off"					,&ph_dbg_draw_mask1,phDbgIKOff);
-	CMD3(CCC_Mask,		"dbg_draw_ph_ik_goal"			,&ph_dbg_draw_mask,	phDbgDrawIKGoal);
-	CMD3(CCC_Mask,		"dbg_ph_ik_limits"				,&ph_dbg_draw_mask,	phDbgIKLimits);
-	CMD3(CCC_Mask,		"dbg_ph_character_control"		,&ph_dbg_draw_mask,	phDbgCharacterControl);
-	CMD3(CCC_Mask,		"dbg_draw_ph_ray_motions"		,&ph_dbg_draw_mask,	phDbgDrawRayMotions);
-	CMD4(CCC_Float,		"dbg_ph_vel_collid_damage_to_display",&dbg_vel_collid_damage_to_display,	0.f, 1000.f);
-	CMD4(CCC_DbgBullets,"dbg_draw_bullet_hit",			&g_bDrawBulletHit,	0, 1)	;
-	CMD1(CCC_DbgPhTrackObj,"dbg_track_obj");
-	CMD3(CCC_Mask,		"dbg_ph_actor_restriction"		,&ph_dbg_draw_mask1,ph_m1_DbgActorRestriction);
-	CMD3(CCC_Mask,		"dbg_draw_ph_hit_anims"			,&ph_dbg_draw_mask1,phDbgHitAnims);
-	CMD3(CCC_Mask,		"dbg_draw_ph_ik_limits"			,&ph_dbg_draw_mask1,phDbgDrawIKLimits);
-#endif
-
-
-
-#ifdef DEBUG
-	CMD4(CCC_Integer,	"string_table_error_msg",	&CStringTable::m_bWriteErrorsToLog,	0,	1);
-
-	CMD1(CCC_DumpInfos,				"dump_infos");
-	CMD1(CCC_DumpMap,				"dump_map");
-	CMD1(CCC_DumpCreatures,			"dump_creatures");
-
-#endif
 
 	CMD3(CCC_Mask,			"cl_dynamiccrosshair",	&psHUD_Flags,	HUD_CROSSHAIR_DYNAMIC);
 	CMD1(CCC_MainMenu,		"main_menu"				);
@@ -1602,21 +1661,8 @@ void CCC_RegisterCommands()
 	CMD3(CCC_Mask,		"ai_use_torch_dynamic_lights",	&g_uCommonFlags, flAiUseTorchDynamicLights);
 
 
-#ifndef MASTER_GOLD
-	CMD4(CCC_Vector3,		"psp_cam_offset",				&CCameraLook2::m_cam_offset, Fvector().set(-1000,-1000,-1000),Fvector().set(1000,1000,1000));
-#endif // MASTER_GOLD
-
 	CMD1(CCC_GSCheckForUpdates, "check_for_updates");
-#ifdef DEBUG
-	CMD1(CCC_DumpObjects,							"dump_all_objects");
-	CMD3(CCC_String, "stalker_death_anim", dbg_stalker_death_anim, 32);
-	CMD4(CCC_Integer, "death_anim_velocity", &b_death_anim_velocity, FALSE,	TRUE );
-	CMD4(CCC_Integer,	"show_wnd_rect",				&g_show_wnd_rect, 0, 1);
-	CMD4(CCC_Integer,	"show_wnd_rect_all",			&g_show_wnd_rect2, 0, 1);
-	CMD1(CCC_Crash,		"crash"						);
-	CMD4(CCC_Integer,		"dbg_show_ani_info",	&g_ShowAnimationInfo,	0, 1)	;
-	CMD4(CCC_Integer,		"dbg_dump_physics_step", &g_bDebugDumpPhysicsStep, 0, 1);
-#endif
+
 	*g_last_saved_game	= 0;
 
 	register_mp_console_commands					();

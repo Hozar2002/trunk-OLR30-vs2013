@@ -2,6 +2,8 @@
 #include "inventory_item.h"
 #include "../../build_config_defines.h"
 
+//#undef INV_NO_ACTIVATE_APPARATUS_SLOT
+
 class CInventory;
 class CInventoryItem;
 class CHudItem;

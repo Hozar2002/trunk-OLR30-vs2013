@@ -1,4 +1,4 @@
-// Weapon.cpp: implementation of the CWeapon class.
+п»ї// Weapon.cpp: implementation of the CWeapon class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -33,8 +33,10 @@
 #include "script_game_object.h"
 #include "game_object_space.h"
 
-#include "../../build_config_defines.h"
+#include "ui\UIInventoryWnd.h"
+#include "UIGameSp.h"
 
+#include "../../build_config_defines.h"
 #define WEAPON_REMOVE_TIME		60000
 #define ROTATION_TIME			0.25f
 
@@ -42,7 +44,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CWeapon::CWeapon(LPCSTR name)
+CWeapon::CWeapon(LPCSTR name) : m_bHideCrosshairInZoom{}, m_bInventoryDraw3D{}
 {
 	SetState(eHidden);
 	SetNextState(eHidden);
@@ -134,7 +136,7 @@ void CWeapon::UpdateXForm()
 		// Get matrices
 		int				boneL, boneR, boneR2;
 		E->g_WeaponBones(boneL, boneR, boneR2);
-		if ((HandDependence() == hd1Hand) || (GetState() == eReload) || (!E->g_Alive()))
+		if ((HandDependence() == hd1Hand) || (GetState() == eReload || GetState() == eJammed) || (!E->g_Alive()))
 			boneL = boneR2;
 #pragma todo("TO ALL: serious performance problem")
 		V->CalculateBones();
@@ -303,11 +305,20 @@ void CWeapon::Load(LPCSTR section)
 
 	iAmmoElapsed = pSettings->r_s32(section, "ammo_elapsed");
 	iMagazineSize = pSettings->r_s32(section, "ammo_mag_size");
+	if (pSettings->line_exist(section, "min_ammo_try_jammed"))
+		iMinAmmoTryJammed = pSettings->r_u32(section, "min_ammo_try_jammed");
+	else
+		iMinAmmoTryJammed = pSettings->r_s32(section, "ammo_mag_size");;
+
+	if (pSettings->line_exist(section, "un_jammed_on_show"))
+		iUnJammedOnShow = pSettings->r_bool(section, "un_jammed_on_show");
+	else
+		iUnJammedOnShow = false;
 
 	////////////////////////////////////////////////////
-	// дисперсия стрельбы
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-	//подбрасывание камеры во время отдачи
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	camMaxAngle = pSettings->r_float(section, "cam_max_angle");
 	camMaxAngle = deg2rad(camMaxAngle);
 	camRelaxSpeed = pSettings->r_float(section, "cam_relax_speed");
@@ -360,7 +371,7 @@ void CWeapon::Load(LPCSTR section)
 	m_fMinRadius = pSettings->r_float(section, "min_radius");
 	m_fMaxRadius = pSettings->r_float(section, "max_radius");
 
-	// информация о возможных апгрейдах и их визуализации в инвентаре
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	m_eScopeStatus = (ALife::EWeaponAddonStatus)pSettings->r_s32(section, "scope_status");
 	m_eSilencerStatus = (ALife::EWeaponAddonStatus)pSettings->r_s32(section, "silencer_status");
 	m_eGrenadeLauncherStatus = (ALife::EWeaponAddonStatus)pSettings->r_s32(section, "grenade_launcher_status");
@@ -394,7 +405,7 @@ void CWeapon::Load(LPCSTR section)
 	InitAddons();
 
 	//////////////////////////////////////
-	//время убирания оружия с уровня
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if (pSettings->line_exist(section, "weapon_remove_time"))
 		m_dwWeaponRemoveTime = pSettings->r_u32(section, "weapon_remove_time");
 	else
@@ -406,9 +417,9 @@ void CWeapon::Load(LPCSTR section)
 		m_bAutoSpawnAmmo = TRUE;
 	//////////////////////////////////////
 
-	m_bHideCrosshairInZoom = true;
-	if (pSettings->line_exist(hud_sect, "zoom_hide_crosshair"))
-		m_bHideCrosshairInZoom = !!pSettings->r_bool(hud_sect, "zoom_hide_crosshair");
+	m_bHideCrosshairInZoom = READ_IF_EXISTS(pSettings, r_bool, section, "zoom_hide_crosshair", true);
+
+	m_bInventoryDraw3D = READ_IF_EXISTS(pSettings, r_bool, section, "inventory_draw", true);
 
 	//////////////////////////////////////////////////////////
 
@@ -466,9 +477,11 @@ R_ASSERT2			(!lst.empty(),prefix);
 
 BOOL CWeapon::net_Spawn(CSE_Abstract* DC)
 {
+	R_ASSERT(DC);
 	BOOL bResult = inherited::net_Spawn(DC);
 	CSE_Abstract					*e = (CSE_Abstract*)(DC);
 	CSE_ALifeItemWeapon			    *E = smart_cast<CSE_ALifeItemWeapon*>(e);
+	R_ASSERT(E);
 
 	//iAmmoCurrent					= E->a_current;
 	iAmmoElapsed = E->a_elapsed;
@@ -500,7 +513,7 @@ void CWeapon::net_Destroy()
 {
 	inherited::net_Destroy();
 
-	//удалить объекты партиклов
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	StopFlameParticles();
 	StopFlameParticles2();
 	StopLight();
@@ -565,18 +578,19 @@ void CWeapon::net_Import(NET_Packet& P)
 	case eFire:
 	case eFire2:
 	case eSwitch:
+	case eJammed:
 	case eReload:
 	{
 	}break;
 	default:
 	{
-		if (ammoType >= m_ammoTypes.size())
-			Msg("!! Weapon [%d], State - [%d]", ID(), wstate);
-		else
-		{
-			m_ammoType = ammoType;
-			SetAmmoElapsed((ammo_elapsed));
-		}
+			   if (ammoType >= m_ammoTypes.size())
+				   Msg("!! Weapon [%d], State - [%d]", ID(), wstate);
+			   else
+			   {
+				   m_ammoType = ammoType;
+				   SetAmmoElapsed((ammo_elapsed));
+			   }
 	}break;
 	}
 
@@ -611,32 +625,32 @@ void CWeapon::OnEvent(NET_Packet& P, u16 type)
 	{
 	case GE_ADDON_CHANGE:
 	{
-		P.r_u8(m_flagsAddOnState);
-		InitAddons();
-		UpdateAddonsVisibility();
+							P.r_u8(m_flagsAddOnState);
+							InitAddons();
+							UpdateAddonsVisibility();
 	}break;
 
 	case GE_WPN_STATE_CHANGE:
 	{
-		u8				state;
-		P.r_u8(state);
-		P.r_u8(m_sub_state);
-		//			u8 NewAmmoType =
-		P.r_u8();
-		u8 AmmoElapsed = P.r_u8();
-		u8 NextAmmo = P.r_u8();
-		if (NextAmmo == u8(-1))
-			m_set_next_ammoType_on_reload = u32(-1);
-		else
-			m_set_next_ammoType_on_reload = u8(NextAmmo);
+								u8				state;
+								P.r_u8(state);
+								P.r_u8(m_sub_state);
+								//			u8 NewAmmoType =
+								P.r_u8();
+								u8 AmmoElapsed = P.r_u8();
+								u8 NextAmmo = P.r_u8();
+								if (NextAmmo == u8(-1))
+									m_set_next_ammoType_on_reload = u32(-1);
+								else
+									m_set_next_ammoType_on_reload = u8(NextAmmo);
 
-		if (OnClient()) SetAmmoElapsed(int(AmmoElapsed));
-		OnStateSwitch(u32(state));
+								if (OnClient()) SetAmmoElapsed(int(AmmoElapsed));
+								OnStateSwitch(u32(state));
 	}
 		break;
 	default:
 	{
-		inherited::OnEvent(P, type);
+			   inherited::OnEvent(P, type);
 	}break;
 	}
 };
@@ -660,7 +674,7 @@ void CWeapon::OnH_B_Independent(bool just_before_destroy)
 	if (m_pHUD)
 		m_pHUD->Hide();
 
-	//завершить принудительно все процессы что шли
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ
 	FireEnd();
 	m_bPending = false;
 	SwitchState(eIdle);
@@ -688,7 +702,7 @@ void CWeapon::OnH_A_Chield()
 void CWeapon::OnActiveItem()
 {
 	inherited::OnActiveItem();
-	//если мы занружаемся и оружие было в руках
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
 	SetState(eIdle);
 	SetNextState(eIdle);
 	if (m_pHUD) m_pHUD->Show();
@@ -716,10 +730,10 @@ void CWeapon::UpdateCL()
 {
 	inherited::UpdateCL();
 	UpdateHUDAddonsVisibility();
-	//подсветка от выстрела
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	UpdateLight();
 
-	//нарисовать партиклы
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	UpdateFlameParticles();
 	UpdateFlameParticles2();
 
@@ -733,11 +747,11 @@ void CWeapon::renderable_Render()
 {
 	UpdateXForm();
 
-	//нарисовать подсветку
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 	RenderLight();
 
-	//если мы в режиме снайперки, то сам HUD рисовать не надо
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅ HUD пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 	if (IsZoomed() && !IsRotatingToZoom() && ZoomTexture())
 		m_bRenderHud = false;
 	else
@@ -780,50 +794,53 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 	switch (cmd)
 	{
 	case kWPN_FIRE:
-	{
-		//если оружие чем-то занято, то ничего не делать
+
+		if (GetCondition() < 0.05f) return false; /// hi_flyer
+
 		{
-			if (flags&CMD_START)
+			//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 			{
-				if (IsPending())		return false;
-				FireStart();
-			}
-			else
-				FireEnd();
-		};
-	}
+				if (flags&CMD_START)
+				{
+					if (IsPending())		return false;
+					FireStart();
+				}
+				else
+					FireEnd();
+			};
+		}
 		return true;
 	case kWPN_NEXT:
 	{
-		if (IsPending() || OnClient())
-		{
-			return false;
-		}
+					  if (IsPending() || OnClient())
+					  {
+						  return false;
+					  }
 
-		if (flags&CMD_START)
-		{
-			u32 l_newType = m_ammoType;
-			bool b1, b2;
-			do
-			{
-				l_newType = (l_newType + 1) % m_ammoTypes.size();
-				b1 = l_newType != m_ammoType;
-				b2 = unlimited_ammo() ? false : (!m_pCurrentInventory->GetAny(*m_ammoTypes[l_newType]));
-			} while (b1 && b2);
+					  if (flags&CMD_START)
+					  {
+						  u32 l_newType = m_ammoType;
+						  bool b1, b2;
+						  do
+						  {
+							  l_newType = (l_newType + 1) % m_ammoTypes.size();
+							  b1 = l_newType != m_ammoType;
+							  b2 = unlimited_ammo() ? false : (!m_pCurrentInventory->GetAny(*m_ammoTypes[l_newType]));
+						  } while (b1 && b2);
 
-			if (l_newType != m_ammoType)
-			{
-				m_set_next_ammoType_on_reload = l_newType;
-				/*						m_ammoType = l_newType;
-										m_pAmmo = NULL;
-										if (unlimited_ammo())
-										{
-										m_DefaultCartridge.Load(*m_ammoTypes[m_ammoType], u8(m_ammoType));
-										};
-										*/
-				if (OnServer()) Reload();
-			}
-		}
+						  if (l_newType != m_ammoType)
+						  {
+							  m_set_next_ammoType_on_reload = l_newType;
+							  /*						m_ammoType = l_newType;
+							  m_pAmmo = NULL;
+							  if (unlimited_ammo())
+							  {
+							  m_DefaultCartridge.Load(*m_ammoTypes[m_ammoType], u8(m_ammoType));
+							  };
+							  */
+							  if (OnServer()) Reload();
+						  }
+					  }
 	}
 		return true;
 
@@ -945,7 +962,7 @@ int CWeapon::GetAmmoCurrent(bool use_item_to_spawn) const
 	int l_count = iAmmoElapsed;
 	if (!m_pCurrentInventory) return l_count;
 
-	//чтоб не делать лишних пересчетов
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (m_pCurrentInventory->ModifyFrame() <= m_dwAmmoCurrentCalcFrame)
 		return l_count + iAmmoCurrent;
 
@@ -967,8 +984,8 @@ int CWeapon::GetAmmoCurrent(bool use_item_to_spawn) const
 		}
 
 #if defined(AMMO_FROM_BELT)
-		auto parent			= const_cast<CObject*>(H_Parent());
-		auto entity_alive	= smart_cast<CEntityAlive*>(parent);
+		auto parent = const_cast<CObject*>(H_Parent());
+		auto entity_alive = smart_cast<CEntityAlive*>(parent);
 
 		if (entity_alive == NULL || !entity_alive->cast_actor())
 #endif
@@ -996,7 +1013,7 @@ int CWeapon::GetAmmoCurrent(bool use_item_to_spawn) const
 
 float CWeapon::GetConditionMisfireProbability() const
 {
-	if (GetCondition() > 0.95f) return 0.0f;
+	if (GetCondition() > 0.55f) return 0.0f;	//95
 
 	float mis = misfireProbability + powf(1.f - GetCondition(), 3.f)*misfireConditionK;
 	clamp(mis, 0.0f, 0.99f);
@@ -1103,9 +1120,9 @@ void CWeapon::UpdateHUDAddonsVisibility()
 		pHudVisual->LL_GetBoneVisible(bone_id))
 		pHudVisual->LL_SetBoneVisible(bone_id, FALSE, TRUE);
 	else
-		if (m_eScopeStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
-			!pHudVisual->LL_GetBoneVisible(bone_id))
-			pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
+	if (m_eScopeStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
+		!pHudVisual->LL_GetBoneVisible(bone_id))
+		pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
 
 	bone_id = pHudVisual->LL_BoneID(wpn_silencer);
 	if (SilencerAttachable())
@@ -1125,9 +1142,9 @@ void CWeapon::UpdateHUDAddonsVisibility()
 		pHudVisual->LL_GetBoneVisible(bone_id))
 		pHudVisual->LL_SetBoneVisible(bone_id, FALSE, TRUE);
 	else
-		if (m_eSilencerStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
-			!pHudVisual->LL_GetBoneVisible(bone_id))
-			pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
+	if (m_eSilencerStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
+		!pHudVisual->LL_GetBoneVisible(bone_id))
+		pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
 
 	bone_id = pHudVisual->LL_BoneID(wpn_grenade_launcher);
 	if (GrenadeLauncherAttachable())
@@ -1150,9 +1167,9 @@ void CWeapon::UpdateHUDAddonsVisibility()
 		pHudVisual->LL_GetBoneVisible(bone_id))
 		pHudVisual->LL_SetBoneVisible(bone_id, FALSE, TRUE);
 	else
-		if (m_eGrenadeLauncherStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
-			!pHudVisual->LL_GetBoneVisible(bone_id))
-			pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
+	if (m_eGrenadeLauncherStatus == CSE_ALifeItemWeapon::eAddonPermanent && bone_id != BI_NONE &&
+		!pHudVisual->LL_GetBoneVisible(bone_id))
+		pHudVisual->LL_SetBoneVisible(bone_id, TRUE, TRUE);
 }
 
 void CWeapon::UpdateAddonsVisibility()
@@ -1221,6 +1238,15 @@ void CWeapon::UpdateAddonsVisibility()
 
 bool CWeapon::Activate()
 {
+	if (CActor* pActor = smart_cast<CActor*>(H_Parent()))
+	{
+		CUIGameSP* gameUI = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+		if (gameUI && gameUI->InventoryMenu)
+		{
+			gameUI->InventoryMenu->OutfitStaticSelectWeapon(this);
+		}
+	}
+
 	UpdateAddonsVisibility();
 	return inherited::Activate();
 }
@@ -1598,7 +1624,7 @@ void CWeapon::Show()
 
 bool CWeapon::show_crosshair()
 {
-	return !IsZoomed();
+	return !m_bHideCrosshairInZoom || !IsZoomed();
 }
 
 bool CWeapon::show_indicators()

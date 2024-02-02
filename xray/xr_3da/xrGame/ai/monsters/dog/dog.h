@@ -20,7 +20,10 @@ public:
 	virtual void	CheckSpecParams		(u32 spec_params);
 
 	virtual bool	ability_can_drag		() {return true;}
+
+	virtual void	reload				(LPCSTR section);
 	
+	virtual void	HitEntityInJump		(const CEntity *pEntity);
 
 private:
 #ifdef _DEBUG	

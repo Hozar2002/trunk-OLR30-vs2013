@@ -54,8 +54,14 @@ void CAI_Flesh::Load(LPCSTR section)
 	anim().AddAnim(eAnimStandTurnLeft,	"stand_turn_ls_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimStandTurnRight,	"stand_turn_rs_",		-1, &velocity_turn,		PS_STAND);
 
-	anim().AddAnim(eAnimLieIdle,			"lie_idle_",			-1, &velocity_none,		PS_LIE);
-	anim().AddAnim(eAnimSleep,			"lie_idle_",			-1, &velocity_none,		PS_LIE);
+	//anim().AddAnim(eAnimLieIdle,			"lie_idle_",			-1, &velocity_none,		PS_LIE);
+	//anim().AddAnim(eAnimSleep,			"lie_idle_",			-1, &velocity_none,		PS_LIE);
+
+	anim().AddAnim(eAnimLieIdle,		"lie_idle_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimSleep,			"lie_idle_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieStandUp,		"stand_threaten_",		-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieToSleep,		"stand_lie_down_",		-1, &velocity_none,		PS_LIE	);
+
 
 	anim().AddAnim(eAnimWalkFwd,			"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND);
 	anim().AddAnim(eAnimWalkDamaged,		"stand_walk_fwd_dmg_",	-1, &velocity_walk_dmg,	PS_STAND);
@@ -80,12 +86,15 @@ void CAI_Flesh::Load(LPCSTR section)
 	anim().AddAnim(eAnimThreaten,		"stand_threaten_",		-1,	&velocity_none,		PS_STAND);
 
 	// define transitions
-	anim().AddTransition(PS_STAND,	PS_LIE,		eAnimStandLieDown,		false);
-	anim().AddTransition(PS_LIE,		PS_STAND,	eAnimLieStandUp,		false, SKIP_IF_AGGRESSIVE);
+	anim().AddTransition(eAnimStandLieDown,	eAnimSleep,		eAnimLieToSleep,		false);										
+	anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandLieDown,		true);
+	anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandLieDown,		false);
+	anim().AddTransition(PS_LIE,				PS_STAND,		eAnimLieStandUp,		false, SKIP_IF_AGGRESSIVE);
+
 
 	// define links from Action to animations
 	anim().LinkAction(ACT_STAND_IDLE,	eAnimStandIdle);
-	anim().LinkAction(ACT_SIT_IDLE,		eAnimLieIdle);
+	anim().LinkAction(ACT_SIT_IDLE,		eAnimLieToSleep);
 	anim().LinkAction(ACT_LIE_IDLE,		eAnimLieIdle);
 	anim().LinkAction(ACT_WALK_FWD,		eAnimWalkFwd);
 	anim().LinkAction(ACT_WALK_BKWD,		eAnimWalkBkwd);

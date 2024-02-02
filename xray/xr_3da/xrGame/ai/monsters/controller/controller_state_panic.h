@@ -1,5 +1,6 @@
 #pragma once
 #include "../state.h"
+#include "../../../controller_state_panic_inline.h"
 
 template<typename _Object>
 class	CStateControllerPanic : public CState<_Object> {
@@ -20,4 +21,3 @@ public:
 	virtual void		reselect_state			();
 };
 
-#include "controller_state_panic_inline.h"

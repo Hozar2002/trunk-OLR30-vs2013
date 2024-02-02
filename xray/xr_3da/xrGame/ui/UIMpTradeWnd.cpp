@@ -10,6 +10,10 @@
 #include "../UIDialogHolder.h"
 #include "../game_cl_deathmatch.h"
 
+void CUIMpTradeWnd::Draw3DStatic() 
+{
+	if (m_item_info) m_item_info->Draw3DStatic();
+}
 
 void CUIMpTradeWnd::OnBtnOkClicked(CUIWindow* w, void* d)
 {
@@ -234,6 +238,8 @@ void CUIMpTradeWnd::Hide()
 		pActor->SetWeaponHideState(INV_STATE_BUY_MENU, false);
 
 	CleanUserItems			();
+	
+	m_item_info->SetItemImageDefaultValues();
 }
 
 bool	CUIMpTradeWnd::IsIgnoreMoneyAndRank			()

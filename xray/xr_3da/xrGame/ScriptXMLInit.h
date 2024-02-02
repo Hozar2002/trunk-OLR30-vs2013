@@ -22,7 +22,7 @@ class CUIEditBox;
 class CUITextBanner;
 class CUIMultiTextStatic;
 class CUIAnimatedStatic;
-class CUIArtefactPanel;
+//class CUIArtefactPanel;
 class CServerList;
 class CUIMapList;
 class CUITrackBar;

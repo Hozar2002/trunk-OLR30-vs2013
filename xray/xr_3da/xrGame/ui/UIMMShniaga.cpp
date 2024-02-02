@@ -157,8 +157,8 @@ void CUIMMShniaga::CreateList(xr_vector<CUIStatic*>& lst, CUIXml& xml_doc, LPCST
 		if (pF)
 			st->SetFont(pF);
 		st->SetTextColor(color);
-		st->SetTextAlignment(CGameFont::alCenter);
-//		st->SetTextAlignment(CGameFont::alLeft);
+//		st->SetTextAlignment(CGameFont::alCenter);
+		st->SetTextAlignment(CGameFont::alLeft);
 		st->SetVTextAlignment(valCenter);
 		st->SetWindowName(xml_doc.ReadAttrib("btn", i, "name"));
 		st->SetMessageTarget(this);
@@ -381,9 +381,9 @@ void CUIMMShniaga::ProcessEvent(EVENT ev){
 //				m_destination = (y < border) ? y : border;
 				m_destination = m_selected->GetWndPos().y - m_magnifier->GetWndPos().y;
 				m_destination += m_offset;
-				m_run_time = u32((log(1 + abs(m_origin - m_destination))/log(GetHeight()))*1000);
-				if (m_run_time < 100)
-					m_run_time = 100;
+				m_run_time = u32((log(1 + abs(m_origin - m_destination))/log(GetHeight())));
+				//if (m_run_time < 100)
+				//	m_run_time = 100;
 
                 // reset flags
 				m_flags.set(fl_SoundFinalized,	FALSE);

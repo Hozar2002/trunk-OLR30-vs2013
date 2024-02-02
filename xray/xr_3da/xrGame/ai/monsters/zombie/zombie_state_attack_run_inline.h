@@ -98,7 +98,7 @@ TEMPLATE_SPECIALIZATION
 void CStateZombieAttackRunAbstract::choose_action()
 {
 	// for test
-	action = object->HitMemory.is_hit() ?  ACT_RUN : ACT_WALK_FWD;
+	action = object->HitMemory.is_hit() ?  ACT_WALK_FWD : ACT_RUN;
 
 	//// check if its a strong monster
 	//if (object->Rank() > 50) {

@@ -86,10 +86,11 @@ void CLevel::remove_objects	()
 	}
 
 	g_pGamePersistent->destroy_particles		(false);
+	::Sound->stop_emitters();
 
 //.	xr_delete									(m_seniority_hierarchy_holder);
 //.	m_seniority_hierarchy_holder				= xr_new<CSeniorityHierarchyHolder>();
-	if (!IsGameTypeSingle()) Msg("CLevel::remove_objects - End");
+
 }
 
 #ifdef DEBUG
@@ -124,7 +125,7 @@ void CLevel::net_Stop		()
 
 void CLevel::ClientSend()
 {
-	if (GameID() == GAME_SINGLE || OnClient())
+	if (GameID() != GAME_SINGLE && OnClient()) // fix clients objects
 	{
 		if ( !net_HasBandwidth() ) return;
 	};

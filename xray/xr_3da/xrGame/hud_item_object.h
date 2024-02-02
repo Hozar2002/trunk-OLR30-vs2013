@@ -40,6 +40,9 @@ public:
 	virtual bool		Activate			();
 	virtual void		Deactivate			();
 	virtual void		UpdateCL			();
+	virtual void		UpdateHudPosition();
+	virtual void		UpdateHudInertion(Fmatrix& hud_trans);
+	virtual void		UpdateHudAdditonal(Fmatrix&);
 	virtual void		renderable_Render	();
 	virtual void		on_renderable_Render();
 

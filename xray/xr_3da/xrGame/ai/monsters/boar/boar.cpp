@@ -15,6 +15,7 @@ CAI_Boar::CAI_Boar()
 	CControlled::init_external(this);
 	com_man().add_ability(ControlCom::eControlRotationJump);
 	com_man().add_ability(ControlCom::eControlRunAttack);
+	com_man().add_ability(ControlCom::eControlThreaten);
 }
 
 CAI_Boar::~CAI_Boar()
@@ -72,7 +73,8 @@ void CAI_Boar::Load(LPCSTR section)
 	anim().AddAnim(eAnimDie,				"stand_idle_",			-1, &velocity_none,		PS_STAND);
 	anim().AddAnim(eAnimJumpLeft,		"stand_jump_left_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimJumpRight,		"stand_jump_right_",	-1, &velocity_turn,		PS_STAND);
-//	anim().AddAnim(eAnimAttackRun,		"stand_run_attack_",	-1, &velocity_run,		PS_STAND);
+	anim().AddAnim(eAnimThreaten,		"stand_threaten_",		-1, &velocity_none,		PS_STAND);
+	anim().AddAnim(eAnimAttackRun,		"stand_attack_run_",	-1, &velocity_run,		PS_STAND);        //-- uncoment
 
 	anim().AddAnim(eAnimRunTurnLeft,	"stand_run_look_left_",	 -1, &velocity_run,	PS_STAND);
 	anim().AddAnim(eAnimRunTurnRight,	"stand_run_look_right_", -1, &velocity_run,	PS_STAND);
@@ -111,8 +113,26 @@ void CAI_Boar::reinit()
 	inherited::reinit();
 	if(CCustomMonster::use_simplified_visual())	return;
 	com_man().add_rotation_jump_data("stand_jump_left_0",0,"stand_jump_right_0",0, PI - PI_DIV_6, SControlRotationJumpData::eStopAtOnce | SControlRotationJumpData::eRotateOnce);
+
+	start_threaten = false;
+	com_man().set_threaten_data	("stand_threaten_0", 0.63f);
 }
 
+bool CAI_Boar::check_start_conditions(ControlCom::EControlType type)
+{
+	if (!inherited::check_start_conditions(type))	return false;
+
+	if (type == ControlCom::eControlThreaten) {
+		if (!start_threaten) return false;
+		
+		start_threaten = false;
+
+		if (Random.randI(100) < 50) return false;
+			
+	}
+	
+	return true;
+}
 
 void  CAI_Boar::BoneCallback(CBoneInstance *B)
 {

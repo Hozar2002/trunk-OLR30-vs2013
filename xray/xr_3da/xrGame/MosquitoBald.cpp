@@ -4,6 +4,13 @@
 #include "ParticlesObject.h"
 #include "level.h"
 #include "physicsshellholder.h"
+
+#include "CharacterPhysicsSupport.h"
+#include "phmovementcontrol.h"
+#include "actor.h"
+
+#include "Car.h"
+
 CMosquitoBald::CMosquitoBald(void) 
 {
 	m_dwDeltaTime			= 0;
@@ -19,6 +26,7 @@ CMosquitoBald::~CMosquitoBald(void)
 void CMosquitoBald::Load(LPCSTR section) 
 {
 	inherited::Load(section);
+	m_fThrowImpulse = READ_IF_EXISTS(pSettings, r_float, section, "throw_impulse", 10.f);
 }
 
 
@@ -50,6 +58,8 @@ void CMosquitoBald::Affect(SZoneObjectInfo* O)
 
 	if(O->zone_ignore) return;
 
+	if(smart_cast<CCar*>(pGameObject)) return;
+
 	Fvector P; 
 	XFORM().transform_tiny(P,CFORM()->getSphere().P);
 
@@ -60,9 +70,9 @@ void CMosquitoBald::Affect(SZoneObjectInfo* O)
 #endif
 
 	Fvector hit_dir; 
-	hit_dir.set(::Random.randF(-.5f,.5f), 
+	hit_dir.set(::Random.randF(-.2f,.2f), 
 		::Random.randF(.0f,1.f), 
-		::Random.randF(-.5f,.5f)); 
+		::Random.randF(-.2f,.2f)); 
 	hit_dir.normalize();
 
 
@@ -84,6 +94,14 @@ void CMosquitoBald::Affect(SZoneObjectInfo* O)
 		position_in_bone_space.set(0.f,0.f,0.f);
 
 		CreateHit(pGameObject->ID(),ID(),hit_dir,power,0,position_in_bone_space,impulse,m_eHitTypeBlowout);
+
+		Fvector hit_dir_actor;
+		hit_dir_actor.set(hit_dir);
+
+		if(smart_cast<CActor*>(pGameObject))
+		{
+			Actor()->character_physics_support()->movement()->ApplyImpulse(hit_dir_actor,Actor()->GetMass() * m_fThrowImpulse);
+		}
 
 		PlayHitParticles(pGameObject);
 	}

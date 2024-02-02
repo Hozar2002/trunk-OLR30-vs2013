@@ -6,6 +6,11 @@
 class CWeaponShotgun :	public CWeaponCustomPistol
 {
 	typedef CWeaponCustomPistol inherited;
+
+private:
+	// �������������� ����� �������� (������� ��������)
+	bool m_bFireSecondEnabled;
+
 public:
 	CWeaponShotgun(void);
 	virtual ~CWeaponShotgun(void);

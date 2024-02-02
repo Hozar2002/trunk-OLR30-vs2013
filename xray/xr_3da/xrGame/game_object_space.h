@@ -49,7 +49,8 @@ namespace GameObject {
 		eTraderSoundEnd,
 
 		eInvBoxItemTake,
-		/************************************************** added by Ray Twitty (aka Shadows) START **************************************************/
+
+		//************************************************** added by Ray Twitty (aka Shadows) START **************************************************/
 		// клавиатура/мышь
 		eOnKeyPress,
 		eOnKeyRelease,
@@ -62,7 +63,9 @@ namespace GameObject {
 		eOnItemRuck,
 		// фонарь
 		eSwitchTorch,
-		/*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
+
+		eOnLooking,
+		//*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
 
 		// Added by Cribbledirge Start.
 		/* Added in some mouse press detection for the player character. */
@@ -88,6 +91,9 @@ namespace GameObject {
 
 		eCellItemFocus,
 		eCellItemFocusLost,
+		
+		ePdaContactItemClick, // Клик по контакту в ПДА
+		eOnItemSelect, // Выделение предмета в рюкзаке
 
 		eAttachVehicle,
 		eDetachVehicle,
@@ -99,12 +105,14 @@ namespace GameObject {
 		eOnInvBoxOpen,
 		eUIMapClick,
 		eUIMapSpotClick,
-		eUIPickUpItemShowing,
+		//eUIPickUpItemShowing,
 		eUIGroupItems,
 		eOnCellItemMouse,
-		eOnActorStartShoot,
-		eOnWpnShellDrop,
-		eOnThrowGrenade,
+		eOnEatHudItem,
+		//eOnCarEngineStart,
+		eTradeBtnClick,
+		eActorLanded,
+		//eGrenadeContact,
 
 		// Cribbledirge End
 		eDummy = u32(-1),

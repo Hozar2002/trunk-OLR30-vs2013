@@ -20,6 +20,8 @@ public:
 
 	virtual void	UpdateCL			();
 
+	virtual bool	check_start_conditions	(ControlCom::EControlType type);
+
 	virtual bool	CanExecRotationJump	() {return true;}
 	virtual void	CheckSpecParams		(u32 spec_params);
 
@@ -31,6 +33,10 @@ public:
 			bool	look_at_enemy;
 	
 	virtual bool	ability_can_drag	() {return true;}
+
+	public:
+
+		bool	start_threaten;
 	
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 

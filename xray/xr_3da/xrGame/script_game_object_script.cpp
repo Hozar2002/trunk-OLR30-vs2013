@@ -79,6 +79,7 @@ void CScriptGameObject::script_register(lua_State *L)
 					value("inventory_info", int(GameObject::eInventoryInfo)),
 					value("article_info", int(GameObject::eArticleInfo)),
 					value("use_object", int(GameObject::eUseObject)),
+					//value("on_car_engine_start", int(GameObject::eOnCarEngineStart)),
 					value("hit", int(GameObject::eHit)),
 					value("sound", int(GameObject::eSound)),
 					value("action_movement", int(GameObject::eActionTypeMovement)),
@@ -96,6 +97,15 @@ void CScriptGameObject::script_register(lua_State *L)
 					value("task_state", int(GameObject::eTaskStateChange)),
 					value("take_item_from_box", int(GameObject::eInvBoxItemTake)),
 					value("map_location_added", int(GameObject::eMapLocationAdded)),
+
+					// hi_flyer callbacks
+					value("on_obj_look", int(GameObject::eOnLooking)),
+					value("on_eat_hud_object", int(GameObject::eOnEatHudItem)),
+					value("on_actor_landed", int(GameObject::eActorLanded)),
+					value("on_trade_btn_click", int(GameObject::eTradeBtnClick)),
+					//value("on_grenade_contact", int(GameObject::eGrenadeContact)),
+					// hi_flyer callbacks
+
 					/************************************************** added by Ray Twitty (aka Shadows) START **************************************************/
 					// клавиатура/мышь
 					value("on_key_press", int(GameObject::eOnKeyPress)),
@@ -128,6 +138,10 @@ void CScriptGameObject::script_register(lua_State *L)
 					value("on_npc_weapon_empty", int(GameObject::eOnNPCWeaponEmpty)),
 					// Cribbledirge End
 
+					// Клик по контакту в ПДА
+					value("on_pda_contact_item_click", int(GameObject::ePdaContactItemClick)),
+					value("on_inv_item_select", int(GameObject::eOnItemSelect)),
+
 					value("on_cell_item_focus", int(GameObject::eCellItemFocus)),
 					value("on_cell_item_focus_lost", int(GameObject::eCellItemFocusLost)),
 					value("on_attach_vehicle", int(GameObject::eAttachVehicle)),
@@ -140,11 +154,10 @@ void CScriptGameObject::script_register(lua_State *L)
 					value("on_inv_box_open", int(GameObject::eOnInvBoxOpen) ),
 					value("on_level_map_click", int(GameObject::eUIMapClick) ),
 					value("on_map_spot_click", int(GameObject::eUIMapSpotClick) ),
-					value("on_pickup_item_showing", int(GameObject::eUIPickUpItemShowing) ),
+					//value("on_pickup_item_showing", int(GameObject::eUIPickUpItemShowing) ),
 					value("on_group_items", int(GameObject::eUIGroupItems) ),
-					value("on_cell_item_mouse", int(GameObject::eOnCellItemMouse) ),
-					value("on_weapon_shell_drop", int(GameObject::eOnWpnShellDrop) ),
-					value("on_throw_grenade", int(GameObject::eOnThrowGrenade) )
+					//value("on_car_engine_start", int(GameObject::eOnCarEngineStart) ),
+					value("on_cell_item_mouse", int(GameObject::eOnCellItemMouse) )
 				],
 
 				def("buy_condition", (void(*)(CScriptIniFile*, LPCSTR))(&::buy_condition)),

@@ -91,8 +91,12 @@ public:
 
 	//игровое имя 
 	virtual LPCSTR	Name        () const;
+	LPCSTR			Icon        () const;
+	LPCSTR			Bio	        () const;
+	const DIALOG_ID_VECTOR& ActorDialogs() const;
 	u32					get_money		() const				{return m_money;}
 	void				set_money		(u32 amount, bool bSendEvent);
+	void				SetName(LPCSTR name) { m_game_name = name; };
 protected:
 	u32					m_money;
 	// торговля
@@ -117,9 +121,9 @@ public:
 	virtual bool				HasInfo		(shared_str info_id) const;
 	virtual bool				GetInfo		(shared_str info_id, INFO_DATA&) const;
 
-	#ifdef DEBUG
+	//#ifdef DEBUG
 	void CInventoryOwner::DumpInfo() const;
-	#endif
+	//#endif
 
 	CInfoPortionWrapper			*m_known_info_registry;
 

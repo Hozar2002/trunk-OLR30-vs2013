@@ -74,8 +74,8 @@ void CBastArtefact::BastCollision(CEntityAlive* pEntityAlive)
 		m_bStrike = true;
 		Fvector vel;
 		vel.set(0,0,0);
-	//	this->m_pPhysicsShell->set_LinearVel(vel);
-	//	this->m_pPhysicsShell->set_AngularVel(vel);
+		this->m_pPhysicsShell->set_LinearVel(vel);  // -- было flyer
+		this->m_pPhysicsShell->set_AngularVel(vel); // -- было flyer
 
 	}
 }
@@ -171,7 +171,7 @@ void CBastArtefact::UpdateCLChild()
 				dir.y += ::Random.randF(-0.05f, 0.5f);
 		
 				m_pPhysicsShell->applyImpulse(dir, 
-								  m_fStrikeImpulse * Device.fTimeDelta *
+								  m_fStrikeImpulse * Device.fTimeDelta / 10 *
 								  m_pPhysicsShell->getMass());
 			}
 			else
@@ -190,8 +190,8 @@ void CBastArtefact::UpdateCLChild()
 			Fmatrix pos; 
 			pos.set(XFORM()); 
 			Fvector vel; 
-			//vel.sub(Position(),ps_Element(0).vPosition); 
-			//vel.div((Level().timeServer()-ps_Element(0).dwTime)/1000.f);
+			vel.sub(Position(),ps_Element(0).vPosition);                   //-- было flyer
+			vel.div((Level().timeServer()-ps_Element(0).dwTime)/1000.f);   //-- было flyer
 			vel.set(0,0,0);
 			pStaticPG->UpdateParent(pos, vel); 
 			pStaticPG->Play();

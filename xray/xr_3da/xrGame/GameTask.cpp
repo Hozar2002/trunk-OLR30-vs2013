@@ -66,6 +66,7 @@ CGameTask::CGameTask(const TASK_ID& id)
 	m_ReceiveTime	= 0;
 	m_FinishTime	= 0;
 	m_Title			= NULL;
+	m_textDesc = NULL;
 	m_priority		= u32(-1);
 	Load			(id);
 }
@@ -75,6 +76,7 @@ CGameTask::CGameTask()
 	m_ReceiveTime	= 0;
 	m_FinishTime	= 0;
 	m_Title			= NULL;
+	m_textDesc = NULL;
 	m_ID			= NULL;
 }
 
@@ -91,6 +93,7 @@ void CGameTask::Load(const TASK_ID& id)
 	THROW3							(task_node, "game task id=", *id);
 	g_gameTaskXml->SetLocalRoot		(task_node);
 	m_Title							= g_gameTaskXml->Read(g_gameTaskXml->GetLocalRoot(), "title", 0, NULL);
+	m_textDesc							= g_gameTaskXml->Read(g_gameTaskXml->GetLocalRoot(), "text_desc", 0, NULL);
 	m_priority						= g_gameTaskXml->ReadAttribInt(g_gameTaskXml->GetLocalRoot(), "prio", -1);
 #ifdef DEBUG
 	if(m_priority == u32(-1))
@@ -575,6 +578,7 @@ void SGameTaskKey::save(IWriter &stream)
 	save_data(game_task->m_FinishTime,		stream);
 	save_data(game_task->m_TimeToComplete,	stream);
 	save_data(game_task->m_Title,			stream);
+	save_data(game_task->m_textDesc, stream);
 
 	u32 cnt	= game_task->m_Objectives.size();
 	save_data(cnt, stream);
@@ -595,6 +599,7 @@ void SGameTaskKey::load(IReader &stream)
 	load_data(game_task->m_TimeToComplete,	stream);
 
 	load_data(game_task->m_Title,			stream);
+	load_data(game_task->m_textDesc, stream);
 
 	u32 cnt;
 	load_data(cnt, stream);

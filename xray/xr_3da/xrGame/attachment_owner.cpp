@@ -99,6 +99,7 @@ void CAttachmentOwner::attach(CInventoryItem *inventory_item)
 
 		inventory_item->object().setVisible	(true);
 		attachable_item->afterAttach		();
+		//Msg("CAttachmentOwner - attached");
 	}
 }
 
@@ -135,6 +136,7 @@ bool  CAttachmentOwner::attached			(shared_str sect_name) const
 
 bool CAttachmentOwner::can_attach			(const CInventoryItem *inventory_item) const
 {
+	//Msg("CAttachmentOwner try attach"); // FOR NPC ONLY
 	const CAttachableItem	*item = smart_cast<const CAttachableItem*>(inventory_item);
 	if (!item || !item->enabled() || !item->can_be_attached())
 		return			(false);
@@ -146,7 +148,7 @@ bool CAttachmentOwner::can_attach			(const CInventoryItem *inventory_item) const
 	//если уже есть присоединненый объет такого типа 
 	if(attached(inventory_item->object().cNameSect()))
 		return false;
-
+	//Msg("CAttachmentOwner try attach - TRUE"); // FOR NPC ONLY
 	return true;
 }
 

@@ -251,6 +251,33 @@ bool CScriptGameObject::CheckObjectVisibility(const CScriptGameObject *tpLuaGame
 	return				(script_entity->CheckObjectVisibility(&tpLuaGameObject->object()));
 }
 
+
+bool CScriptGameObject::CheckObjectVisibilityNow(const CScriptGameObject *tpLuaGameObject)
+{
+	if (!tpLuaGameObject) {
+		Log("!!CScriptGameObject : cannot check visibility null object!");
+		return false;
+	}
+
+	CEntityAlive		*entity_alive = smart_cast<CEntityAlive*>(&object());
+	if (entity_alive && !entity_alive->g_Alive()) {
+		ai().script_engine().script_log	(ScriptStorage::eLuaMessageTypeError,"CScriptGameObject : cannot check visibility of dead object!");
+		return			(false);
+	}
+
+	CScriptEntity		*script_entity = smart_cast<CScriptEntity*>(&object());
+	if (!script_entity) {
+		CActor			*actor = smart_cast<CActor*>(&object());
+		if (!actor) {
+			ai().script_engine().script_log	(ScriptStorage::eLuaMessageTypeError,"CScriptGameObject : cannot access class member CheckObjectVisibility!");
+			return		(false);
+		}
+		return			(actor->memory().visual().visible_right_now(&tpLuaGameObject->object()));
+	}
+
+	return				(script_entity->CheckObjectVisibilityNow(&tpLuaGameObject->object()));
+}
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -543,6 +570,53 @@ void CScriptGameObject::invulnerable		(bool invulnerable)
 	monster->invulnerable	(invulnerable);
 }
 
+
+void CScriptGameObject::SetActorWater(float water)
+{
+	CActor* m_pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
+	if(!m_pActor) {
+		Msg("set actor water fail");
+		return;
+	}
+	m_pActor->conditions().ChangeWater(water);
+}
+
+
+void CScriptGameObject::SetActorSleep(float sleep)
+{
+	CActor* m_pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
+	if(!m_pActor) {
+		Msg("set actor sleep fail");
+		return;
+	}
+	m_pActor->conditions().ChangeSleep(sleep);
+}
+
+
+float CScriptGameObject::ReturnActorWater() const
+{
+	CActor* m_pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
+	float actorwater = m_pActor->conditions().GetWater();
+	if (!actorwater) {
+		//Msg("no actor water");
+		return		FALSE;
+	}
+		return (m_pActor->conditions().GetWater());
+}
+
+
+float CScriptGameObject::ReturnActorSleep() const
+{
+	CActor* m_pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
+	float actorwater = m_pActor->conditions().GetSleep();
+	if (!actorwater) {
+		//Msg("no actor water");
+		return		FALSE;
+	}
+		return (m_pActor->conditions().GetSleep());
+}
+
+
 bool CScriptGameObject::IsActorOutdoors() const
 {
 	// Check to make sure all the params are available (we're in game and such).
@@ -561,6 +635,24 @@ bool CScriptGameObject::IsActorOutdoors() const
 	// I don't know what the proper limit for this is supposed to be, but this seems good enough.
 	return e->renderable_ROS()->get_luminocity_hemi() > 0.05f;
 }
+
+
+bool CScriptGameObject::IsObjectOutdoors() const
+{
+	// Check to make sure all the params are available (we're in game and such).
+	if (!g_pGameLevel) 
+	{
+		Msg("CScriptGameObject::IsObjectOutdoors : Game Level Doesn't Exist.");
+		return FALSE;
+	}
+	CObject *e = smart_cast<CObject*>(&object());
+	if (!e || !e->renderable_ROS())
+	{
+		return FALSE;
+	}
+	return e->renderable_ROS()->get_luminocity_hemi() > 0.05f;
+}
+
 
 // Real Wolf 07.07.2014
 
@@ -735,7 +827,10 @@ void CScriptGameObject::SetVisualName(LPCSTR str)
 	}
 }
 
+#include "actor.h"
 #include "Car.h"
+#include "../CameraBase.h"
+#include "ActorEffector.h"
 void CScriptGameObject::AttachVehicle(CScriptGameObject *obj)
 {
 	if (!g_pGameLevel)
@@ -758,6 +853,10 @@ void CScriptGameObject::AttachVehicle(CScriptGameObject *obj)
 		return;
 	}
 
+	//if (pCamBobbing){
+		//Actor()->Cameras().RemoveCamEffector(eCEBobbing);
+		//pCamBobbing = NULL;
+	//}
 	actor->attach_Vehicle(car);
 }
 
@@ -809,41 +908,44 @@ void CScriptGameObject::SetDirection (const Fvector &dir, float bank)
 	}
 	
 	// alpet: сохранение направления в серверный экземпляр
-	CSE_ALifeDynamicObject* se_obj = object().alife_object();
+	CSE_ALifeDynamicObject* se_obj = alife_object();
 	if (se_obj)
 		se_obj->angle() = dir;	
 }
 
-void CScriptGameObject::SetPosition(const Fvector &pos)
-{
-	if (!g_pGameLevel)
-	{
+void CScriptGameObject::SetPosition(const Fvector &pos) {
+	if (!g_pGameLevel) {
 		Msg("Error! CScriptGameObject::SetPosition : game level doesn't exist.");
 		return;
 	}
 
-	if (IsActor() )
-		SetActorPosition(pos);
-	else
-	{
+	if (this->IsActor() ) {
+		this->SetActorPosition(pos);
+	}
+	else {
 		NET_Packet						PP;
 		CGameObject::u_EventGen			(PP, GE_CHANGE_POS, object().ID() );
 		PP.w_vec3						(pos);
 		CGameObject::u_EventSend		(PP);
-		
-		// Real Wolf: Для инвентарных объектов из-за этого позиция не меняется.
-		if (smart_cast<CInventoryItem*>(&object()) == NULL)
-		{
-			// alpet: явное перемещение визуалов объектов
+		// alpet: явное перемещение визуалов объектов
+		if (smart_cast<CInventoryItem*>(&object()) == NULL) {
 			Fmatrix m = object().XFORM();
 			m.translate_over(pos);
-			object().UpdateXFORM(m);
+			if (smart_cast<CInventoryBox*>(&object() ) == NULL) {
+				object().UpdateXFORM(m);
+			}
+			else {
+				object().XFORM().set(m);
+			}
 		}
 
 		// alpet: сохранение позиции в серверный экземпляр
-		CSE_ALifeDynamicObject* se_obj = object().alife_object();
-		if (se_obj)
+		CSE_ALifeDynamicObject* se_obj = alife_object();
+		if (se_obj) {
 			se_obj->position() = pos;
+		}
+		
+
 	}
 }
 

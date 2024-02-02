@@ -30,6 +30,9 @@
 #include "GameTask.h"
 #include "car.h"
 
+#include "PhraseDialog.h"
+
+
 using namespace luabind;
 
 class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject> &instance)
@@ -88,6 +91,7 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 
 		.def("is_body_turning",				&CScriptGameObject::is_body_turning)
 
+
 		//////////////////////////////////////////////////////////////////////////
 		// Space restrictions
 		//////////////////////////////////////////////////////////////////////////
@@ -112,6 +116,9 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 		//inventory owner
 		//////////////////////////////////////////////////////////////////////////
 
+		.def("inv_box_count", &CScriptGameObject::InvBoxCount)
+		.def("object_from_inv_box", &CScriptGameObject::ObjectFromInvBox)
+
 		.enum_("EPdaMsg")
 		[
 			value("dialog_pda_msg",			int(ePdaMsgDialog)),
@@ -124,11 +131,12 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 		.def("give_game_news",				(bool (CScriptGameObject::*)(LPCSTR,LPCSTR,Frect,int,int))(&CScriptGameObject::GiveGameNews))
 
 		.def("give_talk_message",			(void (CScriptGameObject::*)(LPCSTR,LPCSTR,Frect,LPCSTR))(&CScriptGameObject::AddIconedTalkMessage))
-		
 
 		.def("has_info",					&CScriptGameObject::HasInfo)
 		.def("dont_has_info",				&CScriptGameObject::DontHasInfo)
 		.def("get_info_time",				&CScriptGameObject::GetInfoTime)
+		
+		.def("add_answer_news",				&CScriptGameObject::AddAnswerNews)
 
 		.def("get_task_state",				&CScriptGameObject::GetGameTaskState)
 		.def("set_task_state",				&CScriptGameObject::SetGameTaskState)
@@ -179,7 +187,10 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 		//////////////////////////////////////////////////////////////////////////
 		.def("profile_name",				&CScriptGameObject::ProfileName)
 		.def("character_name",				&CScriptGameObject::CharacterName)
+		.def("character_icon",				&CScriptGameObject::CharacterIcon)
+		.def("character_bio",				&CScriptGameObject::CharacterBio)
 		.def("character_rank",				&CScriptGameObject::CharacterRank)
+		.def("iterate_actor_dialogs",		&CScriptGameObject::IterateActorDialogs)
 		.def("set_character_rank",			&CScriptGameObject::SetCharacterRank)
 		.def("character_reputation",		&CScriptGameObject::CharacterReputation)
 		.def("change_character_reputation",	&CScriptGameObject::ChangeCharacterReputation)
@@ -188,7 +199,16 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 
 		.def("get_actor_relation_flags",	&CScriptGameObject::get_actor_relation_flags)
 		.def("set_actor_relation_flags",	&CScriptGameObject::set_actor_relation_flags)
-		.def("sound_voice_prefix",	&CScriptGameObject::sound_voice_prefix)
+		.def("sound_voice_prefix",			&CScriptGameObject::sound_voice_prefix)
+		
+		.def("update_available_dialogs",	&CScriptGameObject::UpdateAvailableDialogs)
+		.def("available_dialogs_foreach",	&CScriptGameObject::AvailableDialogsForeach)
+		.def("say_phrase", 					&CScriptGameObject::SayPhrase)
+		.def("get_available_dialogs_size", 	&CScriptGameObject::GetAvailableDialogsSize)
+		.def("get_available_dialogs_front", &CScriptGameObject::GetAvailableDialogsFront)
+		.def("get_dialog_by_id", 			&CScriptGameObject::GetDialogByID)
+		.def("init_dialog", 				&CScriptGameObject::InitDialog)
+		.def("have_available_dialog",		&CScriptGameObject::HaveAvailableDialog)
 
 		.enum_("ACTOR_RELATIONS")
 		[
@@ -289,6 +309,7 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 		/*************************************************** added by Cribbledirge START ***************************************************/
 
 		.def("is_actor_outdoors",			&CScriptGameObject::IsActorOutdoors)
+		.def("is_obj_outdoors",				&CScriptGameObject::IsObjectOutdoors)
 
 		/**************************************************** added by Cribbledirge END ****************************************************/
 
@@ -351,6 +372,12 @@ class_<CScriptGameObject> &script_register_game_object2(class_<CScriptGameObject
 		.def("is_inventory_box",			&CScriptGameObject::IsInventoryBox)
 
 		// KD
+
+
+		.def("get_actor_thirst",			&CScriptGameObject::ReturnActorWater)
+		.def("set_actor_thirst",			&CScriptGameObject::SetActorWater)
+		.def("get_actor_sleep",				&CScriptGameObject::ReturnActorSleep)
+		.def("set_actor_sleep",				&CScriptGameObject::SetActorSleep)
 
 		// by Real Wolf 07.07.2014
 		.def("switch_projector",			&CScriptGameObject::SwitchProjector)

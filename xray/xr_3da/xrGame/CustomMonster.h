@@ -11,7 +11,7 @@
 #include "../feel_touch.h"
 #include "../skeletonanimated.h"
 #include "associative_vector.h"
-
+#include "ai\monsters\anomaly_detector.h"
 
 namespace MonsterSpace {
 	struct SBoneRotation;
@@ -27,7 +27,6 @@ class CMovementManager;
 class CSoundPlayer;
 class CAI_Stalker;
 class CDangerObject;
-class CCustomMonsterScript;
 
 class CCustomMonster : 
 	public CEntityAlive, 
@@ -38,7 +37,6 @@ class CCustomMonster :
 {
 private:
 	typedef	CEntityAlive	inherited;
-	friend	class CCustomMonsterScript;
 
 private:
 	CMemoryManager		*m_memory_manager;
@@ -320,6 +318,16 @@ private:
 public:
 	virtual	void					create_anim_mov_ctrl						(CBlend *b);
 	virtual	void					destroy_anim_mov_ctrl						();
+
+	// -----------------------------------------------------------------------------
+	// Anomaly Detector
+private:
+	CAnomalyDetector		*m_anomaly_detector;
+
+public:
+	CAnomalyDetector		&anomaly_detector	() {return (*m_anomaly_detector);}
+	// -----------------------------------------------------------------------------
+
 };
 
 #include "custommonster_inline.h"

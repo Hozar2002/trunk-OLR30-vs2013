@@ -5,13 +5,10 @@
 
 #include "level.h"
 #include "ui\UIFrameWindow.h"
-#include "WeaponBinocularsVision.h"
 #include "object_broker.h"
 #include "hudmanager.h"
 CWeaponBinoculars::CWeaponBinoculars() : CWeaponCustomPistol("BINOCULARS")
 {
-	m_binoc_vision	= NULL;
-	m_bVision		= false;
 	SetSlot (APPARATUS_SLOT);
 }
 
@@ -19,7 +16,7 @@ CWeaponBinoculars::~CWeaponBinoculars()
 {
 	HUD_SOUND::DestroySound	(sndZoomIn);
 	HUD_SOUND::DestroySound	(sndZoomOut);
-	xr_delete				(m_binoc_vision);
+	HUD_SOUND::DestroySound	(sndIdle);
 }
 
 void CWeaponBinoculars::Load	(LPCSTR section)
@@ -29,7 +26,7 @@ void CWeaponBinoculars::Load	(LPCSTR section)
 	// Sounds
 	HUD_SOUND::LoadSound(section, "snd_zoomin",  sndZoomIn,		SOUND_TYPE_ITEM_USING);
 	HUD_SOUND::LoadSound(section, "snd_zoomout", sndZoomOut,	SOUND_TYPE_ITEM_USING);
-	m_bVision = !!pSettings->r_bool(section,"vision_present");
+	HUD_SOUND::LoadSound(section, "snd_idle_binocle", sndIdle,	SOUND_TYPE_ITEM_USING);
 }
 
 
@@ -51,11 +48,7 @@ void CWeaponBinoculars::OnZoomIn		()
 		HUD_SOUND::StopSound(sndZoomOut);
 		bool b_hud_mode = (Level().CurrentEntity() == H_Parent());
 		HUD_SOUND::PlaySound(sndZoomIn, H_Parent()->Position(), H_Parent(), b_hud_mode);
-		if(m_bVision && !m_binoc_vision) 
-		{
-			//.VERIFY			(!m_binoc_vision);
-			m_binoc_vision	= xr_new<CBinocularsVision>(this);
-		}
+		HUD_SOUND::PlaySound(sndIdle, H_Parent()->Position(), H_Parent(), b_hud_mode);
 	}
 
 	inherited::OnZoomIn();
@@ -68,10 +61,9 @@ void CWeaponBinoculars::OnZoomOut		()
 	if(H_Parent() && IsZoomed() && !IsRotatingToZoom())
 	{
 		HUD_SOUND::StopSound(sndZoomIn);
+		HUD_SOUND::StopSound(sndIdle);
 		bool b_hud_mode = (Level().CurrentEntity() == H_Parent());	
 		HUD_SOUND::PlaySound(sndZoomOut, H_Parent()->Position(), H_Parent(), b_hud_mode);
-		VERIFY			(m_binoc_vision);
-		xr_delete		(m_binoc_vision);
 	
 		m_fRTZoomFactor = m_fZoomFactor;//store current
 	}
@@ -90,21 +82,35 @@ BOOL	CWeaponBinoculars::net_Spawn			(CSE_Abstract* DC)
 void	CWeaponBinoculars::net_Destroy()
 {
 	inherited::net_Destroy();
-	xr_delete(m_binoc_vision);
 }
 
 void	CWeaponBinoculars::UpdateCL()
 {
 	inherited::UpdateCL();
-	//manage visible entities here...
-	if(H_Parent() && IsZoomed() && !IsRotatingToZoom() && m_binoc_vision)
-		m_binoc_vision->Update();
+	UpdateIdleSnd			(Device.dwTimeDelta);
+}
+
+#define SND_UPDATE_TIME 2800u
+void CWeaponBinoculars::UpdateIdleSnd		(u32 dt) 
+{
+	static u32 snd_update_time = 0;
+	if ( snd_update_time > SND_UPDATE_TIME ) 
+	{
+	snd_update_time = 0;
+	bool b_hud_mode = (Level().CurrentEntity() == H_Parent());
+	if(H_Parent() && IsZoomed() && b_hud_mode)
+	{
+		HUD_SOUND::PlaySound	(sndIdle, H_Parent()->Position(), this, true, true);
+	};
+	}
+	else
+	{
+		snd_update_time +=dt;
+	};
 }
 
 void CWeaponBinoculars::OnDrawUI()
 {
-	if(H_Parent() && IsZoomed() && !IsRotatingToZoom() && m_binoc_vision)
-		m_binoc_vision->Draw();
 	inherited::OnDrawUI	();
 }
 
@@ -120,17 +126,15 @@ void CWeaponBinoculars::load(IReader &input_packet)
 	load_data		(m_fRTZoomFactor,input_packet);
 }
 
-void CWeaponBinoculars::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count)
+void CWeaponBinoculars::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name)
 {
 	str_name		= NameShort();
 	str_count		= "";
 	icon_sect_name	= *cNameSect();
+	ammo_sect_name = "";
 }
 
 void CWeaponBinoculars::net_Relcase	(CObject *object)
 {
-	if (!m_binoc_vision)
-		return;
 
-	m_binoc_vision->remove_links	(object);
 }

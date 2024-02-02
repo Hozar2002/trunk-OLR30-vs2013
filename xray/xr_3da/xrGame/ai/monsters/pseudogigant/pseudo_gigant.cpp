@@ -25,7 +25,7 @@ CPseudoGigant::CPseudoGigant()
 	
 	com_man().add_ability(ControlCom::eControlRunAttack);
 	com_man().add_ability(ControlCom::eControlThreaten);
-	//com_man().add_ability(ControlCom::eControlJump);
+	com_man().add_ability(ControlCom::eControlJump);
 	com_man().add_ability(ControlCom::eControlRotationJump);
 }
 
@@ -41,14 +41,14 @@ void CPseudoGigant::Load(LPCSTR section)
 
 	anim().AddReplacedAnim(&m_bDamaged,			eAnimRun,		eAnimRunDamaged);
 	anim().AddReplacedAnim(&m_bDamaged,			eAnimWalkFwd,	eAnimWalkDamaged);
-	//anim().AddReplacedAnim(&m_bRunTurnLeft,		eAnimRun,		eAnimRunTurnLeft);
-	//anim().AddReplacedAnim(&m_bRunTurnRight,	eAnimRun,		eAnimRunTurnRight);
+	anim().AddReplacedAnim(&m_bRunTurnLeft,		eAnimRun,		eAnimRunTurnLeft);
+	anim().AddReplacedAnim(&m_bRunTurnRight,	eAnimRun,		eAnimRunTurnRight);
 
 	anim().accel_load			(section);
-	//anim().accel_chain_add		(eAnimWalkFwd,		eAnimRun);
-	//anim().accel_chain_add		(eAnimWalkFwd,		eAnimRunTurnLeft);
-	//anim().accel_chain_add		(eAnimWalkFwd,		eAnimRunTurnRight);
-	//anim().accel_chain_add		(eAnimWalkDamaged,	eAnimRunDamaged);
+	anim().accel_chain_add		(eAnimWalkFwd,		eAnimRun);
+	anim().accel_chain_add		(eAnimWalkFwd,		eAnimRunTurnLeft);
+	anim().accel_chain_add		(eAnimWalkFwd,		eAnimRunTurnRight);
+	anim().accel_chain_add		(eAnimWalkDamaged,	eAnimRunDamaged);
 
 	step_effector.time			= pSettings->r_float(section,	"step_effector_time");
 	step_effector.amplitude		= pSettings->r_float(section,	"step_effector_amplitude");
@@ -59,7 +59,7 @@ void CPseudoGigant::Load(LPCSTR section)
 	SVelocityParam &velocity_walk		= move().get_velocity(MonsterMovement::eVelocityParameterWalkNormal);
 	SVelocityParam &velocity_run		= move().get_velocity(MonsterMovement::eVelocityParameterRunNormal);
 	SVelocityParam &velocity_walk_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterWalkDamaged);
-//	SVelocityParam &velocity_run_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterRunDamaged);
+	SVelocityParam &velocity_run_dmg	= move().get_velocity(MonsterMovement::eVelocityParameterRunDamaged);
 	SVelocityParam &velocity_steal		= move().get_velocity(MonsterMovement::eVelocityParameterSteal);
 
 
@@ -67,12 +67,14 @@ void CPseudoGigant::Load(LPCSTR section)
 	anim().AddAnim(eAnimStandTurnLeft,	"stand_turn_ls_",		-1, &velocity_turn,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimStandTurnRight,	"stand_turn_rs_",		-1, &velocity_turn,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimLieIdle,		"stand_sleep_",			-1, &velocity_none,		PS_LIE,		"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+	
 	anim().AddAnim(eAnimSitIdle,		"sit_idle_",			-1, &velocity_none,		PS_SIT,		"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimSleep,			"stand_sleep_",			-1, &velocity_none,		PS_LIE,		"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+
 	anim().AddAnim(eAnimWalkFwd,		"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimWalkDamaged,	"stand_walk_fwd_dmg_",	-1, &velocity_walk_dmg,	PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
-	anim().AddAnim(eAnimRun,			"stand_walk_fwd_",		-1,	&velocity_walk,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
-	anim().AddAnim(eAnimRunDamaged,		"stand_walk_fwd_dmg_",	-1,	&velocity_walk_dmg,	PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+	anim().AddAnim(eAnimRun,			"stand_run_fwd_",		-1,	&velocity_run,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
+	anim().AddAnim(eAnimRunDamaged,		"stand_run_dmg_",	    -1,	&velocity_walk_dmg,	PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimEat,			"stand_eat_",			-1, &velocity_none,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimAttack,			"stand_attack_",		-1, &velocity_none,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
 	anim().AddAnim(eAnimLookAround,		"stand_idle_",			-1, &velocity_none,		PS_STAND,	"fx_stand_f", "fx_stand_b", "fx_stand_l", "fx_stand_r");
@@ -122,6 +124,7 @@ void CPseudoGigant::Load(LPCSTR section)
 	anim().AddTransition(eAnimStandLieDown,	eAnimSleep,		eAnimLieToSleep,		false);										
 	anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandLieDown,		true);
 	anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandLieDown,		false);
+	anim().AddTransition(PS_LIE,			PS_STAND,		eAnimLieStandUp,		false, SKIP_IF_AGGRESSIVE);
 
 #ifdef DEBUG	
 	anim().accel_chain_test		();
@@ -177,7 +180,7 @@ void CPseudoGigant::reinit()
 	move().load_velocity(*cNameSect(), "Velocity_JumpPrepare",MonsterMovement::eGiantVelocityParameterJumpPrepare);
 	move().load_velocity(*cNameSect(), "Velocity_JumpGround",MonsterMovement::eGiantVelocityParameterJumpGround);
 	
-	//com_man().load_jump_data(0,"jump_attack_0", "jump_attack_1", "jump_attack_2", MonsterMovement::eGiantVelocityParameterJumpPrepare, MonsterMovement::eGiantVelocityParameterJumpGround,0);
+	com_man().load_jump_data(0,"jump_attack_0", "jump_attack_1", "jump_attack_2", MonsterMovement::eGiantVelocityParameterJumpPrepare, MonsterMovement::eGiantVelocityParameterJumpGround,0);
 	com_man().add_rotation_jump_data("1","2","3","4", PI_DIV_2);
 
 	com_man().set_threaten_data	("stand_kick_0", 0.43f);
@@ -194,6 +197,7 @@ void CPseudoGigant::event_on_step()
 	CActor* pActor =  smart_cast<CActor*>(Level().CurrentEntity());
 	if(pActor)
 	{
+		//Msg("gigant kick event_on_step");
 		float dist_to_actor = pActor->Position().distance_to(Position());
 		float max_dist		= MAX_STEP_RADIUS;
 		if (dist_to_actor < max_dist) 
@@ -201,7 +205,7 @@ void CPseudoGigant::event_on_step()
 				step_effector.time, 
 				step_effector.amplitude, 
 				step_effector.period_number, 
-				(max_dist - dist_to_actor) / (1.2f * max_dist))
+				(max_dist - dist_to_actor) / (1.2f * max_dist)) 
 			);
 	}
 	//////////////////////////////////
@@ -262,7 +266,7 @@ void CPseudoGigant::on_threaten_execute()
 	
 	CActor *pA = const_cast<CActor *>(smart_cast<const CActor *>(EnemyMan.get_enemy()));
 	if (!pA) return;
-	if (pA->is_jump()) return;
+	//if (pA->is_jump()) return; // kick if in jump
 
 	float dist_to_enemy = pA->Position().distance_to(Position());
 	float			hit_value;
@@ -275,11 +279,13 @@ void CPseudoGigant::on_threaten_execute()
 
 	// развернуть камеру
 	if (pA->cam_Active()) {
-		pA->cam_Active()->Move(Random.randI(2) ? kRIGHT : kLEFT, Random.randF(0.3f * hit_value)); 
-		pA->cam_Active()->Move(Random.randI(2) ? kUP	: kDOWN, Random.randF(0.3f * hit_value)); 
+		pA->cam_Active()->Move(Random.randI(2) ? kRIGHT : kLEFT, Random.randF(0.6f * hit_value)); // 0.3
+		pA->cam_Active()->Move(Random.randI(2) ? kUP	: kDOWN, Random.randF(0.6f * hit_value)); // 0.3
 	}
 
 	Actor()->lock_accel_for	(m_time_kick_actor_slow_down);
+
+	//Actor()->character_physics_support()->movement()->ApplyImpulse(Direction(),Actor()->GetMass() * 20.0f);
 	
 	// Нанести хит
 	NET_Packet	l_P;
@@ -306,18 +312,18 @@ void CPseudoGigant::HitEntityInJump		(const CEntity *pEntity)
 
 void CPseudoGigant::TranslateActionToPathParams()
 {
-	if ((anim().m_tAction != ACT_RUN) && (anim().m_tAction != ACT_WALK_FWD)) {
+	//if ((anim().m_tAction != ACT_RUN) && (anim().m_tAction != ACT_WALK_FWD)) {
 		inherited::TranslateActionToPathParams();
 		return;
-	}
+	//}
 
-	u32 vel_mask = (m_bDamaged ? MonsterMovement::eVelocityParamsWalkDamaged : MonsterMovement::eVelocityParamsWalk);
-	u32 des_mask = (m_bDamaged ? MonsterMovement::eVelocityParameterWalkDamaged : MonsterMovement::eVelocityParameterWalkNormal);
+	//u32 vel_mask = (m_bDamaged ? MonsterMovement::eVelocityParamsWalkDamaged : MonsterMovement::eVelocityParamsWalk);
+	//u32 des_mask = (m_bDamaged ? MonsterMovement::eVelocityParameterWalkDamaged : MonsterMovement::eVelocityParameterWalkNormal);
 
-	if (m_force_real_speed) vel_mask = des_mask;
+	//if (m_force_real_speed) vel_mask = des_mask;
 
-	path().set_velocity_mask	(vel_mask);
-	path().set_desirable_mask	(des_mask);
-	path().enable_path			();
+	//path().set_velocity_mask	(vel_mask);
+	//path().set_desirable_mask	(des_mask);
+	//path().enable_path			();
 }
 

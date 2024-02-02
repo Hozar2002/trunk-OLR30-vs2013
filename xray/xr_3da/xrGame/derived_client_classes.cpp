@@ -6,7 +6,6 @@
 //	Description : XRay derived client classes script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "StdAfx.h"
 #include "pch_script.h"
 #include "base_client_classes.h"
 #include "derived_client_classes.h"
@@ -24,6 +23,8 @@
 	    Это позволяет сохранить единый стиль программирования в скриптах и отделить новые методы от исконно движковых версии 1.0006.
    Alexander Petrov
 */
+
+//#undef INV_NEW_SLOTS_SYSTEM
 
 
 using namespace luabind;
@@ -96,7 +97,7 @@ void CEatableItemScript::script_register(lua_State *L)
 {
 	module(L)
 		[
-			class_<CEatableItem, CInventoryItem>("CEatableItem")
+			class_<CEatableItem>("CEatableItem")
 			.def_readwrite("eat_health"					,			&CEatableItem::m_fHealthInfluence)
 			.def_readwrite("eat_power"					,			&CEatableItem::m_fPowerInfluence)
 			.def_readwrite("eat_satiety"				,			&CEatableItem::m_fSatietyInfluence)
@@ -106,7 +107,7 @@ void CEatableItemScript::script_register(lua_State *L)
 			.def_readwrite("eat_portions_num"			,			&CEatableItem::m_iPortionsNum)
 			.def_readwrite("eat_max_power"				,			&CEatableItem::m_iStartPortionsNum)			
 			,
-			class_<CEatableItemObject, bases<CEatableItem, CGameObject>>("CEatableItemObject")
+			class_<CEatableItemObject, bases<CInventoryItemObject, CEatableItem>>("CEatableItemObject")
 		];
 }
 
@@ -256,6 +257,8 @@ void CInventoryScript::script_register(lua_State *L)
 			.def_readwrite("allow_talk"					,			&CInventoryOwner::m_bAllowTalk)
 			.def_readwrite("allow_trade"				,			&CInventoryOwner::m_bAllowTrade)
 			.def_readwrite("raw_money"					,			&CInventoryOwner::m_money)
+			.def("Name", &CInventoryOwner::Name)
+			.def("SetName", &CInventoryOwner::SetName)
 			.property	  ("money"						,			&CInventoryOwner::get_money,				&set_io_money)			
 			.property	  ("class_name"					,			&get_lua_class_name)			
 			
@@ -470,6 +473,8 @@ void CWeaponScript::script_register(lua_State *L)
 			.def_readwrite("cur_fire_mode"				,			&CWeaponMagazined::m_iCurFireMode)			
 			.property	  ("fire_mode"					,			&curr_fire_mode)
 			.property	  ("fire_modes"					,			&get_fire_modes, &set_fire_modes)
+			.def("attach_addon", &CWeaponMagazined::Attach)
+			.def("detach_addon", &CWeaponMagazined::Detach)
 			,
 			class_<CWeaponMagazinedWGrenade,			CWeaponMagazined>("CWeaponMagazinedWGrenade")
 			.def_readwrite("gren_mag_size"				,			&CWeaponMagazinedWGrenade::iMagazineSize2)			
@@ -478,15 +483,5 @@ void CWeaponScript::script_register(lua_State *L)
 			.def_readwrite("destroy_time"				,			&CMissile::m_dwDestroyTime)
 			.def_readwrite("destroy_time_max"			,			&CMissile::m_dwDestroyTimeMax)			
 			
-		];
-}
-
-
-void CCustomMonsterScript::script_register(lua_State *L)
-{
-	module(L)
-		[
-			class_<CCustomMonster, bases<CEntityAlive>>("CCustomMonster")
-			.def("get_dest_vertex_id", &CCustomMonsterScript::GetDestVertexId)
 		];
 }

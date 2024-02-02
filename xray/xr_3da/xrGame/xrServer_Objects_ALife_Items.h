@@ -92,7 +92,7 @@ SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemTorch,CSE_ALifeItem)
 //флаги
 	enum EStats{
 		eTorchActive				= (1<<0),
-		eNightVisionActive			= (1<<1),
+		//eNightVisionActive			= (1<<1),
 		eAttached					= (1<<2)
 	};
 	bool							m_active;
@@ -105,16 +105,6 @@ SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemTorch,CSE_ALifeItem)
 	SERVER_ENTITY_DECLARE_END
 		add_to_type_list(CSE_ALifeItemTorch)
 #define script_type_list save_type_list(CSE_ALifeItemTorch)
-
-		SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemEatable, CSE_ALifeItem)
-							CSE_ALifeItemEatable(LPCSTR);
-		virtual				~CSE_ALifeItemEatable();
-		virtual		BOOL	Net_Relevant();
-public:
-					s32		m_portions_num;
-SERVER_ENTITY_DECLARE_END
-add_to_type_list(CSE_ALifeItemEatable)
-#define script_type_list save_type_list(CSE_ALifeItemEatable)
 
 SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemAmmo,CSE_ALifeItem)
 	u16								a_elapsed;
@@ -182,6 +172,16 @@ SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemWeapon,CSE_ALifeItem)
 SERVER_ENTITY_DECLARE_END
 add_to_type_list(CSE_ALifeItemWeapon)
 #define script_type_list save_type_list(CSE_ALifeItemWeapon)
+
+SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemEatable, CSE_ALifeItem)
+s32		m_portions_num;
+CSE_ALifeItemEatable(LPCSTR);
+virtual				~CSE_ALifeItemEatable();
+
+// virtual CSE_ALifeItemWeapon		*cast_item_weapon	() {return this;}
+SERVER_ENTITY_DECLARE_END
+add_to_type_list(CSE_ALifeItemEatable)
+#define script_type_list save_type_list(CSE_ALifeItemEatable)
 
 SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemWeaponMagazined,CSE_ALifeItemWeapon)
 u8			m_u8CurFireMode;

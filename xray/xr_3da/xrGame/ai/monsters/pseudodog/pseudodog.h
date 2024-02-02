@@ -8,12 +8,18 @@ class CAI_PseudoDog : public CBaseMonster {
 
 public:
 
+	TTime				time_next_psi_attack;
+
 	float			m_anger_hunger_threshold;
 	float			m_anger_loud_threshold;
+		
+	SAttackEffector m_psi_effector;  // add
+	float			psy_effect_turn_angle; // add
 
 	TTime			m_time_became_angry;
 
 	TTime			time_growling;			// время нахождения в состоянии пугания
+	ref_sound		psy_effect_sound;		// звук, который играется в голове у актера
 
 	enum {
 		eAdditionalSounds		= MonsterSound::eMonsterSoundCustom,
@@ -30,11 +36,13 @@ public:
 	virtual void	reinit				();
 	virtual void	reload				(LPCSTR section);
 
+	virtual void	UpdateCL			();
+
 	virtual bool	ability_can_drag	() {return true;}
 	virtual bool	ability_psi_attack	() {return true;}
 
 	virtual void	CheckSpecParams		(u32 spec_params);
-	//virtual void	play_effect_sound	();
+	virtual void	play_effect_sound	();
 
 	virtual void	HitEntityInJump		(const CEntity *pEntity);
 

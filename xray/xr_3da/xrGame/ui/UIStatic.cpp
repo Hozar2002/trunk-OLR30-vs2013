@@ -133,16 +133,25 @@ void CUIStatic::InitTextureEx(LPCSTR tex_name, LPCSTR sh_name)
 	string_path buff;
 	u32		v_dev	= CAP_VERSION(HW.Caps.raster_major, HW.Caps.raster_minor);
 	u32		v_need	= CAP_VERSION(2,0);
-	if (/*strstr(Core.Params,"-ps_movie") &&*/ (v_dev >= v_need) && FS.exist(buff,"$game_textures$", tex_name, ".ogm") )
-		CUITextureMaster::InitTexture	(tex_name, "hud\\movie", &m_UIStaticItem);
-	else
-		CUITextureMaster::InitTexture	(tex_name, sh_name, &m_UIStaticItem);
 
-	CUIStaticItem(m_UIStaticItem);
+	try {
 
-	Fvector2 p						= GetWndPos();
-	m_UIStaticItem.SetPos			(p.x, p.y);
-	m_bAvailableTexture				= true;
+		if (/*strstr(Core.Params,"-ps_movie") &&*/ (v_dev >= v_need) && FS.exist(buff, "$game_textures$", tex_name, ".ogm"))
+			CUITextureMaster::InitTexture(tex_name, "hud\\movie", &m_UIStaticItem);
+		else
+			CUITextureMaster::InitTexture(tex_name, sh_name, &m_UIStaticItem);
+
+		CUIStaticItem(m_UIStaticItem);
+
+		Fvector2 p = GetWndPos();
+		m_UIStaticItem.SetPos(p.x, p.y);
+		m_bAvailableTexture = true;
+
+	}
+	catch (...) {
+		Msg("!!!Error in InitTexture");
+	}
+
 }
 
 void  CUIStatic::Draw()
@@ -514,10 +523,7 @@ void CUIStatic::SetMask(CUIFrameWindow *pMask)
 //}
 
 CGameFont::EAligment CUIStatic::GetTextAlignment(){
-	if (m_pLines != NULL)
-		return m_pLines->GetTextAlignment();
-
-	return CGameFont::EAligment::alLeft;
+	return m_pLines->GetTextAlignment();
 }
 
 //void CUIStatic::SetTextAlign(CGameFont::EAligment align){
@@ -647,18 +653,4 @@ void CUIStatic::DrawHighlightedText(){
 bool CUIStatic::IsHighlightText()
 {
 	return m_bCursorOverWindow;
-}
-
-// Real Wolf: установка цвета для статика и его детей.
-void CUIStatic::SetColorAll(u32 color)
-{
-	SetColor(color);
-
-	//for (auto it = m_ChildWndList.begin(); it != m_ChildWndList.end(); ++it)
-	//{
-	//	if (auto s = smart_cast<CUIStatic*>(*it))
-	//	{
-	//		s->SetColor(color);
-	//	}
-	//}
 }

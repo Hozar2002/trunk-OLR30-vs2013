@@ -15,8 +15,8 @@ const float TRACER_SIZE = 0.13f;
 //////////////////////////////////////////////////////////////////////
 #define TRACERS_COLOR_TABLE "tracers_color_table"
 CTracer::CTracer()
-{
-	sh_Tracer.create("effects\\bullet_tracer","fx\\fx_tracer");
+{																  // SOC				// BUILD
+	sh_Tracer.create("effects\\bullet_tracer","effects\\bullet_tracer");  // fx\\fx_tracer   // effects\\bullet_tracer
 	sh_Geom.create	(FVF::F_LIT, RCache.Vertex.Buffer(), RCache.QuadIB);
 	m_aColors.clear();
 	for (u8 i=0; i<255; i++)
@@ -89,5 +89,6 @@ void  CTracer::Render	(FVF::LIT*&verts, const Fvector& pos, const Fvector& cente
 		if (colorID >= m_aColors.size()) colorID = 0;
 		FillSprite_Circle	(verts,pos,width*.5f,width*.5f, m_aColors[colorID]);
 		FillSprite_Line	(verts,center,dir,width*.5f,length*.5f, m_aColors[colorID]);
+		//Msg("create tracer");
 	}
 }

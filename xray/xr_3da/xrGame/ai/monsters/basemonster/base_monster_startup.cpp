@@ -15,7 +15,7 @@
 
 #include "../state_manager.h"
 #include "../controlled_entity.h"
-#include "../anomaly_detector.h"
+//#include "../anomaly_detector.h"
 #include "../monster_cover_manager.h"
 #include "../monster_home.h"
 #include "../../../ai_object_location.h"
@@ -51,7 +51,7 @@ void CBaseMonster::Load(LPCSTR section)
 
 	control().load					(section);
 
-	m_anomaly_detector->load		(section);
+	//m_anomaly_detector->load		(section);
 	CoverMan->load					();
 
 	m_rank							= (pSettings->line_exist(section,"rank")) ? int(pSettings->r_u32(section,"rank")) : 0;
@@ -147,7 +147,7 @@ void CBaseMonster::reinit()
 
 	control().reinit				();
 
-	m_anomaly_detector->reinit		();
+	//m_anomaly_detector->reinit		();
 
 	m_skip_transfer_enemy			= false;
 
@@ -221,7 +221,20 @@ BOOL CBaseMonster::net_Spawn (CSE_Abstract* DC)
 //		}
 //	}
 
-	return(TRUE);
+	if (IsGameTypeSingle()) {
+		auto dialog_manager = smart_cast<CAI_PhraseDialogManager*>(this);
+		const bool cond = (
+			HasDialogs() &&
+			(dialog_manager && !dialog_manager->GetStartDialog().size())
+		);
+		if (cond) {
+			const char* start_dialog = spawn_ini()->r_string("dialogs", "start_dialog");
+			dialog_manager->SetStartDialog(start_dialog);
+			dialog_manager->SetDefaultStartDialog(start_dialog);
+		}
+	}
+
+	return TRUE;
 }
 
 void CBaseMonster::net_Destroy()

@@ -15,6 +15,7 @@ CAI_Dog::CAI_Dog()
 	
 	CControlled::init_external	(this);
 
+	com_man().add_ability(ControlCom::eControlJump);
 	com_man().add_ability(ControlCom::eControlRotationJump);
 	com_man().add_ability(ControlCom::eControlMeleeJump);
 }
@@ -54,8 +55,16 @@ void CAI_Dog::Load(LPCSTR section)
 	anim().AddAnim(eAnimStandTurnLeft,	"stand_turn_ls_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimStandTurnRight,	"stand_turn_rs_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimEat,			"stand_eat_",			-1, &velocity_none,		PS_STAND);
-	anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE);
-	anim().AddAnim(eAnimLieIdle,		"lie_idle_",			-1, &velocity_none,		PS_LIE);
+
+	//anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE);
+	//anim().AddAnim(eAnimLieIdle,		"lie_idle_",			-1, &velocity_none,		PS_LIE);
+	anim().AddAnim(eAnimLieIdle,		"lie_idle_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimSleep,			"lie_sleep_",			-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieStandUp,		"lie_to_sit_",		-1, &velocity_none,		PS_LIE	);
+	anim().AddAnim(eAnimLieToSleep,		"sit_lie_down_",		-1, &velocity_none,		PS_LIE	);
+
+
+
 	anim().AddAnim(eAnimSitIdle,		"sit_idle_",			-1, &velocity_none,		PS_SIT);
 	anim().AddAnim(eAnimAttack,			"stand_attack_",		-1, &velocity_turn,		PS_STAND);
 	anim().AddAnim(eAnimWalkFwd,		"stand_walk_fwd_",		-1, &velocity_walk,		PS_STAND);
@@ -68,16 +77,16 @@ void CAI_Dog::Load(LPCSTR section)
 
 	anim().AddAnim(eAnimCheckCorpse,	"stand_check_corpse_",	-1,	&velocity_none,		PS_STAND);
 	anim().AddAnim(eAnimDragCorpse,		"stand_drag_",			-1, &velocity_drag,		PS_STAND);
-	//anim().AddAnim(eAnimSniff,		"stand_sniff_",			-1, &velocity_none,		PS_STAND);
-	//anim().AddAnim(eAnimHowling,		"stand_howling_",		-1,	&velocity_none,		PS_STAND);
-	//anim().AddAnim(eAnimJumpGlide,	"jump_glide_",			-1, &velocity_none,		PS_STAND);
+	anim().AddAnim(eAnimSniff,			"stand_sniff_",			-1, &velocity_none,		PS_STAND);     /// 111111
+	anim().AddAnim(eAnimHowling,		"stand_howling_",		-1,	&velocity_none,		PS_STAND); /// 111111
+	anim().AddAnim(eAnimJumpGlide,		"jump_glide_",			-1, &velocity_none,		PS_STAND);     /// 111111
 	anim().AddAnim(eAnimSteal,			"stand_steal_",			-1, &velocity_steal,	PS_STAND);
 	anim().AddAnim(eAnimThreaten,		"stand_threaten_",		-1, &velocity_none,		PS_STAND);
 
 	anim().AddAnim(eAnimSitLieDown,		"sit_lie_down_",		-1, &velocity_none,		PS_SIT);
 	anim().AddAnim(eAnimStandSitDown,	"stand_sit_down_",		-1, &velocity_none,		PS_STAND);	
 	anim().AddAnim(eAnimSitStandUp,		"sit_stand_up_",		-1, &velocity_none,		PS_SIT);
-	//anim().AddAnim(eAnimLieToSleep,	"lie_to_sleep_",		-1,	&velocity_none,		PS_LIE);
+	anim().AddAnim(eAnimLieToSleep,		"lie_to_sleep_",		-1,	&velocity_none,		PS_LIE);      /// 111111
 	anim().AddAnim(eAnimLieSitUp,		"lie_to_sit_",		-1, &velocity_none,		PS_LIE);
 
 	anim().AddAnim(eAnimJumpLeft,		"stand_jump_left_",		-1, &velocity_none,		PS_STAND);
@@ -89,6 +98,12 @@ void CAI_Dog::Load(LPCSTR section)
 	anim().AddTransition(PS_STAND,		PS_SIT,		eAnimStandSitDown,		false);
 	anim().AddTransition(PS_SIT,		PS_STAND,	eAnimSitStandUp,		false, SKIP_IF_AGGRESSIVE);
 	anim().AddTransition(PS_LIE,		PS_SIT,		eAnimLieSitUp,			false, SKIP_IF_AGGRESSIVE);
+
+	anim().AddTransition(eAnimStandLieDown,	eAnimSleep,		eAnimLieToSleep,		false);										
+	anim().AddTransition(PS_STAND,			eAnimSleep,		eAnimStandLieDown,		true);
+	anim().AddTransition(PS_STAND,			PS_LIE,			eAnimStandLieDown,		false);
+	anim().AddTransition(PS_LIE,				PS_STAND,		eAnimLieStandUp,		false, SKIP_IF_AGGRESSIVE);
+
 	
 	// todo: stand -> lie
 
@@ -122,6 +137,24 @@ void CAI_Dog::reinit()
 	com_man().add_rotation_jump_data("1","2","3","4", PI_DIV_2);
 	com_man().add_rotation_jump_data("5","6","7","8", deg(179));
 	com_man().add_melee_jump_data("5","jump_right_0");
+}
+
+
+void CAI_Dog::reload(LPCSTR section)
+{
+	inherited::reload			(section);
+
+	if(CCustomMonster::use_simplified_visual())	return;
+	
+	// load jump params
+	com_man().load_jump_data			(0,"stand_run_attack_0", "jump_glide_0", "jump_over_0", MonsterMovement::eVelocityParameterRunNormal,MonsterMovement::eVelocityParameterRunNormal,0);
+
+}
+
+void CAI_Dog::HitEntityInJump		(const CEntity *pEntity) 
+{
+	SAAParam &params	= anim().AA_GetParams("jump_glide_0");
+	HitEntity			(pEntity, params.hit_power, params.impulse, params.impulse_dir);
 }
 
 

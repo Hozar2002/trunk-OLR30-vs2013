@@ -1,7 +1,6 @@
 #pragma once
 
 #include "inventory_item_object.h"
-//#include "night_vision_effector.h"
 #include "hudsound.h"
 #include "script_export_space.h"
 
@@ -14,6 +13,8 @@ private:
 
 protected:
 	float			fBrightness;
+	//float			fPowLoss;
+	//float			fPowLossF;
 	CLAItem*		lanim;
 	float			time2hide;
 
@@ -45,8 +46,9 @@ public:
 
 	virtual void	OnH_A_Chield		();
 	virtual void	OnH_B_Independent	(bool just_before_destroy);
-
 	virtual void	UpdateCL			();
+
+	virtual void	OnMoveToBelt		();
 
 			void	Switch				();
 			void	Switch				(bool light_on);
@@ -54,28 +56,16 @@ public:
 	virtual bool	can_be_attached		() const;
  
 public:
-			void	SwitchNightVision		  ();
-			void	SwitchNightVision		  (bool light_on);
-			void	UpdateSwitchNightVision   ();
-			float	NightVisionBattery		  ();
-protected:
-	bool					m_bNightVisionEnabled;
-public:
-	bool					m_bNightVisionOn;
-protected:
-	HUD_SOUND				m_NightVisionOnSnd;
-	HUD_SOUND				m_NightVisionOffSnd;
-	HUD_SOUND				m_NightVisionIdleSnd;
-	HUD_SOUND				m_NightVisionBrokenSnd;
 
-	/*float					m_NightVisionRechargeTime;
-	float					m_NightVisionRechargeTimeMin;
-	float					m_NightVisionDischargeTime;
-	float					m_NightVisionChargeTime;*/
+protected:
+
+public:
+
+protected:
+
 
 	enum EStats{
 		eTorchActive				= (1<<0),
-		eNightVisionActive			= (1<<1),
 		eAttached					= (1<<2)
 	};
 

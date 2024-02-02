@@ -3,6 +3,33 @@
 #include "../feel_touch.h"
 #include "hudsound.h"
 
+
+class CArtefact;
+//описание типа зоны
+struct ART_TYPE
+{
+	//интервал частот отыгрывания звука
+	float		min_freq_art;
+	float		max_freq_art;
+
+	//звук реакции детектора на конкретную зону
+	HUD_SOUND	detect_snds_art;
+
+	shared_str	art_map_location;
+};
+
+//описание зоны, обнаруженной детектором
+struct ART_INFO
+{
+	u32								snd_time_art;
+	//текущая частота работы датчика
+	float							cur_freq_art;
+
+	ART_INFO();
+	~ART_INFO();
+};
+
+
 class CCustomZone;
 //описание типа зоны
 struct ZONE_TYPE
@@ -66,11 +93,13 @@ protected:
 	void StopAllSounds				();
 	void UpdateMapLocations			();
 	void AddRemoveMapSpot			(CCustomZone* pZone, bool bAdd);
-	void UpdateNightVisionMode		();
+	//void UpdateNightVisionMode		();
 
 	bool m_bWorking;
 
 	float m_fRadius;
+	float m_fRadiusArt;
+
 
 	//если хозяин текущий актер
 	CActor*				m_pCurrentActor;
@@ -83,8 +112,22 @@ protected:
 	//список обнаруженных зон и информация о них
 	DEFINE_MAP(CCustomZone*, ZONE_INFO, ZONE_INFO_MAP, ZONE_INFO_MAP_IT);
 	ZONE_INFO_MAP m_ZoneInfoMap;
+
+
+	//информация об онаруживаемых артах
+	DEFINE_MAP(CLASS_ID, ART_TYPE, ART_TYPE_MAP, ART_TYPE_MAP_IT);
+	ART_TYPE_MAP m_ArtTypeMap;
+
+	//список обнаруженных атов и информация о них
+	DEFINE_MAP(CArtefact*, ART_INFO, ART_INFO_MAP, ART_INFO_MAP_IT);
+	ART_INFO_MAP m_ArtInfoMap;
+
 	
 	shared_str						m_nightvision_particle;
+
+private:
+	HUD_SOUND				s_noise;
+	HUD_SOUND				s_buzzer;
 
 protected:
 	u32					m_ef_detector_type;

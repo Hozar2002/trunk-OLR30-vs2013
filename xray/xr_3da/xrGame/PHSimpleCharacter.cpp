@@ -218,7 +218,7 @@ void CPHSimpleCharacter::SetBox(const dVector3 &sizes)
 	dGeomSphereSetRadius(m_cap,test_radius);
 	dGeomSetPosition(m_cap,0.f,test_height,0.f);
 }
-void CPHSimpleCharacter::Create(dVector3 sizes){
+void CPHSimpleCharacter::Create(dVector3 sizes){  // вызывется при спавне нпс
 
 	if(b_exist) return;
 	

@@ -32,4 +32,5 @@ public:
 			void	CursorOnFrame	();
 			void	Render			();
 			void	Load			();
+			CObject	*GetObj			();
 };

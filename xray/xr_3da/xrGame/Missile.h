@@ -2,18 +2,19 @@
 #include "hud_item_object.h"
 #include "HudSound.h"
 
-#define MS_HIDDEN		0
-#define MS_SHOWING		1
-#define MS_IDLE			2
-#define MS_THREATEN		3
-#define MS_READY		4
-#define MS_THROW		5
-#define MS_END			6
-#define MS_EMPTY		7
-#define MS_HIDING		8
-#define MS_PLAYING		9
-#define MS_IDLE_SPRINT	10
-#define MS_SHOWING2		11
+const u32 MS_HIDDEN = 0;
+const u32 MS_SHOWING = 1;
+const u32 MS_IDLE = 2;
+const u32 MS_THREATEN = 3;
+const u32 MS_READY = 4;
+const u32 MS_THROW = 5;
+const u32 MS_END = 6;
+const u32 MS_EMPTY = 7;
+const u32 MS_HIDING = 8;
+const u32 MS_PLAYING = 9;
+const u32 MS_IDLE_SPRINT = 10;
+const u32 MS_IDLE_WALK = 11;
+const u32 MS_IDLE_WALK_SLOW = 12;
 
 struct dContact;
 struct SGameMtl;
@@ -22,6 +23,12 @@ class CMissile : public CHudItemObject
 	friend class CWeaponScript;
 
 	typedef CHudItemObject inherited;
+
+	// hi_flyer & BASE1707: ?????????? ? ??????-????????????? ???????
+protected:
+	bool m_bGeometryContact;
+	bool m_bContactExplode;
+
 public:
 							CMissile					();
 	virtual					~CMissile					();
@@ -51,6 +58,7 @@ public:
 	virtual bool 			IsHidden					() const {return GetState() == MS_HIDDEN;}
 	virtual bool 			IsHiding					() const {return GetState() == MS_HIDING;}
 	virtual bool 			IsShowing					() const {return GetState() == MS_SHOWING;}
+	virtual void			SilentHide					()	{OnStateSwitch(MS_HIDDEN);}
 
 	virtual void 			Throw();
 	virtual void 			Destroy();
@@ -60,7 +68,7 @@ public:
 //.	IC u32		 			State						()				{return m_state;}
 	virtual void 			State						(u32 state);
 	virtual void 			OnStateSwitch				(u32 S);
-	virtual void			GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count);
+	virtual void			GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name);
 
 protected:
 	virtual void			UpdateFireDependencies_internal	();
@@ -68,18 +76,18 @@ protected:
 	void					UpdatePosition					(const Fmatrix& trans);
 	void					spawn_fake_missile				();
 
-	//инициализация если вещь в активном слоте или спрятана на OnH_B_Chield
+	//????????????? ???? ???? ? ???????? ????? ??? ???????? ?? OnH_B_Chield
 	virtual void			OnActiveItem		();
 	virtual void			OnHiddenItem		();
 
-	//для сети
+	//??? ????
 	virtual void			StartIdleAnim		();
 	virtual void			net_Relcase			(CObject* O );
 protected:
 
 	bool					m_throw;
-	
-	//время уничтожения
+	bool					m_bolt;
+	//????? ???????????
 	u32						m_dwDestroyTime;
 	u32						m_dwDestroyTimeMax;
 
@@ -88,33 +96,34 @@ protected:
 
 	CMissile				*m_fake_missile;
 
-	//параметры броска
+	//????????? ??????
 	
 	float m_fMinForce, m_fConstForce, m_fMaxForce, m_fForceGrowSpeed;
 //private:
 	bool					m_constpower;
 	float					m_fThrowForce;
 protected:
-	//относительная точка и направление вылета гранаты
+	//????????????? ????? ? ??????????? ?????? ???????
 	Fvector					m_vThrowPoint;
 	Fvector					m_vThrowDir;
-	//для HUD
+	//??? HUD
 	Fvector					m_vHudThrowPoint;
 	Fvector					m_vHudThrowDir;
 
-	//имена анимаций
+	//????? ????????
 	shared_str				m_sAnimShow;
 	shared_str				m_sAnimHide;
 	shared_str				m_sAnimIdle;
 	shared_str				m_sAnimIdleSprint;
+	shared_str				m_sAnimIdleWalk;
+	shared_str				m_sAnimIdleWalkSlow;
 	shared_str				m_sAnimPlaying;
 	shared_str				m_sAnimThrowBegin;
 	shared_str				m_sAnimThrowIdle;
 	shared_str				m_sAnimThrowAct;
 	shared_str				m_sAnimThrowEnd;
-	shared_str				m_sAnimShow2;
 
-	//звук анимации "играния"
+	//???? ???????? "???????"
 	HUD_SOUND				sndPlaying;
 
 	u32						idle_state();
@@ -132,6 +141,6 @@ protected:
 public:
 	virtual u32				ef_weapon_type			() const;
 	IC		u32				destroy_time			() const {return m_dwDestroyTime;};
-	static	void			ExitContactCallback		(bool& do_colide,bool bo1,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/);
+	static	void			ExitContactCallback		(bool& do_colide,bool bo1,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/);  ///???? ?????? ?????? ???????!!!!!
 	virtual u16				bone_count_to_synchronize	() const;
 };

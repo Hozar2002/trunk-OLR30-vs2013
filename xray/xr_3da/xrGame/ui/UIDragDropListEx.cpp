@@ -2,7 +2,7 @@
 #include "UIDragDropListEx.h"
 #include "UIScrollBar.h"
 #include "../object_broker.h"
-#include "UICellCustomItems.h"
+#include "UICellItem.h"
 #include "../GameObject.h"
 
 CUIDragItem* CUIDragDropListEx::m_drag_item = NULL;
@@ -22,7 +22,7 @@ CUIDragDropListEx::CUIDragDropListEx()
 	m_vScrollBar				= xr_new<CUIScrollBar>();
 	m_vScrollBar->SetAutoDelete	(true);
 	m_selected_item				= NULL;
-	m_bConditionProgBarVisible  = false;
+	
 
 	SetCellSize					(Ivector2().set(50,50));
 	SetCellsCapacity			(Ivector2().set(0,0));
@@ -32,16 +32,12 @@ CUIDragDropListEx::CUIDragDropListEx()
 
 	m_vScrollBar->SetWindowName	("scroll_v");
 	Register					(m_vScrollBar);
-	AddCallback					("scroll_v",	SCROLLBAR_VSCROLL,				CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnScrollV)		);
-	AddCallback					("cell_item",	DRAG_DROP_ITEM_DRAG,			CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemStartDragging)	);
-	AddCallback					("cell_item",	DRAG_DROP_ITEM_DROP,			CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemDrop)			);
-	AddCallback					("cell_item",	DRAG_DROP_ITEM_SELECTED,		CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemSelected)			);
+	AddCallback					("scroll_v",	SCROLLBAR_VSCROLL,				CUIWndCallback::void_function				(this, &CUIDragDropListEx::OnScrollV)		);
+	AddCallback					("cell_item",	DRAG_DROP_ITEM_DRAG,			CUIWndCallback::void_function			(this, &CUIDragDropListEx::OnItemStartDragging)	);
+	AddCallback					("cell_item",	DRAG_DROP_ITEM_DROP,			CUIWndCallback::void_function			(this, &CUIDragDropListEx::OnItemDrop)			);
+	AddCallback					("cell_item",	DRAG_DROP_ITEM_SELECTED,		CUIWndCallback::void_function		(this, &CUIDragDropListEx::OnItemSelected)			);
 	AddCallback					("cell_item",	DRAG_DROP_ITEM_RBUTTON_CLICK,	CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemRButtonClick)			);
-	AddCallback					("cell_item",	DRAG_DROP_ITEM_DB_CLICK,		CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemDBClick)			);
-	AddCallback					("cell_item",	DRAG_DROP_ITEM_FOCUSED_UPDATE,	CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemFocusedUpdate)			);
-	AddCallback					("cell_item",	WINDOW_FOCUS_RECEIVED,			CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemFocusReceived)			);
-	AddCallback					("cell_item",	WINDOW_FOCUS_LOST,				CUIWndCallback::void_function	(this, &CUIDragDropListEx::OnItemFocusLost)			);
-
+	AddCallback					("cell_item",	DRAG_DROP_ITEM_DB_CLICK,		CUIWndCallback::void_function		(this, &CUIDragDropListEx::OnItemDBClick)			);
 	SetDrawGrid					(true);
 }
 
@@ -62,7 +58,8 @@ bool CUIDragDropListEx::IsAutoGrow()
 }
 void CUIDragDropListEx::SetGrouping(bool b)						
 {
-	m_flags.set(flGroupSimilar,b);
+	//m_flags.set(flGroupSimilar,b);
+	m_flags.set(flGroupSimilar,false);
 }
 bool CUIDragDropListEx::IsGrouping()
 {
@@ -108,10 +105,11 @@ void CUIDragDropListEx::CreateDragItem(CUICellItem* itm)
 
 	m_drag_item							= itm->CreateDragItem();
 	GetParent()->SetCapture				(m_drag_item, true);
-
+	
 	Fvector2 p;
 	itm->GetAbsolutePos(p);
 	itm->OnMouse(p.x, p.y, EUIMessages::DRAG_DROP_ITEM_DRAG);
+
 }
 
 void CUIDragDropListEx::DestroyDragItem()
@@ -163,7 +161,7 @@ void CUIDragDropListEx::OnItemDrop(CUIWindow* w, void* pData)
 		itm->GetAbsolutePos(p);
 		itm->OnMouse(p.x, p.y, EUIMessages::DRAG_DROP_ITEM_DROP);
 	}
-
+	
 	if(m_f_item_drop && m_f_item_drop(itm) ){
 		DestroyDragItem						();
 		return;
@@ -231,37 +229,6 @@ void CUIDragDropListEx::OnItemRButtonClick(CUIWindow* w, void* pData)
 	CUICellItem*		itm				= smart_cast<CUICellItem*>(w);
 	if(m_f_item_rbutton_click) 
 		m_f_item_rbutton_click(itm);
-}
-
-void  CUIDragDropListEx::OnItemFocusedUpdate(CUIWindow* w, void* pData)
-{
-	OnItemSelected						(w, pData);
-	CUICellItem*		itm				= smart_cast<CUICellItem*>(w);
-	if(m_f_item_focused_update)
-	{
-		m_f_item_focused_update			(itm);
-	}
-}
-
-
-void  CUIDragDropListEx::OnItemFocusReceived(CUIWindow* w, void* pData)
-{	
-	OnItemSelected						(w, pData);
-	if(m_f_item_focus_received)
-	{
-		CUICellItem* itm				= smart_cast<CUICellItem*>(w);
-		m_f_item_focus_received			(itm);
-	}
-}
-
-void  CUIDragDropListEx::OnItemFocusLost(CUIWindow* w, void* pData)
-{	
-	OnItemSelected						(w, pData);
-	if(m_f_item_focus_lost)
-	{
-		CUICellItem* itm				= smart_cast<CUICellItem*>(w);
-		m_f_item_focus_lost				(itm);
-	}
 }
 
 void CUIDragDropListEx::GetClientArea(Frect& r)
@@ -411,7 +378,7 @@ void CUIDragDropListEx::SetItem(CUICellItem* itm) //auto
 		return;
 	}
 
-	Ivector2 dest_cell_pos =	m_container->FindFreeCell(itm->GetGridSize(true));
+	Ivector2 dest_cell_pos =	m_container->FindFreeCell(itm->GetGridSize());
 
 	SetItem						(itm,dest_cell_pos);
 }
@@ -422,7 +389,7 @@ void CUIDragDropListEx::SetItem(CUICellItem* itm, Fvector2 abs_pos) // start at 
 	
 	const Ivector2 dest_cell_pos =	m_container->PickCell		(abs_pos);
 
-	if(m_container->ValidCell(dest_cell_pos) && m_container->IsRoomFree(dest_cell_pos,itm->GetGridSize(true)))
+	if(m_container->ValidCell(dest_cell_pos) && m_container->IsRoomFree(dest_cell_pos,itm->GetGridSize()))
 		SetItem						(itm, dest_cell_pos);
 	else
 		SetItem						(itm);
@@ -431,7 +398,7 @@ void CUIDragDropListEx::SetItem(CUICellItem* itm, Fvector2 abs_pos) // start at 
 void CUIDragDropListEx::SetItem(CUICellItem* itm, Ivector2 cell_pos) // start at cell
 {
 	if(m_container->AddSimilar(itm))	return;
-	R_ASSERT						(m_container->IsRoomFree(cell_pos, itm->GetGridSize(true)));
+	R_ASSERT						(m_container->IsRoomFree(cell_pos, itm->GetGridSize()));
 #ifdef DEBUG_SLOTS
 	Msg("# drag-drop list SetItem (0x%p) ", itm);
 #endif
@@ -444,11 +411,11 @@ void CUIDragDropListEx::SetItem(CUICellItem* itm, Ivector2 cell_pos) // start at
 }
 
 bool CUIDragDropListEx::CanSetItem(CUICellItem* itm){
-	if (m_container->HasFreeSpace(itm->GetGridSize(true)))
+	if (m_container->HasFreeSpace(itm->GetGridSize()))
 		return true;
 	Compact();
 
-	return m_container->HasFreeSpace(itm->GetGridSize(true));
+	return m_container->HasFreeSpace(itm->GetGridSize());
 }
 
 CUICellItem* CUIDragDropListEx::RemoveItem(CUICellItem* itm, bool force_root)
@@ -529,21 +496,15 @@ CUICellItem* CUICellContainer::FindSimilar(CUICellItem* itm)
 
 void CUICellContainer::PlaceItemAtPos(CUICellItem* itm, Ivector2& cell_pos)
 {
-	auto cs	= itm->GetGridSize(true);
-
+	Ivector2 cs				=	itm->GetGridSize();
 	if(m_pParentDragDropList->GetVerticalPlacement())
 		std::swap(cs.x,cs.y); 
 
-	for (int x = 0; x < cs.x; ++x)
-	{
-		for (int y = 0; y < cs.y; ++y)
-		{
-			CUICell& C = GetCellAt(Ivector2().set(x, y).add(cell_pos));
-			C.SetItem(itm, (x == 0 && y == 0));
+	for(int x=0; x<cs.x; ++x)
+		for(int y=0; y<cs.y; ++y){
+			CUICell& C		= GetCellAt(Ivector2().set(x,y).add(cell_pos));
+			C.SetItem		(itm,(x==0&&y==0));
 		}
-	}
-
-	cs		= itm->GetGridSize(false);
 
 	itm->SetWndPos			( Fvector2().set( (m_cellSize.x*cell_pos.x), (m_cellSize.y*cell_pos.y))	);
 	itm->SetWndSize			( Fvector2().set( (m_cellSize.x*cs.x),		(m_cellSize.y*cs.y)		 )	);
@@ -580,7 +541,7 @@ CUICellItem* CUICellContainer::RemoveItem(CUICellItem* itm, bool force_root)
 #endif
 
 	Ivector2 pos			= GetItemPos(itm);
-	Ivector2 cs				= itm->GetGridSize(true);
+	Ivector2 cs				= itm->GetGridSize();
 
 	if(m_pParentDragDropList->GetVerticalPlacement())
 		std::swap(cs.x,cs.y); 
@@ -825,7 +786,6 @@ void CUICellContainer::Draw()
 	// calculate cell size in screen pixels
 	Fvector2 f_len;
 	UI()->ClientToScreenScaled(f_len, float(cell_sz.x), float(cell_sz.y) );
-
 	
 	// fill cell buffer
 	u32 vOffset = 0;
@@ -833,8 +793,23 @@ void CUICellContainer::Draw()
 	FVF::TL* pv = start_pv;
 	for (int x = 0; x <= tgt_cells.width(); ++x){
 		for (int y = 0; y <= tgt_cells.height(); ++y){
+		
 			Fvector2			tp;
-			GetTexUVLT(tp, tgt_cells.x1 + x, tgt_cells.y1 + y);
+			Ivector2 cpos;
+			cpos.set( x, y );
+			cpos.add( TopVisibleCell() );
+			CUICell& ui_cell = GetCellAt( cpos );
+			
+			if (( !ui_cell.Empty() )&&(ui_cell.m_item->m_selected))
+			{
+				tp.set(0.50f,0.0f);
+			}else{
+				tp.set(0.0f,0.0f);
+			}
+			
+			Fvector2			rect_offset;
+			rect_offset.set		( (drawLT.x + f_len.x*x), (drawLT.y + f_len.y*y ) );
+
 			for (u32 k = 0; k < 6; ++k, ++pv){
 				const Fvector2& p = pts[k];
 				const Fvector2& uv = uvs[k];

@@ -25,13 +25,15 @@
 #include "CharacterPhysicsSupport.h"
 #include "InventoryBox.h"
 #include "../../build_config_defines.h"
+#include "pch_script.h"
+////#undef INV_NEW_SLOTS_SYSTEM
 
 #ifdef INV_NEW_SLOTS_SYSTEM
 	#include "silencer.h"
 	#include "scope.h"
 	#include "grenadelauncher.h"
 	#include "Artifact.h"
-	#include "eatable_item.h"
+	#include "eatable_item_object.h"
 	#include "BottleItem.h"
 	#include "medkit.h"
 	#include "antirad.h"
@@ -110,8 +112,16 @@ void CActor::IR_OnKeyboardPress(int cmd)
 	case kCAM_2:	cam_Set			(eacLookAt);				break;
 	case kCAM_3:	cam_Set			(eacFreeLook);				break;
 	case kNIGHT_VISION:
+		if (!IsEat())
 		{
-			const xr_vector<CAttachableItem*>& all = CAttachmentOwner::attached_objects();
+			luabind::functor<LPCSTR> fl;
+			R_ASSERT2(
+				ai().script_engine().functor<LPCSTR>("olr_items_efs.kick_object_ph", fl), "Failed to guick use bandage!");
+			fl();
+			return;
+		}break;
+		//{
+			/*const xr_vector<CAttachableItem*>& all = CAttachmentOwner::attached_objects();
 			xr_vector<CAttachableItem*>::const_iterator it = all.begin();
 			xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
 			for(;it!=it_e;++it){
@@ -120,24 +130,35 @@ void CActor::IR_OnKeyboardPress(int cmd)
 					torch->SwitchNightVision();
 					break;
 				}
-			}
-		}break;
+			}*/
+		//}break;
 	case kTORCH:{ 
 		const xr_vector<CAttachableItem*>& all = CAttachmentOwner::attached_objects();
 		xr_vector<CAttachableItem*>::const_iterator it = all.begin();
 		xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
 		for(;it!=it_e;++it){
 				CTorch* torch = smart_cast<CTorch*>(*it);
-				if (torch){		
+				if (torch && inventory().InBelt(torch)){
+					//Msg("torch attached - switch");
 					torch->Switch();
 					break;
 				}
 		}
+		//TIItemContainer::iterator	I = inventory().m_all.begin();
+		//TIItemContainer::iterator	E = inventory().m_all.end();
+		//for ( ; I != E; ++I){
+		//			CTorch* torch = smart_cast<CTorch*>(*I);
+		//			if (torch){
+		//				Msg("torch attached - switch");
+		//				torch->Switch();
+		//				break;
+		//			}
+		//}
 		}break;
 	case kWPN_1:	
 	case kWPN_2:	
-	case kWPN_3:	
-	case kWPN_4:	
+	case kWPN_3:
+	case kWPN_4:
 	case kWPN_5:	
 	case kWPN_6:	
 	case kWPN_RELOAD:
@@ -147,8 +168,10 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		ActorUse();
 		break;
 	case kDROP:
-		b_DropActivated			= TRUE;
-		f_DropPower				= 0;
+		if (!IsEat()) {
+			b_DropActivated = TRUE;
+			f_DropPower = 0;
+		}
 		break;
 	case kNEXT_SLOT:
 		{
@@ -160,9 +183,25 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		}break;
 
 	case kUSE_BANDAGE:
-	case kUSE_MEDKIT:
+		if (!IsEat())
 		{
-			if(IsGameTypeSingle())
+         luabind::functor<LPCSTR> fl;
+		 R_ASSERT2(
+		 ai().script_engine().functor<LPCSTR>("olr_items_efs.on_quick_bandage", fl), "Failed to guick use bandage!");
+		 fl();
+		 return;
+		}break;
+	case kUSE_MEDKIT:
+		if (!IsEat())
+		{
+	     luabind::functor<LPCSTR> fl;
+		 R_ASSERT2(
+		 ai().script_engine().functor<LPCSTR>("olr_items_efs.on_quick_medkit", fl), "Failed to guick use medkit!");
+		 fl();
+		 return;
+		}break;
+
+					/*if(IsGameTypeSingle())
 			{
 				PIItem itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );	
 				if(itm)
@@ -174,9 +213,9 @@ void CActor::IR_OnKeyboardPress(int cmd)
 					strconcat					(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", itm->Name());
 					_s->wnd()->SetText			(str);
 				}
-			}
-		}break;
-#ifdef INV_NEW_SLOTS_SYSTEM
+			}*/
+
+#if defined(INV_NEW_SLOTS_SYSTEM) && !defined(OLR_SLOTS)
 	case kUSE_SLOT_QUICK_ACCESS_0:
 	case kUSE_SLOT_QUICK_ACCESS_1:
 	case kUSE_SLOT_QUICK_ACCESS_2:
@@ -202,25 +241,28 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				}
 
 				if (itm){
-					CMedkit*			pMedkit				= smart_cast<CMedkit*>			(itm);
-					CAntirad*			pAntirad			= smart_cast<CAntirad*>			(itm);
-					CEatableItem*		pEatableItem		= smart_cast<CEatableItem*>		(itm);
-					CBottleItem*		pBottleItem			= smart_cast<CBottleItem*>		(itm);				
+					CMedkit* pMedkit = smart_cast<CMedkit*>(itm);
+					CAntirad* pAntirad = smart_cast<CAntirad*>(itm);
+					CEatableItemObject* pEatableItem = smart_cast<CEatableItemObject*>(itm);
+					CBottleItem* pBottleItem = smart_cast<CBottleItem*>(itm);				
 					string1024					str;
 					
-					if(pMedkit || pAntirad || pEatableItem || pBottleItem){
-						PIItem iitm = inventory().Same(itm,true);
-						if(iitm){
-							inventory().Eat(iitm);
-							strconcat(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", iitm->Name());
-						}else{
-							inventory().Eat(itm);
-							strconcat(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", itm->Name());
-						}
+					if (pEatableItem && !pEatableItem->IsUseHud()) {
+						if(pMedkit || pAntirad || pBottleItem){
+							PIItem iitm = inventory().Same(itm,true);
+							if(iitm){
+								inventory().Eat(iitm);
+								strconcat(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", iitm->Name());
+							}
+							else{
+								inventory().Eat(itm);
+								strconcat(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", itm->Name());
+							}
 						
-						SDrawStaticStruct* _s		= HUD().GetUI()->UIGame()->AddCustomStatic("item_used", true);
-						_s->m_endTime				= Device.fTimeGlobal+3.0f;// 3sec
-						_s->wnd()->SetText			(str);
+							SDrawStaticStruct* _s = HUD().GetUI()->UIGame()->AddCustomStatic("item_used", true);
+							_s->m_endTime = Device.fTimeGlobal+3.0f;// 3sec
+							_s->wnd()->SetText(str);
+						}
 					}
 				}
 			}
@@ -233,10 +275,10 @@ void CActor::IR_OnMouseWheel(int direction)
 {
 	if(inventory().Action( (direction>0)? kWPN_ZOOM_DEC:kWPN_ZOOM_INC , CMD_START)) return;
 
-	if (direction>0)
+	/*if (direction>0)
 		OnNextWeaponSlot				();
 	else
-		OnPrevWeaponSlot				();
+		OnPrevWeaponSlot				();*/
 }
 void CActor::IR_OnKeyboardRelease(int cmd)
 {
@@ -263,11 +305,18 @@ void CActor::IR_OnKeyboardRelease(int cmd)
 
 
 
-		switch(cmd)
-		{
-		case kJUMP:		mstate_wishful &=~mcJump;		break;
-		case kDROP:		if(GAME_PHASE_INPROGRESS == Game().Phase()) g_PerformDrop();				break;
-		case kCROUCH:	g_bAutoClearCrouch = true;
+		switch(cmd) {
+			case kJUMP: {
+				mstate_wishful &=~mcJump;
+			} break;
+			case kDROP: {
+				if(!IsEat() && GAME_PHASE_INPROGRESS == Game().Phase()) {
+					g_PerformDrop();
+				}
+			} break;
+			case kCROUCH: {
+				g_bAutoClearCrouch = true;
+			}
 		}
 	}
 }
@@ -386,14 +435,13 @@ bool CActor::use_Holder				(CHolderCustom* holder)
 	}
 }
 
-void CActor::ActorUse()
-{
+void CActor::ActorUse() {
 	//mstate_real = 0;
 	PickupModeOn();
 
+	if (this->IsEat()) return ;
 		
-	if (m_holder)
-	{
+	if (m_holder) {
 		CGameObject*	GO			= smart_cast<CGameObject*>(m_holder);
 		NET_Packet		P;
 		CGameObject::u_EventGen		(P, GEG_PLAYER_DETACH_HOLDER, ID());
@@ -402,7 +450,7 @@ void CActor::ActorUse()
 		return;
 	}
 				
-	if(character_physics_support()->movement()->PHCapture())
+	if(character_physics_support()->movement()->PHCapture()) 
 		character_physics_support()->movement()->PHReleaseObject();
 
 	
@@ -420,8 +468,7 @@ void CActor::ActorUse()
 	{
 		if(m_pPersonWeLookingAt)
 		{
-			CEntityAlive* pEntityAliveWeLookingAt = 
-				smart_cast<CEntityAlive*>(m_pPersonWeLookingAt);
+			auto pEntityAliveWeLookingAt = smart_cast<CEntityAlive*>(m_pPersonWeLookingAt);
 
 			VERIFY(pEntityAliveWeLookingAt);
 
@@ -484,6 +531,7 @@ BOOL CActor::HUDview				( )const
 static	u32 SlotsToCheck [] = {
 		KNIFE_SLOT		,		// 0
 		PISTOL_SLOT		,		// 1
+		GREN_SLOT		,		// 1
 		RIFLE_SLOT		,		// 2
 		GRENADE_SLOT	,		// 3
 		APPARATUS_SLOT	,		// 4
@@ -510,7 +558,7 @@ void	CActor::OnNextWeaponSlot()
 	{
 		if (inventory().ItemFromSlot(SlotsToCheck[i]))
 		{
-			if (SlotsToCheck[i] == ARTEFACT_SLOT) 
+			if (SlotsToCheck[i] == NO_ACTIVE_SLOT) 
 			{
 				IR_OnKeyboardPress(kARTEFACT);
 			}

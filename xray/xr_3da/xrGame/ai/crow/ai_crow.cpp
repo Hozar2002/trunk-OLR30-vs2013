@@ -140,6 +140,12 @@ BOOL CAI_Crow::net_Spawn		(CSE_Abstract* DC)
 	// disable UpdateCL, enable only on HIT
 	processing_deactivate		();
 
+	auto tmp = Position().set(0,0,0);
+	tmp.x = tmp.x + ::Random.randF(-50.0f, 50.0f);
+	tmp.y = tmp.y + ::Random.randF(50.0f, 90.0f);
+	tmp.z = tmp.z + ::Random.randF(-50.0f, 50.0f);
+	Position().set(tmp);
+
 	return		R;
 }
 

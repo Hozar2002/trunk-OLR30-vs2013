@@ -31,6 +31,8 @@
 #	define USE_IK
 #endif // PRIQUEL
 
+#include "../../build_config_defines.h"
+
 void  NodynamicsCollide(bool& do_colide,bool bo1,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
 {
 	dBodyID body1=dGeomGetBody(c.geom.g1);
@@ -197,7 +199,7 @@ void CCharacterPhysicsSupport::in_NetSpawn(CSE_Abstract* e)
 	{
 		
 		if(m_eType==etStalker)
-			ka->PlayCycle("waunded_1_idle_0");
+			ka->PlayCycle("waunded_1_idle_0");  // waunded_1_idle_0 (soc) // cr_death_0 (1154)  (18xx)
 		else
 			ka->PlayCycle("death_init");
 
@@ -417,9 +419,10 @@ void CCharacterPhysicsSupport::in_Hit(float P,Fvector &dir, CObject *who,s16 ele
 	if(m_flags.test(fl_block_hit))
 	{
 		VERIFY(!m_EntityAlife.g_Alive());
-		if(Device.dwTimeGlobal-m_EntityAlife.GetLevelDeathTime()>=2000)
-			m_flags.set(fl_block_hit,FALSE);
-		else return;
+		//if(Device.dwTimeGlobal-m_EntityAlife.GetLevelDeathTime()>=20) // 2000
+			//m_flags.set(fl_block_hit,FALSE);  // комент 07.12.19
+		//else 
+			//return;
 	}
 
 	is_killing=is_killing||(m_eState==esAlive&&!m_EntityAlife.g_Alive());
@@ -435,6 +438,21 @@ void CCharacterPhysicsSupport::in_Hit(float P,Fvector &dir, CObject *who,s16 ele
 	if(!m_pPhysicsShell&&is_killing)
 	{
 		KillHit(who, hit_type, impulse);
+		// hi_flyer 07.12.19
+		// доп хит для эффектного отлёта от машины аля 1935
+		CActor* A=smart_cast<CActor*>(who);
+		if(A)
+		{
+		//Msg("actor kill dibila");
+			if(A->Holder()){
+			float car_hit = 9000.f;
+			m_pPhysicsShell->applyHit(p_in_object_space,dir,car_hit*2,element,hit_type);  // походу не пашет
+			m_pPhysicsShell->set_LinearVel(dir);
+			m_pPhysicsShell->applyImpulse(dir,car_hit);
+			m_pPhysicsShell->applyForce(dir,car_hit);
+			//Msg("actorcar imp  %f", car_hit);
+			};
+		};
 	}
 
 	if(!(m_pPhysicsShell&&m_pPhysicsShell->isActive()))
@@ -705,18 +723,19 @@ void CCharacterPhysicsSupport::ActivateShell			( CObject* who )
 	m_eState=esDead;
 	m_flags.set(fl_skeleton_in_shell,TRUE);
 	
-	if(IsGameTypeSingle())
+#ifdef DEAD_BODY_COLLISION
+	if (etActor == m_eType)
+#endif //DEAD_BODY_COLLISION
 	{
-		m_pPhysicsShell->SetPrefereExactIntegration	();//use exact integration for ragdolls in single
-		m_pPhysicsShell->SetRemoveCharacterCollLADisable();
+		if(IsGameTypeSingle()) {
+			m_pPhysicsShell->SetPrefereExactIntegration	();//use exact integration for ragdolls in single
+			m_pPhysicsShell->SetRemoveCharacterCollLADisable();
+		}
+		else {
+			m_pPhysicsShell->SetIgnoreDynamic();
+		}
+		m_pPhysicsShell->SetIgnoreSmall();
 	}
-	else
-	{
-		m_pPhysicsShell->SetIgnoreDynamic();
-	}
-	m_pPhysicsShell->SetIgnoreSmall();
-	//end seting params
-
 
 
 	//fly back after correction
@@ -724,7 +743,7 @@ void CCharacterPhysicsSupport::ActivateShell			( CObject* who )
 	//
 
 	//actualize
-	m_pPhysicsShell->GetGlobalTransformDynamic(&mXFORM);
+	m_pPhysicsShell->GetGlobalTransformDynamic(&mXFORM);  // типо более плавнее регдол но хз
 	//
 
 	m_pPhysicsShell->add_ObjectContactCallback(OnCharacterContactInDeath);
@@ -737,11 +756,12 @@ void CCharacterPhysicsSupport::ActivateShell			( CObject* who )
 		mXFORM.set( start_xform );
 		//anim_mov_blend->blendPower = 1;
 		anim_mov_blend->timeCurrent  += Device.fTimeDelta * anim_mov_blend->speed;
-		m_pPhysicsShell->AnimToVelocityState( Device.fTimeDelta, 2 * default_l_limit, 10.f * default_w_limit );
+		m_pPhysicsShell->AnimToVelocityState( Device.fTimeDelta, 2 * default_l_limit, 10.f * default_w_limit ); // 10
 		mXFORM.set( sv_xform );
 	}
 
 }
+
 void CCharacterPhysicsSupport::in_ChangeVisual()
 {
 	
@@ -864,7 +884,8 @@ void						CCharacterPhysicsSupport::FlyTo(const	Fvector &disp)
 		m_pPhysicsShell->set_CallbackData(m_pPhysicsShell->PIsland());
 		m_pPhysicsShell->UnFreeze();
 		Fvector vel;vel.set(disp);
-		const	u16	steps_num=10;
+		const	u16	steps_num=200; // 10
+		//const u16 steps_num=disp.magnitude()/fixed_step;
 		const	float	fsteps_num=steps_num;
 		vel.mul(1.f/fsteps_num/fixed_step);
 
@@ -907,7 +928,9 @@ void CCharacterPhysicsSupport::TestForWounded()
 
 void CCharacterPhysicsSupport::UpdateFrictionAndJointResistanse()
 {
-	//Преобразование skel_ddelay из кадров в секунды и линейное нарастание сопротивления в джоинтах со временем от момента смерти 
+	//Преобразование skel_ddelay из кадров в секунды и линейное нарастание сопротивления в джоинтах со временем от момента смерти
+
+	// hf - если закоменитить то нпс скользят как по льду
 
 	if(skel_remain_time!=0)
 	{

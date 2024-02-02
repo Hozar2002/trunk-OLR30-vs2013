@@ -8,7 +8,7 @@
 #include "level.h"
 #include "actor.h"
 
-CWeaponShotgun::CWeaponShotgun(void) : CWeaponCustomPistol("TOZ34")
+CWeaponShotgun::CWeaponShotgun(void) : CWeaponCustomPistol("TOZ34"), m_bFireSecondEnabled{}
 {
     m_eSoundShotBoth		= ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING);
 	m_eSoundClose			= ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING);
@@ -35,9 +35,12 @@ void CWeaponShotgun::Load	(LPCSTR section)
 {
 	inherited::Load		(section);
 
-	// Звук и анимация для выстрела дуплетом
-	HUD_SOUND::LoadSound(section, "snd_shoot_duplet", sndShotBoth, m_eSoundShotBoth);
-	animGet	(mhud_shot_boths,	pSettings->r_string(*hud_sect,"anim_shoot_both"));
+	if (m_bFireSecondEnabled = READ_IF_EXISTS(pSettings, r_bool, section, "fire_second_mode_enabled", false))
+	{
+		// ???? ? ???????? ??? ???????? ????????
+		HUD_SOUND::LoadSound(section, "snd_shoot_duplet", sndShotBoth, m_eSoundShotBoth);
+		animGet(mhud_shot_boths, pSettings->r_string(*hud_sect, "anim_shoot_both"));
+	}
 
 	if(pSettings->line_exist(section, "tri_state_reload")){
 		m_bTriStateReload = !!pSettings->r_bool(section, "tri_state_reload");
@@ -87,7 +90,10 @@ void CWeaponShotgun::Fire2Start ()
 			else					
 			{
 				CWeapon::FireStart			();
-				SwitchState					((iAmmoElapsed < iMagazineSize)?eFire:eFire2);
+
+				// ???? ????? ?????????? ? ????? ??????? ? ??????? - ???????? ????????
+				bool condition = m_bFireSecondEnabled && iAmmoElapsed == iMagazineSize;
+				SwitchState(condition ? eFire2 : eFire);
 			}
 		}
 	}else{
@@ -105,20 +111,20 @@ void CWeaponShotgun::Fire2End ()
 
 void CWeaponShotgun::OnShotBoth()
 {
-	//если патронов меньше, чем 2 
+	//???? ???????? ??????, ??? 2 
 	if(iAmmoElapsed < iMagazineSize) 
 	{ 
 		OnShot(); 
 		return; 
 	}
 
-	//звук выстрела дуплетом
+	//???? ???????? ????????
 	PlaySound			(sndShotBoth,get_LastFP());
 	
 	// Camera
 	AddShotEffector		();
 	
-	// анимация дуплета
+	// ???????? ???????
 	m_pHUD->animPlay			(random_anim(mhud_shot_boths),FALSE,this,GetState());
 	
 	// Shell Drop
@@ -126,11 +132,11 @@ void CWeaponShotgun::OnShotBoth()
 	PHGetLinearVell		(vel);
 	OnShellDrop			(get_LastSP(), vel);
 
-	//огонь из 2х стволов
+	//????? ?? 2? ???????
 	StartFlameParticles			();
 	StartFlameParticles2		();
 
-	//дым из 2х стволов
+	//??? ?? 2? ???????
 	CParticlesObject* pSmokeParticles = NULL;
 	CShootingObject::StartParticles(pSmokeParticles, *m_sSmokeParticlesCurrent, get_LastFP(),  zero_vel, true);
 	pSmokeParticles = NULL;
@@ -171,7 +177,7 @@ void CWeaponShotgun::switch2_Fire2	()
 		
 		OnShotBoth						();
 
-		//выстрел из обоих стволов
+		//??????? ?? ????? ???????
 		FireTrace					(p1,d);
 		FireTrace					(p1,d);
 		fTime						+= fTimeToFire*2.f;
@@ -194,23 +200,32 @@ bool CWeaponShotgun::Action			(s32 cmd, u32 flags)
 
 	if(	m_bTriStateReload && GetState()==eReload &&
 		cmd==kWPN_FIRE && flags&CMD_START &&
-		m_sub_state==eSubstateReloadInProcess		)//остановить перезагрузку
+		m_sub_state==eSubstateReloadInProcess		)//?????????? ????????????
 	{
 		AddCartridge(1);
 		m_sub_state = eSubstateReloadEnd;
 		return true;
 	}
-	//если оружие чем-то занято, то ничего не делать
+	//???? ?????? ???-?? ??????, ?? ?????? ?? ??????
 	if(IsPending()) return false;
 
-	switch(cmd) 
+	switch (cmd)
 	{
-		case kWPN_ZOOM : 
+		case kWPN_FIRE_SEC:
+		{
+			if (m_bFireSecondEnabled)
 			{
-				if(flags&CMD_START) Fire2Start();
-				else Fire2End();
+				if (flags&CMD_START)
+				{
+					Fire2Start();
+				}
+				else
+				{
+					Fire2End();
+				}
 			}
-			return true;
+		}
+		return true;
 	}
 	return false;
 }
@@ -329,7 +344,7 @@ bool CWeaponShotgun::HaveCartridgeInInventory		(u8 cnt)
 	m_pAmmo = NULL;
 	if(m_pCurrentInventory) 
 	{
-		//попытаться найти в инвентаре патроны текущего типа 
+		//?????????? ????? ? ????????? ??????? ???????? ???? 
 		#if defined(AMMO_FROM_BELT)
 		if (ParentIsActor())
 			m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[m_ammoType]));
@@ -342,7 +357,7 @@ bool CWeaponShotgun::HaveCartridgeInInventory		(u8 cnt)
 		{
 			for(u32 i = 0; i < m_ammoTypes.size(); ++i) 
 			{
-				//проверить патроны всех подходящих типов
+				//????????? ??????? ???? ?????????? ?????
 				#if defined(AMMO_FROM_BELT)
 				if (ParentIsActor())
 					m_pAmmo = smart_cast<CWeaponAmmo*>(m_pCurrentInventory->GetAmmoOnBelt(*m_ammoTypes[i]));
@@ -398,7 +413,7 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 
 	VERIFY((u32)iAmmoElapsed == m_magazine.size());
 
-	//выкинуть коробку патронов, если она пустая
+	//???????? ??????? ????????, ???? ??? ??????
 	if(m_pAmmo && !m_pAmmo->m_boxCurr && OnServer()) 
 		m_pAmmo->SetDropManual(TRUE);
 

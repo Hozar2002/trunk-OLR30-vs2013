@@ -16,6 +16,7 @@ static	u16 SlotsToCheck [] = {
 //		KNIFE_SLOT		,		// 0
 //		GRENADE_SLOT	,		// 3
 		PISTOL_SLOT		,		// 1
+		GREN_SLOT		,		// 1
 		RIFLE_SLOT		,		// 2
 };
 
@@ -255,7 +256,7 @@ void game_cl_Deathmatch::CheckItem			(PIItem pItem, PRESET_ITEMS* pPresetItems, 
 		if (PresetItemIt == pPresetItems->end()) return;
 	}
 
-	if (SlotID == PISTOL_SLOT)
+	if (SlotID == PISTOL_SLOT) 
 	{
 		PRESET_ITEMS_it DefPistolIt = std::find(PlayerDefItems.begin(), PlayerDefItems.end(), BigID);
 		if (DefPistolIt != PlayerDefItems.end() && PresetItemIt == pPresetItems->end()) return;

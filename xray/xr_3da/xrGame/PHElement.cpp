@@ -680,6 +680,9 @@ void CPHElement::InterpolateGlobalTransform(Fmatrix* m){
 }
 void CPHElement::GetGlobalTransformDynamic(Fmatrix* m)
 {
+	//if (m_body == 0)
+	//	Msg("m_body zero"); 
+	//	return;
 	PHDynamicData::DMXPStoFMX(dBodyGetRotation(m_body),dBodyGetPosition(m_body),*m);
 	MulB43InverceLocalForm(*m);
 	VERIFY(_valid(*m));

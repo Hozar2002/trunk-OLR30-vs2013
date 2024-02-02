@@ -4,6 +4,7 @@
 #include "UIMessagesWindow.h"
 #include "../UIZoneMap.h"
 
+#include "UIHelper.h"
 
 #include <dinput.h>
 #include "../ai_space.h"
@@ -39,7 +40,6 @@
 
 #include "../string_table.h"
 #include "../clsid_game.h"
-#include "UIArtefactPanel.h"
 #include "UIMap.h"
 #include <functional>  // добавлено alpet для успешной сборки в VS 2013
 
@@ -54,7 +54,6 @@
 #include "../game_news.h"
 #include "../pch_script.h"
 
-#include "../../../build_config_defines.h"
 
 #ifdef DEBUG
 #	include "../debug_renderer.h"
@@ -145,10 +144,6 @@ CUIMainIngameWnd::CUIMainIngameWnd()
 	m_pItem						= NULL;
 	UIZoneMap					= xr_new<CUIZoneMap>();
 	m_pPickUpItem				= NULL;
-	m_artefactPanel				= xr_new<CUIArtefactPanel>();
-	#ifdef INV_QUICK_SLOT_PANEL
-	m_quickSlotPanel			= xr_new<CUIQuickSlotPanel>();
-	#endif
 	m_pMPChatWnd				= NULL;
 	m_pMPLogWnd					= NULL;	
 #ifdef SCRIPT_ICONS_CONTROL
@@ -169,11 +164,6 @@ CUIMainIngameWnd::~CUIMainIngameWnd()
 {
 	DestroyFlashingIcons		();
 	xr_delete					(UIZoneMap);
-	xr_delete					(m_artefactPanel);
-	#ifdef INV_QUICK_SLOT_PANEL
-	xr_delete					(m_quickSlotPanel);
-	#endif
-	HUD_SOUND::DestroySound		(m_contactSnd);
 	xr_delete					(g_MissileForceShape);
 }
 
@@ -201,22 +191,14 @@ void CUIMainIngameWnd::Init()
 	xml_init.InitStatic			(uiXml, "static_ammo", 0, &UIWeaponSignAmmo);
 	UIWeaponSignAmmo.SetElipsis	(CUIStatic::eepEnd, 2);
 
+	UIWeaponBack.AttachChild	(&UIWeaponSignAmmoName);
+	xml_init.InitStatic			(uiXml, "static_ammo_name", 0, &UIWeaponSignAmmoName);
+	UIWeaponSignAmmoName.SetElipsis	(CUIStatic::eepEnd, 2);
+
 	UIWeaponBack.AttachChild	(&UIWeaponIcon);
 	xml_init.InitStatic			(uiXml, "static_wpn_icon", 0, &UIWeaponIcon);
 	UIWeaponIcon.SetShader		(GetEquipmentIconsShader());
 	UIWeaponIcon_rect			= UIWeaponIcon.GetWndRect();
-	//---------------------------------------------------------
-	AttachChild					(&UIPickUpItemIcon);
-	xml_init.InitStatic			(uiXml, "pick_up_item", 0, &UIPickUpItemIcon);
-	UIPickUpItemIcon.SetShader	(GetEquipmentIconsShader());
-	UIPickUpItemIcon.Show		(false);
-
-	m_iPickUpItemIconWidth		= UIPickUpItemIcon.GetWidth();
-	m_iPickUpItemIconHeight		= UIPickUpItemIcon.GetHeight();
-	m_iPickUpItemIconX			= UIPickUpItemIcon.GetWndRect().left;
-	m_iPickUpItemIconY			= UIPickUpItemIcon.GetWndRect().top;
-	//---------------------------------------------------------
-
 
 	UIWeaponIcon.Enable			(false);
 
@@ -224,24 +206,13 @@ void CUIMainIngameWnd::Init()
 	UIZoneMap->Init				();
 	UIZoneMap->SetScale			(DEFAULT_MAP_SCALE);
 
-	if(IsGameTypeSingle())
-	{
-		xml_init.InitStatic					(uiXml, "static_pda_online", 0, &UIPdaOnline);
-		UIZoneMap->Background().AttachChild	(&UIPdaOnline);
-	}
-
-
 	//Полоса прогресса здоровья
 	UIStaticHealth.AttachChild	(&UIHealthBar);
-//.	xml_init.InitAutoStaticGroup(uiXml,"static_health", &UIStaticHealth);
 	xml_init.InitProgressBar	(uiXml, "progress_bar_health", 0, &UIHealthBar);
 
 	//Полоса прогресса армора
 	UIStaticArmor.AttachChild	(&UIArmorBar);
-//.	xml_init.InitAutoStaticGroup(uiXml,"static_armor", &UIStaticArmor);
 	xml_init.InitProgressBar	(uiXml, "progress_bar_armor", 0, &UIArmorBar);
-
-	
 
 	// Подсказки, которые возникают при наведении прицела на объект
 	AttachChild					(&UIStaticQuickHelp);
@@ -253,15 +224,12 @@ void CUIMainIngameWnd::Init()
 	xml_init.InitScrollView		(uiXml, "icons_scroll_view", 0, m_UIIcons);
 	AttachChild					(m_UIIcons);
 
-	// Загружаем иконки 
-	if(IsGameTypeSingle())
-	{
-		xml_init.InitStatic		(uiXml, "starvation_static", 0, &UIStarvationIcon);
-		UIStarvationIcon.Show	(false);
 
-		xml_init.InitStatic		(uiXml, "psy_health_static", 0, &UIPsyHealthIcon);
-		UIPsyHealthIcon.Show	(false);
-	}
+	xml_init.InitStatic			(uiXml, "starvation_static", 0, &UIStarvationIcon);
+	UIStarvationIcon.Show		(false);
+
+	xml_init.InitStatic			(uiXml, "psy_health_static", 0, &UIPsyHealthIcon);
+	UIPsyHealthIcon.Show		(false);
 
 	xml_init.InitStatic			(uiXml, "weapon_jammed_static", 0, &UIWeaponJammedIcon);
 	UIWeaponJammedIcon.Show		(false);
@@ -274,6 +242,10 @@ void CUIMainIngameWnd::Init()
 
 	xml_init.InitStatic			(uiXml, "invincible_static", 0, &UIInvincibleIcon);
 	UIInvincibleIcon.Show		(false);
+
+	m_water_static				= UIHelper::CreateStatic(uiXml, "water_static", this);
+
+	m_sleep_static				= UIHelper::CreateStatic(uiXml, "sleep_static", this);
 
 
 	if(GameID()==GAME_ARTEFACTHUNT){
@@ -322,72 +294,19 @@ void CUIMainIngameWnd::Init()
 	AttachChild								(&UICarPanel);
 	xml_init.InitWindow						(uiXml, "car_panel", 0, &UICarPanel);
 
-	AttachChild								(&UIMotionIcon);
-	UIMotionIcon.Init						();
-
-	if(IsGameTypeSingle())
-	{
-		m_artefactPanel->InitFromXML		(uiXml, "artefact_panel", 0);
-		this->AttachChild					(m_artefactPanel);	
-	}
-#ifdef INV_QUICK_SLOT_PANEL	
-	m_quickSlotPanel->Init();
-	m_quickSlotPanel->SetWindowName("quick_slot_panel");
-	this->AttachChild(m_quickSlotPanel);					
-#endif
-	AttachChild								(&UIStaticDiskIO);
-	UIStaticDiskIO.SetWndRect				(1000,750,16,16);
-	UIStaticDiskIO.GetUIStaticItem().SetRect(0,0,16,16);
-	UIStaticDiskIO.InitTexture				("ui\\ui_disk_io");
-	UIStaticDiskIO.SetOriginalRect			(0,0,32,32);
-	UIStaticDiskIO.SetStretchTexture		(TRUE);
 		
-
-	HUD_SOUND::LoadSound					("maingame_ui", "snd_new_contact"		, m_contactSnd		, SOUND_TYPE_IDLE);
 }
 
-float UIStaticDiskIO_start_time = 0.0f;
+
 void CUIMainIngameWnd::Draw()
 {
 #ifdef DEBUG
 	test_draw				();
 #endif
-	// show IO icon
-	bool IOActive	= (FS.dwOpenCounter>0);
-	if	(IOActive)	UIStaticDiskIO_start_time = Device.fTimeGlobal;
-
-	if ((UIStaticDiskIO_start_time+1.0f) < Device.fTimeGlobal)	UIStaticDiskIO.Show(false); 
-	else {
-		u32		alpha			= clampr(iFloor(255.f*(1.f-(Device.fTimeGlobal-UIStaticDiskIO_start_time)/1.f)),0,255);
-		UIStaticDiskIO.Show		( true  ); 
-		UIStaticDiskIO.SetColor	(color_rgba(255,255,255,alpha));
-	}
-	FS.dwOpenCounter = 0;
-
-	if(!IsGameTypeSingle())
-	{
-		float		luminocity = smart_cast<CGameObject*>(Level().CurrentEntity())->ROS()->get_luminocity();
-		float		power = log(luminocity > .001f ? luminocity : .001f)*(1.f/*luminocity_factor*/);
-		luminocity	= exp(power);
-
-		static float cur_lum = luminocity;
-		cur_lum = luminocity*0.01f + cur_lum*0.99f;
-		UIMotionIcon.SetLuminosity((s16)iFloor(cur_lum*100.0f));
-	}
 	if(!m_pActor) return;
-
-	UIMotionIcon.SetNoise		((s16)(0xffff&iFloor(m_pActor->m_snd_noise*100.0f)));
-	#ifdef INV_QUICK_SLOT_PANEL
-	m_quickSlotPanel->Draw();
-	#endif
 	CUIWindow::Draw				();
 	UIZoneMap->Render			();			
-
 	RenderQuickInfos			();		
-
-#ifdef DEBUG
-	draw_adjust_mode			();
-#endif
 }
 
 
@@ -420,14 +339,32 @@ void CUIMainIngameWnd::SetAmmoIcon (const shared_str& sect_name)
 
 	// now perform only width scale for ammo, which (W)size >2
 	// all others ammo (1x1, 1x2) will be not scaled (original picture)
-	float w = ((iGridWidth>2)?1.6f:iGridWidth)*INV_GRID_WIDTH*0.9f;
-	float h = INV_GRID_HEIGHT*0.9f;//1 cell
 
+	float w = ((iGridWidth>2)?1.6f:iGridWidth)*INV_GRID_WIDTH*0.9f;   // ((iGridWidth>2)?1.6f:iGridWidth)*INV_GRID_WIDTH*0.9f;
+	//float w = INV_GRID_WIDTH*0.9f;
+	float h = INV_GRID_HEIGHT*0.9f; //1 cell
+
+	float y = UIWeaponIcon_rect.y1;
 	float x = UIWeaponIcon_rect.x1;
-	if	(iGridWidth<2)
-		x	+= ( UIWeaponIcon_rect.width() - w) / 2.0f;
 
-	UIWeaponIcon.SetWndPos	(x, UIWeaponIcon_rect.y1);
+	if ((iGridWidth == 1) && (iGridHeight == 2)){
+		//Msg("fix vodka weapon1");
+		w = INV_GRID_WIDTH -16.5f;  // 2.5, 0, 1.1, 1.7  // shirina
+		h = INV_GRID_HEIGHT - 5.5f ;  // 2.5
+		y -= (UIWeaponIcon_rect.height() - w) / 3.8f;
+	};
+
+	if	(iGridWidth >= 2)										// comment
+		x	+= ( UIWeaponIcon_rect.width() - w) / 3.0f;		    // где 3.0 - меняет положение по гориз (1 - лево самое например)
+
+	if	((iGridWidth > 3) && (iGridHeight == 1)){
+		//Msg("fix long weapon");
+		w = INV_GRID_WIDTH*1.5f;
+		h = INV_GRID_HEIGHT/2.0f;
+		y	-= ( UIWeaponIcon_rect.height() - w) / 3.45f;
+	};
+
+	UIWeaponIcon.SetWndPos	(x, y);
 	
 	UIWeaponIcon.SetWidth	(w);
 	UIWeaponIcon.SetHeight	(h);
@@ -455,25 +392,8 @@ void CUIMainIngameWnd::Update()
 		return;
 	}
 
-	if( !(Device.dwFrame%30) && IsGameTypeSingle() )
-	{
-			string256				text_str;
-			CPda* _pda	= m_pActor->GetPDA();
-			u32 _cn		= 0;
-			if(_pda && 0!= (_cn=_pda->ActiveContactsNum()) )
-			{
-				sprintf_s(text_str, "%d", _cn);
-				UIPdaOnline.SetText(text_str);
-			}
-			else
-			{
-				UIPdaOnline.SetText("");
-			}
-	};
-
 	if( !(Device.dwFrame%5) )
 	{
-		
 		if(!(Device.dwFrame%30))
 		{
 			bool b_God = (GodMode()||(!Game().local_player)) ? true : Game().local_player->testFlag(GAME_PLAYER_FLAG_INVINCIBLE);
@@ -485,7 +405,7 @@ void CUIMainIngameWnd::Update()
 		}
 		// ewiArtefact
 		if( (GameID() == GAME_ARTEFACTHUNT) && !(Device.dwFrame%30) ){
-			bool b_Artefact = (NULL != m_pActor->inventory().ItemFromSlot(ARTEFACT_SLOT));
+			bool b_Artefact = (NULL != m_pActor->inventory().ItemFromSlot(NO_ACTIVE_SLOT));
 			if(b_Artefact)
 				SetWarningIconColor	(ewiArtefact,0xffffffff);			
 			else
@@ -524,8 +444,7 @@ void CUIMainIngameWnd::Update()
 				value = m_pActor->conditions().BleedingSpeed();
 				break;
 			case ewiWeaponJammed:
-				if (m_pWeapon)
-					value = 1 - m_pWeapon->GetConditionToShow();
+				value = 1 - m_pActor->conditions().GetPower();
 				break;
 			case ewiStarvation:
 				value = 1 - m_pActor->conditions().GetSatiety();
@@ -564,93 +483,106 @@ void CUIMainIngameWnd::Update()
 
 	// health&armor
 	UIHealthBar.SetProgressPos		(m_pActor->GetfHealth()*100.0f);
-	UIMotionIcon.SetPower			(m_pActor->conditions().GetPower()*100.0f);
 
 	UIZoneMap->UpdateRadar			(Device.vCameraPosition);
 	float h,p;
 	Device.vCameraDirection.getHP	(h,p);
 	UIZoneMap->SetHeading			(-h);
 
-	UpdatePickUpItem				();
-	#ifdef INV_QUICK_SLOT_PANEL
-	m_quickSlotPanel->Update();
-	#endif
+	float valueWater = m_pActor->conditions().GetWater();
+	m_water_static->Show(false);
+	if (valueWater)
+	{
+		float condition = valueWater;
+	    if (condition<0.35f)
+	    {
+		  m_water_static->Show(true);
+		  if(condition>0.3f)
+			m_water_static->InitTexture("ui_inGame2_water_green");
+		  else if(condition>0.2f)
+			m_water_static->InitTexture("ui_inGame2_water_yellow");
+		  else
+			m_water_static->InitTexture("ui_inGame2_water_red");
+	     }
+	} 
+
+	float valueSleep = m_pActor->conditions().GetSleep();
+	m_sleep_static->Show(false);
+	if (valueSleep)
+	{
+		float condition = valueSleep;
+	    if (condition<0.35f)
+	    {
+		  m_sleep_static->Show(true);
+		  if(condition>0.3f)
+			m_sleep_static->InitTexture("ui_inGame2_sleep_green");
+		  else if(condition>0.2f)
+			m_sleep_static->InitTexture("ui_inGame2_sleep_yellow");
+		  else
+			m_sleep_static->InitTexture("ui_inGame2_sleep_red");
+	     }
+	} 
+
 	CUIWindow::Update				();
 }
 
-void CUIMainIngameWnd::HudAdjustMode(int dik)
+bool CUIMainIngameWnd::OnKeyboardPress(int dik)
 {
+#if 0//def DEBUG
+	test_key(dik);
+#endif
 	// поддержка режима adjust hud mode
+	bool flag = false;
 	if (g_bHudAdjustMode)
 	{
 		CWeaponHUD *pWpnHud = NULL;
 		if (m_pWeapon)
 		{
 			pWpnHud = m_pWeapon->GetHUD();
+//			if (!pWpnHud) return false;
 		}
 		else
-			return;
+			return false;
 
 		Fvector tmpV;
 
-		if (1 == g_bHudAdjustMode) //zoom offset
+		if (1 == g_bHudAdjustMode) //hud offset and zoom offset
 		{
-			if (!pWpnHud) return;
-			tmpV = pWpnHud->ZoomOffset();
+			CActor *pActor = smart_cast<CActor*>(Level().CurrentEntity());
 
-			switch (dik)
+			R_ASSERT(pActor);
+
+			// output coordinate info to the console
+			if (dik == DIK_P)
 			{
-				// Rotate +y
-			case DIK_K:
-				pWpnHud->SetZoomRotateX(pWpnHud->ZoomRotateX() + g_fHudAdjustValue);
-				break;
-				// Rotate -y
-			case DIK_I:
-				pWpnHud->SetZoomRotateX(pWpnHud->ZoomRotateX() - g_fHudAdjustValue);
-				break;
-				// Rotate +x
-			case DIK_L:
-				pWpnHud->SetZoomRotateY(pWpnHud->ZoomRotateY() + g_fHudAdjustValue);
-				break;
-				// Rotate -x
-			case DIK_J:
-				pWpnHud->SetZoomRotateY(pWpnHud->ZoomRotateY() - g_fHudAdjustValue);
-				break;
-				// Shift +x
-			case DIK_W:
-				tmpV.y += g_fHudAdjustValue;
-				break;
-				// Shift -y
-			case DIK_S:
-				tmpV.y -= g_fHudAdjustValue;
-				break;
-				// Shift +x
-			case DIK_D:
-				tmpV.x += g_fHudAdjustValue;
-				break;
-				// Shift -x
-			case DIK_A:
-				tmpV.x -= g_fHudAdjustValue;
-				break;
-				// Shift +z
-			case DIK_Q:
-				tmpV.z += g_fHudAdjustValue;
-				break;
-				// Shift -z
-			case DIK_E:
-				tmpV.z -= g_fHudAdjustValue;
-				break;
-				// output coordinate info to the console
-			case DIK_P:
+				if (!pWpnHud) return false;
+
+				Fmatrix m_offset = pWpnHud->HudOffsetMatrix();
+
+				Msg("Print coordinates:");
 				string256 tmpStr;
-				sprintf_s(tmpStr, "%s",
-					*m_pWeapon->cNameSect());
+				sprintf_s(tmpStr, "[%s]",
+					pSettings->r_string(*m_pWeapon->cNameSect(),"hud"));
+				Log(tmpStr);
+					sprintf_s(tmpStr, "position\t\t\t= %f,%f,%f",
+						m_offset.c.x,
+						m_offset.c.y,
+						m_offset.c.z);
 				Log(tmpStr);
 
-				sprintf_s(tmpStr, "zoom_offset\t\t\t= %f,%f,%f",
-					pWpnHud->ZoomOffset().x,
-					pWpnHud->ZoomOffset().y,
-					pWpnHud->ZoomOffset().z);
+				Fvector orient;
+				m_offset.getHPB (orient);
+				orient.mul (180.f/PI);
+
+				sprintf_s(tmpStr, "orientation\t\t\t= %f,%f,%f",
+						orient.x,
+						orient.y,
+						orient.z);
+				Log(tmpStr);
+						sprintf_s(tmpStr, "zoom_offset\t\t\t= %f,%f,%f",
+						pWpnHud->ZoomOffset().x,
+						pWpnHud->ZoomOffset().y,
+						pWpnHud->ZoomOffset().z);
 				Log(tmpStr);
 				sprintf_s(tmpStr, "zoom_rotate_x\t\t= %f",
 					pWpnHud->ZoomRotateX());
@@ -658,44 +590,179 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 				sprintf_s(tmpStr, "zoom_rotate_y\t\t= %f",
 					pWpnHud->ZoomRotateY());
 				Log(tmpStr);
-				break;
-			}
+				flag = true;
 
-			if (tmpV.x || tmpV.y || tmpV.z)
-				pWpnHud->SetZoomOffset(tmpV);
+			} else if (pActor->IsZoomAimingMode())
+			{
+				if (!pWpnHud) return false;
+				tmpV = pWpnHud->ZoomOffset();
+
+				switch (dik)
+				{
+				// Rotate +x
+				case DIK_K:
+					pWpnHud->SetZoomRotateX(pWpnHud->ZoomRotateX() + g_fHudAdjustValue);
+					flag = true;
+					break;
+				// Rotate -x
+				case DIK_I:
+					pWpnHud->SetZoomRotateX(pWpnHud->ZoomRotateX() - g_fHudAdjustValue);
+					flag = true;
+					break;
+				// Rotate +y
+				case DIK_L:
+					pWpnHud->SetZoomRotateY(pWpnHud->ZoomRotateY() + g_fHudAdjustValue);
+					flag = true;
+					break;
+				// Rotate -y
+				case DIK_J:
+					pWpnHud->SetZoomRotateY(pWpnHud->ZoomRotateY() - g_fHudAdjustValue);
+					flag = true;
+					break;
+				// Shift +x
+				case DIK_W:
+					tmpV.y += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -y
+				case DIK_S:
+					tmpV.y -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift +x
+				case DIK_D:
+					tmpV.x += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -x
+				case DIK_A:
+					tmpV.x -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift +z
+				case DIK_Q:
+					tmpV.z += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -z
+				case DIK_E:
+					tmpV.z -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				}
+
+				if (tmpV.x || tmpV.y || tmpV.z)
+					pWpnHud->SetZoomOffset(tmpV);
+			} else {
+				if (!pWpnHud) return false;
+
+				Fmatrix m_offset = pWpnHud->HudOffsetMatrix();
+				tmpV = pWpnHud->ZoomOffset();
+
+				switch (dik)
+				{
+				// Rotate +x
+				case DIK_L:
+					m_offset.k.x += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Rotate -x
+				case DIK_J:
+					m_offset.k.x -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Rotate +y
+				case DIK_I:
+					m_offset.k.y += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Rotate -y
+				case DIK_K:
+					m_offset.k.y -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift +x
+				case DIK_W:
+					m_offset.c.y += g_fHudAdjustValue;
+					tmpV.y -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -y
+				case DIK_S:
+					m_offset.c.y -= g_fHudAdjustValue;
+					tmpV.y += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift +x
+				case DIK_D:
+					m_offset.c.x += g_fHudAdjustValue;
+					tmpV.x -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -x
+				case DIK_A:
+					m_offset.c.x -= g_fHudAdjustValue;
+					tmpV.x += g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift +z
+				case DIK_Q:
+					m_offset.c.z += g_fHudAdjustValue;
+					tmpV.z -= g_fHudAdjustValue;
+					flag = true;
+					break;
+				// Shift -z
+				case DIK_E:
+					m_offset.c.z -= g_fHudAdjustValue;
+					tmpV.z += g_fHudAdjustValue;
+					flag = true;
+					break;
+				}
+
+				pWpnHud->SetHudOffsetMatrix(m_offset);
+				if (tmpV.x || tmpV.y || tmpV.z)
+					pWpnHud->SetZoomOffset(tmpV);
+			}
 		}
 		else if (2 == g_bHudAdjustMode || 5 == g_bHudAdjustMode) //firePoints
 		{
-			if (TRUE == m_pWeapon->GetHUDmode())
+			if(TRUE==m_pWeapon->GetHUDmode())
 				tmpV = (2 == g_bHudAdjustMode) ? pWpnHud->FirePoint() : pWpnHud->FirePoint2();
 			else
 				tmpV = (2 == g_bHudAdjustMode) ? m_pWeapon->vLoadedFirePoint : m_pWeapon->vLoadedFirePoint2;
 
+		
 			switch (dik)
 			{
 				// Shift +x
 			case DIK_A:
 				tmpV.y += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -x
 			case DIK_D:
 				tmpV.y -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +z
 			case DIK_Q:
 				tmpV.x += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -z
 			case DIK_E:
 				tmpV.x -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +y
 			case DIK_S:
 				tmpV.z += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -y
 			case DIK_W:
 				tmpV.z -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// output coordinate info to the console
 			case DIK_P:
@@ -707,37 +774,33 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 					Log(tmpStr);
 				}
 
-				if (TRUE == m_pWeapon->GetHUDmode())
-					Msg("weapon hud section:");
-				else
-					Msg("weapon section:");
+			if(TRUE==m_pWeapon->GetHUDmode())
+				Msg("weapon hud section:");
+			else
+				Msg("weapon section:");
 
 				sprintf_s(tmpStr, "fire_point\t\t\t= %f,%f,%f",
 					tmpV.x,
 					tmpV.y,
 					tmpV.z);
 				Log(tmpStr);
+				flag = true;
 				break;
 			}
-
-			if (TRUE == m_pWeapon->GetHUDmode())
-			{
-				if (2 == g_bHudAdjustMode)
-					pWpnHud->dbg_SetFirePoint(tmpV);
-				else
-					pWpnHud->dbg_SetFirePoint2(tmpV);
-			}
+//#ifdef	DEBUG
+			if(TRUE==m_pWeapon->GetHUDmode())
+				if (2 == g_bHudAdjustMode) pWpnHud->dbg_SetFirePoint(tmpV);
+				else pWpnHud->dbg_SetFirePoint2(tmpV);
 			else
 			{
-				if (2 == g_bHudAdjustMode)
-					m_pWeapon->vLoadedFirePoint = tmpV;
-				else
-					m_pWeapon->vLoadedFirePoint2 = tmpV;
+				if (2 == g_bHudAdjustMode)  m_pWeapon->vLoadedFirePoint = tmpV;
+				else m_pWeapon->vLoadedFirePoint2 = tmpV;
 			}
+//#endif
 		}
 		else if (4 == g_bHudAdjustMode) //ShellPoint
 		{
-			if (TRUE == m_pWeapon->GetHUDmode())
+			if(TRUE==m_pWeapon->GetHUDmode())
 				tmpV = pWpnHud->ShellPoint();
 			else
 				tmpV = m_pWeapon->vLoadedShellPoint;
@@ -747,26 +810,32 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 				// Shift +x
 			case DIK_A:
 				tmpV.y += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -x
 			case DIK_D:
 				tmpV.y -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +z
 			case DIK_Q:
 				tmpV.x += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -z
 			case DIK_E:
 				tmpV.x -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +y
 			case DIK_S:
 				tmpV.z += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -y
 			case DIK_W:
 				tmpV.z -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// output coordinate info to the console
 			case DIK_P:
@@ -778,23 +847,26 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 					Log(tmpStr);
 				}
 
-				if (TRUE == m_pWeapon->GetHUDmode())
-					Msg("weapon hud section:");
-				else
-					Msg("weapon section:");
+			if(TRUE==m_pWeapon->GetHUDmode())
+				Msg("weapon hud section:");
+			else
+				Msg("weapon section:");
 
 				sprintf_s(tmpStr, "shell_point\t\t\t= %f,%f,%f",
 					tmpV.x,
 					tmpV.y,
 					tmpV.z);
 				Log(tmpStr);
+				flag = true;
 				break;
 			}
-
-			if (TRUE == m_pWeapon->GetHUDmode())
+//#ifdef DEBUG
+			if(TRUE==m_pWeapon->GetHUDmode())
 				pWpnHud->dbg_SetShellPoint(tmpV);
 			else
 				m_pWeapon->vLoadedShellPoint = tmpV;
+
+//#endif
 		}
 		else if (3 == g_bHudAdjustMode) //MissileOffset
 		{
@@ -804,31 +876,38 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 
 			tmpV = pActor->GetMissileOffset();
 
+			if (!pActor) return false;
 			switch (dik)
 			{
 				// Shift +x
 			case DIK_E:
 				tmpV.y += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -x
 			case DIK_Q:
 				tmpV.y -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +z
 			case DIK_D:
 				tmpV.x += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -z
 			case DIK_A:
 				tmpV.x -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift +y
 			case DIK_W:
 				tmpV.z += g_fHudAdjustValue;
+				flag = true;
 				break;
 				// Shift -y
 			case DIK_S:
 				tmpV.z -= g_fHudAdjustValue;
+				flag = true;
 				break;
 				// output coordinate info to the console
 			case DIK_P:
@@ -846,17 +925,17 @@ void CUIMainIngameWnd::HudAdjustMode(int dik)
 					pActor->GetMissileOffset().z);
 
 				Log(tmpStr);
+				flag = true;
 				break;
 			}
 
 			pActor->SetMissileOffset(tmpV);
 		}
+		
+
+		if (flag) return true;
 	}
-}
 
-
-bool CUIMainIngameWnd::OnKeyboardPress(int dik)
-{
 #ifdef DEBUG
 		if(CAttachableItem::m_dbgItem){
 			static float rot_d = deg2rad(0.5f);
@@ -940,16 +1019,14 @@ bool CUIMainIngameWnd::OnKeyboardPress(int dik)
 		{
 		case DIK_NUMPADMINUS:
 			//.HideAll();
-			if (!external_icon_ctrl)
-				HUD().GetUI()->HideGameIndicators();
-			else
-				HUD().GetUI()->ShowGameIndicators();
-
+			HUD().GetUI()->HideGameIndicators();
+			HUD().GetUI()->HideCrosshair();
 			return true;
 			break;
 		case DIK_NUMPADPLUS:
 			//.ShowAll();
 			HUD().GetUI()->ShowGameIndicators();
+			HUD().GetUI()->ShowCrosshair();
 			return true;
 			break;
 		}
@@ -957,6 +1034,7 @@ bool CUIMainIngameWnd::OnKeyboardPress(int dik)
 
 	return false;
 }
+
 
 
 void CUIMainIngameWnd::RenderQuickInfos()
@@ -1177,21 +1255,6 @@ void CUIMainIngameWnd::UpdateFlashingIcons()
 
 void CUIMainIngameWnd::AnimateContacts(bool b_snd)
 {
-	UIPdaOnline.ResetClrAnimation	();
-
-	if(b_snd)
-		HUD_SOUND::PlaySound	(m_contactSnd, Fvector().set(0,0,0), 0, true );
-
-}
-
-void CUIMainIngameWnd::SetPickUpItem	(CInventoryItem* PickUpItem)
-{
-	if (m_pPickUpItem != PickUpItem)
-	{
-		m_pPickUpItem = PickUpItem;
-		UIPickUpItemIcon.Show(false);
-		UIPickUpItemIcon.DetachAll();
-	}
 };
 
 #include "UICellCustomItems.h"
@@ -1228,87 +1291,6 @@ CUIStatic* init_addon(
 	return addon;
 }
 
-void CUIMainIngameWnd::UpdatePickUpItem	()
-{
-	if (!m_pPickUpItem || !Level().CurrentViewEntity() || Level().CurrentViewEntity()->CLS_ID != CLSID_OBJECT_ACTOR) 
-	{
-		return;
-	};
-
-	if (UIPickUpItemIcon.IsShown() ) return; // Real Wolf: Какой смысл постоянно обновлять? 10.08.2014.
-
-	shared_str sect_name	= m_pPickUpItem->object().cNameSect();
-
-	//properties used by inventory menu
-	int m_iGridWidth	= pSettings->r_u32(sect_name, "inv_grid_width");
-	int m_iGridHeight	= pSettings->r_u32(sect_name, "inv_grid_height");
-
-	int m_iXPos			= pSettings->r_u32(sect_name, "inv_grid_x");
-	int m_iYPos			= pSettings->r_u32(sect_name, "inv_grid_y");
-
-	float scale_x = m_iPickUpItemIconWidth/
-		float(m_iGridWidth*INV_GRID_WIDTH);
-
-	float scale_y = m_iPickUpItemIconHeight/
-		float(m_iGridHeight*INV_GRID_HEIGHT);
-
-	scale_x = (scale_x>1) ? 1.0f : scale_x;
-	scale_y = (scale_y>1) ? 1.0f : scale_y;
-
-	float scale = scale_x<scale_y?scale_x:scale_y;
-
-	UIPickUpItemIcon.GetUIStaticItem().SetOriginalRect(
-		float(m_iXPos * INV_GRID_WIDTH),
-		float(m_iYPos * INV_GRID_HEIGHT),
-		float(m_iGridWidth * INV_GRID_WIDTH),
-		float(m_iGridHeight * INV_GRID_HEIGHT));
-
-	UIPickUpItemIcon.SetStretchTexture(true);
-
-	// Real Wolf: Исправляем растягивание. 10.08.2014.
-	scale_x = Device.fASPECT/0.75f;
-
-	UIPickUpItemIcon.SetWidth(m_iGridWidth*INV_GRID_WIDTH*scale*scale_x);
-	UIPickUpItemIcon.SetHeight(m_iGridHeight*INV_GRID_HEIGHT*scale);
-
-	UIPickUpItemIcon.SetWndPos(m_iPickUpItemIconX + 
-		(m_iPickUpItemIconWidth - UIPickUpItemIcon.GetWidth())/2,
-		m_iPickUpItemIconY + 
-		(m_iPickUpItemIconHeight - UIPickUpItemIcon.GetHeight())/2);
-
-	UIPickUpItemIcon.SetColor(color_rgba(255,255,255,192));
-
-	// Real Wolf: Добавляем к иконке аддоны оружия. 10.08.2014.
-	if (auto wpn = m_pPickUpItem->cast_weapon() )
-	{
-		auto cell_item = xr_new<CUIWeaponCellItem>(wpn);
-
-		if (wpn->SilencerAttachable() && wpn->IsSilencerAttached() )
-		{
-			auto sil = init_addon(cell_item, *wpn->GetSilencerName(), scale, scale_x, eAddonType::eSilencer);
-			UIPickUpItemIcon.AttachChild(sil);
-		}
-
-		if (wpn->ScopeAttachable() && wpn->IsScopeAttached() )
-		{
-			auto scope = init_addon(cell_item, *wpn->GetScopeName(), scale, scale_x, eAddonType::eScope);
-			UIPickUpItemIcon.AttachChild(scope);
-		}
-
-		if (wpn->GrenadeLauncherAttachable() && wpn->IsGrenadeLauncherAttached() )
-		{
-			auto launcher = init_addon(cell_item, *wpn->GetGrenadeLauncherName(), scale, scale_x, eAddonType::eLauncher);
-			UIPickUpItemIcon.AttachChild(launcher);
-		}
-		delete_data(cell_item);
-	}
-
-	// Real Wolf: Колбек для скриптового добавления своих иконок. 10.08.2014.
-	g_actor->callback(GameObject::eUIPickUpItemShowing)(m_pPickUpItem->object().lua_game_object(), &UIPickUpItemIcon);
-
-	UIPickUpItemIcon.Show(true);
-};
-
 void CUIMainIngameWnd::UpdateActiveItemInfo()
 {
 	PIItem item		=  m_pActor->inventory().ActiveItem();
@@ -1317,12 +1299,15 @@ void CUIMainIngameWnd::UpdateActiveItemInfo()
 		xr_string					str_name;
 		xr_string					icon_sect_name;
 		xr_string					str_count;
-		item->GetBriefInfo			(str_name, icon_sect_name, str_count);
+		xr_string					ammo_sect_name;
+		item->GetBriefInfo			(str_name, icon_sect_name, str_count, ammo_sect_name);
 
 		UIWeaponSignAmmo.Show		(true						);
 		UIWeaponBack.SetText		(str_name.c_str			()	);
 		UIWeaponSignAmmo.SetText	(str_count.c_str		()	);
 		SetAmmoIcon					(icon_sect_name.c_str	()	);
+		UIWeaponSignAmmoName.Show		(true						);
+		UIWeaponSignAmmoName.SetText	(ammo_sect_name.c_str		()	);
 
 		//-------------------
 		m_pWeapon = smart_cast<CWeapon*> (item);		
@@ -1331,6 +1316,7 @@ void CUIMainIngameWnd::UpdateActiveItemInfo()
 		UIWeaponIcon.Show			(false);
 		UIWeaponSignAmmo.Show		(false);
 		UIWeaponBack.SetText		("");
+		UIWeaponSignAmmoName.Show	(false);
 		m_pWeapon					= NULL;
 	}
 }
@@ -1347,7 +1333,7 @@ void CUIMainIngameWnd::reset_ui()
 	m_pGrenade						= NULL;
 	m_pItem							= NULL;
 	m_pPickUpItem					= NULL;
-	UIMotionIcon.ResetVisibility	();
+	//UIMotionIcon.ResetVisibility	();
 }
 
 #ifdef DEBUG
@@ -1552,273 +1538,5 @@ void CUIMainIngameWnd::draw_adjust_mode()
 			RCache.dbg_DrawAABB(SP,0.02f,0.02f,0.02f,D3DCOLOR_XRGB(0,255,0));
 		}
 	}
-}
-#endif
-
-
-#ifdef INV_QUICK_SLOT_PANEL
-using namespace InventoryUtilities;
-
-CUIQuickSlotPanel::CUIQuickSlotPanel()
-{
-    m_QuickSlot_0_Icon_Size.set			(0.0f,0.0f);
-    m_QuickSlot_1_Icon_Size.set			(0.0f,0.0f);
-    m_QuickSlot_2_Icon_Size.set			(0.0f,0.0f);
-    m_QuickSlot_3_Icon_Size.set			(0.0f,0.0f);
-}
-
-CUIQuickSlotPanel::~CUIQuickSlotPanel()
-{
-}
-
-void CUIQuickSlotPanel::Init()
-{
-
-    CUIXml uiXml;
-    bool xml_result = uiXml.Init(CONFIG_PATH, UI_PATH, "quick_slot_wnd.xml");
-    R_ASSERT2(xml_result, "xml file not found 'quick_slot_wnd.xml'");
-
-    CUIXmlInit	xml_init;
-
-    xml_init.InitWindow					(uiXml, "quick_slot_panel", 0, this);
-	//
-	m_QuickSlotPanelBackground					= xr_new<CUIStatic>();
-	m_QuickSlotPanelBackground->SetAutoDelete	(true);
-	AttachChild					(m_QuickSlotPanelBackground);	
-	xml_init.InitStatic			(uiXml, "quick_slot_panel:quick_slot_panel_background", 0, m_QuickSlotPanelBackground);
-	//
-    m_QuickSlot_0_Icon					= xr_new<CUIStatic>();
-	m_QuickSlot_0_Icon->SetAutoDelete	(true);
-    m_QuickSlotPanelBackground->AttachChild(m_QuickSlot_0_Icon);
-    xml_init.InitStatic			(uiXml, "quick_slot_panel:image_static_quick_slot_0", 0, m_QuickSlot_0_Icon);
-    m_QuickSlot_0_Icon->TextureAvailable(true);
-    m_QuickSlot_0_Icon->TextureOff			();
-    m_QuickSlot_0_Icon->ClipperOn			();
-    m_QuickSlot_0_Icon_Size.set	(m_QuickSlot_0_Icon->GetWidth(),m_QuickSlot_0_Icon->GetHeight());
-	//
-    m_QuickSlot_1_Icon					= xr_new<CUIStatic>();
-	m_QuickSlot_1_Icon->SetAutoDelete	(true);
-    m_QuickSlotPanelBackground->AttachChild					(m_QuickSlot_1_Icon);
-    xml_init.InitStatic			(uiXml, "quick_slot_panel:image_static_quick_slot_1", 0, m_QuickSlot_1_Icon);
-    m_QuickSlot_1_Icon->TextureAvailable(true);
-    m_QuickSlot_1_Icon->TextureOff			();
-    m_QuickSlot_1_Icon->ClipperOn			();
-    m_QuickSlot_1_Icon_Size.set	(m_QuickSlot_1_Icon->GetWidth(),m_QuickSlot_1_Icon->GetHeight());
-	//
-    m_QuickSlot_2_Icon					= xr_new<CUIStatic>();
-	m_QuickSlot_2_Icon->SetAutoDelete	(true);
-    m_QuickSlotPanelBackground->AttachChild					(m_QuickSlot_2_Icon);
-    xml_init.InitStatic			(uiXml, "quick_slot_panel:image_static_quick_slot_2", 0, m_QuickSlot_2_Icon);
-    m_QuickSlot_2_Icon->TextureAvailable(true);
-    m_QuickSlot_2_Icon->TextureOff			();
-    m_QuickSlot_2_Icon->ClipperOn			();
-    m_QuickSlot_2_Icon_Size.set	(m_QuickSlot_2_Icon->GetWidth(),m_QuickSlot_2_Icon->GetHeight());
-	//
-    m_QuickSlot_3_Icon					= xr_new<CUIStatic>();
-	m_QuickSlot_3_Icon->SetAutoDelete	(true);
-    m_QuickSlotPanelBackground->AttachChild					(m_QuickSlot_3_Icon);
-    xml_init.InitStatic			(uiXml, "quick_slot_panel:image_static_quick_slot_3", 0, m_QuickSlot_3_Icon);
-    m_QuickSlot_3_Icon->TextureAvailable(true);
-    m_QuickSlot_3_Icon->TextureOff			();
-    m_QuickSlot_3_Icon->ClipperOn			();
-    m_QuickSlot_3_Icon_Size.set	(m_QuickSlot_3_Icon->GetWidth(),m_QuickSlot_3_Icon->GetHeight());
-	//
-    m_CountItemQuickSlot_0_Text		= xr_new<CUIStatic>();
-    m_CountItemQuickSlot_0_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_CountItemQuickSlot_0_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:count_item_quick_slot_0_text", 0, m_CountItemQuickSlot_0_Text);
-	//
-    m_CountItemQuickSlot_1_Text		= xr_new<CUIStatic>();
-    m_CountItemQuickSlot_1_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_CountItemQuickSlot_1_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:count_item_quick_slot_1_text", 0, m_CountItemQuickSlot_1_Text);
-	//
-    m_CountItemQuickSlot_2_Text		= xr_new<CUIStatic>();
-    m_CountItemQuickSlot_2_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_CountItemQuickSlot_2_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:count_item_quick_slot_2_text", 0, m_CountItemQuickSlot_2_Text);
-	//
-    m_CountItemQuickSlot_3_Text		= xr_new<CUIStatic>();
-    m_CountItemQuickSlot_3_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_CountItemQuickSlot_3_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:count_item_quick_slot_3_text", 0, m_CountItemQuickSlot_3_Text);
-	//
-    m_UseQuickSlot_0_Text		= xr_new<CUIStatic>();
-    m_UseQuickSlot_0_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_UseQuickSlot_0_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:use_quick_slot_0_text", 0, m_UseQuickSlot_0_Text);
-	//
-    m_UseQuickSlot_1_Text		= xr_new<CUIStatic>();
-    m_UseQuickSlot_1_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_UseQuickSlot_1_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:use_quick_slot_1_text", 0, m_UseQuickSlot_1_Text);
-	//
-    m_UseQuickSlot_2_Text		= xr_new<CUIStatic>();
-    m_UseQuickSlot_2_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_UseQuickSlot_2_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:use_quick_slot_2_text", 0, m_UseQuickSlot_2_Text);
-	//
-    m_UseQuickSlot_3_Text		= xr_new<CUIStatic>();
-    m_UseQuickSlot_3_Text->SetAutoDelete(true);
-    m_QuickSlotPanelBackground->AttachChild				(m_UseQuickSlot_3_Text);
-    xml_init.InitStatic		(uiXml, "quick_slot_panel:use_quick_slot_3_text", 0, m_UseQuickSlot_3_Text);
-}
-
-void CUIQuickSlotPanel::DrawItemInSlot(const PIItem itm, CUIStatic* m_QuickSlot_Icon, Fvector2 m_QuickSlot_Icon_Size )
-{
-    PIItem iitm = itm;
-
-    m_QuickSlot_Icon->SetShader(InventoryUtilities::GetEquipmentIconsShader());
-
-    int iGridWidth						= iitm->GetGridWidth();
-    int iGridHeight						= iitm->GetGridHeight();
-    int iXPos							= iitm->GetXPos();
-    int iYPos							= iitm->GetYPos();
-
-    m_QuickSlot_Icon->GetUIStaticItem().SetOriginalRect(	float(iXPos*INV_GRID_WIDTH), float(iYPos*INV_GRID_HEIGHT),
-            float(iGridWidth*INV_GRID_WIDTH),	float(iGridHeight*INV_GRID_HEIGHT));
-    m_QuickSlot_Icon->TextureOn				();
-    m_QuickSlot_Icon->ClipperOn				();
-    m_QuickSlot_Icon->SetStretchTexture		(true);
-
-    Frect v_r							= {	0.0f,
-                                            0.0f,
-                                            float(iGridWidth*INV_GRID_WIDTH),
-                                            float(iGridHeight*INV_GRID_HEIGHT)
-                      };
-    if(UI()->is_16_9_mode())
-        v_r.x2 /= 1.328f;
-
-    m_QuickSlot_Icon->GetUIStaticItem().SetRect	(v_r);
-    m_QuickSlot_Icon->SetWidth					(_min(v_r.width(),	m_QuickSlot_Icon_Size.x));
-    m_QuickSlot_Icon->SetHeight					(_min(v_r.height(),	m_QuickSlot_Icon_Size.y));
-    m_QuickSlot_Icon->Show(true);
-}
-
-
-void CUIQuickSlotPanel::Update()
-{
-    CActor*	pActor = smart_cast<CActor*>(Level().CurrentViewEntity());
-
-    if (pActor)
-    {
-
-        PIItem itm = 0;
-		string32	str;
-		shared_str itm_name;
-		u32 count;
-
-        itm = pActor->inventory().m_slots[SLOT_QUICK_ACCESS_0].m_pIItem;
-
-        if(itm)
-        {
-            sprintf_s	(str, "%s",*CStringTable().translate("ui_quick_slot_use_str_0"));
-            m_UseQuickSlot_0_Text->SetText(str);
-            m_UseQuickSlot_0_Text->Show(true);
-
-			itm_name = itm->object().cNameSect();
-            count = pActor->inventory().dwfGetSameItemCount(itm_name.c_str(), true);
-
-            sprintf(str, "x%d", count);
-            m_CountItemQuickSlot_0_Text->SetText(str);
-            m_CountItemQuickSlot_0_Text->Show(true);
-
-			DrawItemInSlot(itm, m_QuickSlot_0_Icon, m_QuickSlot_0_Icon_Size );
-        }
-        else
-        {
-            m_UseQuickSlot_0_Text->Show(false);
-            m_CountItemQuickSlot_0_Text->Show(false);
-            m_QuickSlot_0_Icon->Show(false);
-        }
-
-        itm = pActor->inventory().m_slots[SLOT_QUICK_ACCESS_1].m_pIItem;
-
-        if(itm)
-        {
-            sprintf_s	(str, "%s",*CStringTable().translate("ui_quick_slot_use_str_1"));
-            m_UseQuickSlot_1_Text->SetText(str);
-            m_UseQuickSlot_1_Text->Show(true);
-
-			itm_name = itm->object().cNameSect();
-            count = pActor->inventory().dwfGetSameItemCount(itm_name.c_str(), true);
-
-            sprintf(str, "x%d", count);
-            m_CountItemQuickSlot_1_Text->SetText(str);
-            m_CountItemQuickSlot_1_Text->Show(true);
-
-			DrawItemInSlot(itm, m_QuickSlot_1_Icon, m_QuickSlot_1_Icon_Size );
-        }
-        else
-        {
-            m_UseQuickSlot_1_Text->Show(false);
-            m_CountItemQuickSlot_1_Text->Show(false);
-            m_QuickSlot_1_Icon->Show(false);
-        }
-
-        itm = pActor->inventory().m_slots[SLOT_QUICK_ACCESS_2].m_pIItem;
-
-        if(itm)
-        {
-            sprintf_s	(str, "%s",*CStringTable().translate("ui_quick_slot_use_str_2"));
-            m_UseQuickSlot_2_Text->SetText(str);
-            m_UseQuickSlot_2_Text->Show(true);
-
-			itm_name = itm->object().cNameSect();
-            count = pActor->inventory().dwfGetSameItemCount(itm_name.c_str(), true);
-
-            sprintf(str, "x%d", count);
-            m_CountItemQuickSlot_2_Text->SetText(str);
-            m_CountItemQuickSlot_2_Text->Show(true);
-
-			DrawItemInSlot(itm, m_QuickSlot_2_Icon, m_QuickSlot_2_Icon_Size );
-        }
-        else
-        {
-            m_UseQuickSlot_2_Text->Show(false);
-            m_CountItemQuickSlot_2_Text->Show(false);
-            m_QuickSlot_2_Icon->Show(false);
-        }
-
-        itm = pActor->inventory().m_slots[SLOT_QUICK_ACCESS_3].m_pIItem;
-
-        if(itm)
-        {
-            sprintf_s	(str, "%s",*CStringTable().translate("ui_quick_slot_use_str_3"));
-            m_UseQuickSlot_3_Text->SetText(str);
-            m_UseQuickSlot_3_Text->Show(true);
-
-			itm_name = itm->object().cNameSect();
-            count = pActor->inventory().dwfGetSameItemCount(itm_name.c_str(), true);
-
-            sprintf(str, "x%d", count);
-            m_CountItemQuickSlot_3_Text->SetText(str);
-            m_CountItemQuickSlot_3_Text->Show(true);
-
-			DrawItemInSlot(itm, m_QuickSlot_3_Icon, m_QuickSlot_3_Icon_Size );
-        }
-        else
-        {
-            m_UseQuickSlot_3_Text->Show(false);
-            m_CountItemQuickSlot_3_Text->Show(false);
-            m_QuickSlot_3_Icon->Show(false);
-        }
-    }
-
-}
-
-void CUIQuickSlotPanel::Draw()
-{
-    CUIWindow::Draw();
-}
-
-void CUIQuickSlotPanel::Show()
-{
-    inherited::Show(true);
-}
-
-void CUIQuickSlotPanel::Hide()
-{
-    inherited::Show(false);
 }
 #endif

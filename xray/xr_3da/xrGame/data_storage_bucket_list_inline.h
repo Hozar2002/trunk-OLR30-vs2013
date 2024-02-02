@@ -74,7 +74,9 @@ IC	u32	 CBucketList::compute_bucket_id	(CGraphVertex &vertex) const
 		return			(bucket_count - 1);
 	if (vertex.f() <= m_min_bucket_value)
 		return			(0);
-	return				(u32(bucket_count*(vertex.f() - m_min_bucket_value)/(m_max_bucket_value - m_min_bucket_value)));
+	//return				(u32(bucket_count*(vertex.f() - m_min_bucket_value)/(m_max_bucket_value - m_min_bucket_value)));
+	u32 idx = u32( bucket_count * ( vertex.f() - m_min_bucket_value ) / ( m_max_bucket_value - m_min_bucket_value ) );
+	return idx < bucket_count ? idx : bucket_count - 1;
 }
 
 TEMPLATE_SPECIALIZATION

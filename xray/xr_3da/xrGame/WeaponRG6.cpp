@@ -52,7 +52,7 @@ void CWeaponRG6::Load(LPCSTR section)
 void CWeaponRG6::FireStart ()
 {
 
-	if(GetState() == eIdle	&& getRocketCount() ) 
+	if(GetState() == eIdle	&& getRocketCount() && iAmmoElapsed) // fix shoot
 	{
 		inheritedSG::FireStart ();
 	
@@ -146,7 +146,7 @@ u8 CWeaponRG6::AddCartridge		(u8 cnt)
 		--k;
 		inheritedRL::SpawnRocket(*fake_grenade_name, this);
 	}
-	return k;
+	return k; 
 }
 
 void CWeaponRG6::OnEvent(NET_Packet& P, u16 type) 

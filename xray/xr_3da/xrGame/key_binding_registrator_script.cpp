@@ -2,7 +2,6 @@
 #include <dinput.h>
 #include "key_binding_registrator.h"
 #include "xr_level_controller.h"
-#include "../../build_config_defines.h"
 
 using namespace luabind;
 
@@ -15,6 +14,7 @@ void key_binding_registrator::script_register(lua_State *L)
 {
 	module(L)
 	[
+		def("is_binded",		&is_binded),
 		def("dik_to_bind",		&dik_to_bind),
 
 		class_<enum_exporter<EGameActions> >("key_bindings")
@@ -51,6 +51,7 @@ void key_binding_registrator::script_register(lua_State *L)
 				value("kWPN_NEXT",					int(kWPN_NEXT)),
 //.				value("kWPN_PREV",					int(kWPN_PREV)),
 				value("kWPN_FIRE",					int(kWPN_FIRE)),
+				value("kWPN_FIRE_SEC",				int(kWPN_FIRE_SEC)),
 				value("kWPN_RELOAD",				int(kWPN_RELOAD)),
 				value("kWPN_ZOOM",					int(kWPN_ZOOM)),
 				value("kWPN_FUNC",					int(kWPN_FUNC)),
@@ -64,13 +65,10 @@ void key_binding_registrator::script_register(lua_State *L)
 				value("kINVENTORY",					int(kINVENTORY)),
 				value("kBUY",						int(kBUY)),
 				value("kSKIN",						int(kSKIN)),
-				value("kTEAM",						int(kTEAM)),
-#ifdef INV_NEW_SLOTS_SYSTEM
-				value("kUSE_SLOT_QUICK_ACCESS_0",	int(kUSE_SLOT_QUICK_ACCESS_0)),
-				value("kUSE_SLOT_QUICK_ACCESS_1",	int(kUSE_SLOT_QUICK_ACCESS_1)),
-				value("kUSE_SLOT_QUICK_ACCESS_2",	int(kUSE_SLOT_QUICK_ACCESS_2)),
-				value("kUSE_SLOT_QUICK_ACCESS_3",	int(kUSE_SLOT_QUICK_ACCESS_3))
-#endif									
+				value("kMAP",						int(kMAP)),
+				value("kACTIVE_JOBS",				int(kACTIVE_JOBS)),
+				value("kCONTACTS",					int(kCONTACTS)),
+				value("kTEAM",						int(kTEAM))
 			],
 		class_<key_binding_registrator >("DIK_keys")
 			.enum_("dik_keys")

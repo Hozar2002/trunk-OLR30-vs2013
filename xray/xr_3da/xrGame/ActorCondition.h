@@ -44,6 +44,8 @@ public:
 
 	virtual void 		ChangeAlcohol				(float value);
 	virtual void 		ChangeSatiety				(float value);
+	virtual void 		ChangeWater					(float value);
+	virtual void 		ChangeSleep					(float value);
 
 	// хромание при потере сил и здоровья
 	virtual	bool		IsLimping					() const;
@@ -58,6 +60,8 @@ public:
 			float	xr_stdcall	GetAlcohol			()	{return m_fAlcohol;}
 			float	xr_stdcall	GetPsy				()	{return 1.0f-GetPsyHealth();}
 			float				GetSatiety			()  {return m_fSatiety;}
+			float	xr_stdcall	GetWater			()  {return m_fWater;}
+			float	xr_stdcall	GetSleep			()  {return m_fSleep;}
 
 public:
 	IC		CActor		&object						() const
@@ -73,9 +77,13 @@ protected:
 	float m_fV_Alcohol;
 //--
 	float m_fSatiety;
+	float m_fWater;
+	float m_fSleep;
 	float m_fV_Satiety;
 	float m_fV_SatietyPower;
 	float m_fV_SatietyHealth;
+	float m_fV_Water;
+	float m_fV_Sleep;
 //--
 	float m_fPowerLeakSpeed;
 

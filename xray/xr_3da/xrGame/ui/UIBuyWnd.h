@@ -56,6 +56,8 @@ public:
 	virtual void				ItemToRuck					(const shared_str& sectionName, u32 addons);
 	virtual void				ItemToSlot					(const shared_str& sectionName, u32 addons);
 
+	void Draw3DStatic();
+
 	/////
 
 	void 			OnTabChange					();

@@ -9,6 +9,13 @@
 #include "../control_animation_base.h"
 #include "../control_movement_base.h"
 
+#include "../../../actor.h"
+#include "../../../ActorEffector.h"
+#include "../../../level.h"
+#include "../../../../CameraBase.h"
+#include "../../../xr_level_controller.h"
+#include "../ai_monster_effector.h"
+
 #ifdef _DEBUG
 #	include <dinput.h>
 #	include "../../../ai_object_location.h"
@@ -24,6 +31,7 @@ CAI_PseudoDog::CAI_PseudoDog()
 {
 	com_man().add_ability(ControlCom::eControlJump);
 	com_man().add_ability(ControlCom::eControlRotationJump);
+	time_next_psi_attack	= 0;
 }
 
 DLL_Pure *CAI_PseudoDog::_construct()
@@ -45,6 +53,8 @@ void CAI_PseudoDog::reinit()
 	m_time_became_angry				= 0;
 	time_growling					= 0;
 
+	time_next_psi_attack	= 0;
+
 	if(CCustomMonster::use_simplified_visual())	return;
 	com_man().add_rotation_jump_data	("1","2","3","4", deg(90));
 }
@@ -64,6 +74,35 @@ void CAI_PseudoDog::Load(LPCSTR section)
 
 	m_anger_hunger_threshold	= pSettings->r_float(section, "anger_hunger_threshold");
 	m_anger_loud_threshold		= pSettings->r_float(section, "anger_loud_threshold");
+
+	// Load psi postprocess --------------------------------------------------------
+	LPCSTR ppi_section = pSettings->r_string(section, "psi_effector");
+	m_psi_effector.ppi.duality.h		= pSettings->r_float(ppi_section,"duality_h");
+	m_psi_effector.ppi.duality.v		= pSettings->r_float(ppi_section,"duality_v");
+	m_psi_effector.ppi.gray				= pSettings->r_float(ppi_section,"gray");
+	m_psi_effector.ppi.blur				= pSettings->r_float(ppi_section,"blur");
+	m_psi_effector.ppi.noise.intensity	= pSettings->r_float(ppi_section,"noise_intensity");
+	m_psi_effector.ppi.noise.grain		= pSettings->r_float(ppi_section,"noise_grain");
+	m_psi_effector.ppi.noise.fps		= pSettings->r_float(ppi_section,"noise_fps");
+	VERIFY(!fis_zero(m_psi_effector.ppi.noise.fps));
+
+	sscanf(pSettings->r_string(ppi_section,"color_base"),	"%f,%f,%f", &m_psi_effector.ppi.color_base.r,	&m_psi_effector.ppi.color_base.g,	&m_psi_effector.ppi.color_base.b);
+	sscanf(pSettings->r_string(ppi_section,"color_gray"),	"%f,%f,%f", &m_psi_effector.ppi.color_gray.r,	&m_psi_effector.ppi.color_gray.g,	&m_psi_effector.ppi.color_gray.b);
+	sscanf(pSettings->r_string(ppi_section,"color_add"),	"%f,%f,%f", &m_psi_effector.ppi.color_add.r,	&m_psi_effector.ppi.color_add.g,	&m_psi_effector.ppi.color_add.b);
+
+	m_psi_effector.time			= pSettings->r_float(ppi_section,"time");
+	m_psi_effector.time_attack	= pSettings->r_float(ppi_section,"time_attack");
+	m_psi_effector.time_release	= pSettings->r_float(ppi_section,"time_release");
+
+	m_psi_effector.ce_time			= pSettings->r_float(ppi_section,"ce_time");
+	m_psi_effector.ce_amplitude		= pSettings->r_float(ppi_section,"ce_amplitude");
+	m_psi_effector.ce_period_number	= pSettings->r_float(ppi_section,"ce_period_number");
+	m_psi_effector.ce_power			= pSettings->r_float(ppi_section,"ce_power");
+
+	// --------------------------------------------------------------------------------
+	psy_effect_turn_angle		= angle_normalize(pSettings->r_float(section,"psy_effect_turn_angle"));
+
+	::Sound->create(psy_effect_sound,pSettings->r_string(section,"sound_psy_effect"),st_Effect,SOUND_TYPE_WORLD);
 
 	SVelocityParam &velocity_none		= move().get_velocity(MonsterMovement::eVelocityParameterIdle);	
 	SVelocityParam &velocity_turn		= move().get_velocity(MonsterMovement::eVelocityParameterStand);
@@ -130,6 +169,7 @@ void CAI_PseudoDog::Load(LPCSTR section)
 	anim().LinkAction(ACT_STEAL,		eAnimWalkFwd);	
 	anim().LinkAction(ACT_LOOK_AROUND,	eAnimSniff);
 
+
 #ifdef DEBUG	
 	anim().accel_chain_test		();
 #endif
@@ -151,8 +191,10 @@ void CAI_PseudoDog::reload(LPCSTR section)
 
 }
 
+// постоянный быстрый апдейт
 void CAI_PseudoDog::CheckSpecParams(u32 spec_params)
 {
+
 	if ((spec_params & ASP_PSI_ATTACK) == ASP_PSI_ATTACK) {
 		com_man().seq_run(anim().get_motion_id(eAnimAttackPsi));
 	}
@@ -162,6 +204,63 @@ void CAI_PseudoDog::CheckSpecParams(u32 spec_params)
 	}
 }
 
+
+void CAI_PseudoDog::UpdateCL()
+{
+	inherited::UpdateCL();
+
+	
+	if (time_next_psi_attack > m_dwCurrentTime) return;
+	time_next_psi_attack			= m_dwCurrentTime + Random.randI(4000,6000);
+	if (!g_Alive()) return;
+	if (!EnemyMan.get_enemy()) return;
+	if (!EnemyMan.see_enemy_now()) return;
+	CActor *pA = const_cast<CActor *>(smart_cast<const CActor *>(EnemyMan.get_enemy()));  // possibpy get_enemy error (fixed? 21.04.18)
+	if (!pA) return;
+	float dist_to_actor = pA->Position().distance_to(Position()); 
+	if (dist_to_actor <= 10.0f) {
+	com_man().seq_run(anim().get_motion_id(eAnimAttackPsi));
+	play_effect_sound();
+	pA->Cameras().AddCamEffector(xr_new<CMonsterEffectorHit>(m_psi_effector.ce_time,m_psi_effector.ce_amplitude,m_psi_effector.ce_period_number,m_psi_effector.ce_power));
+	pA->Cameras().AddPPEffector(xr_new<CMonsterEffector>(m_psi_effector.ppi, m_psi_effector.time, m_psi_effector.time_attack, m_psi_effector.time_release));
+		if (pA->cam_Active()) {
+				pA->cam_Active()->Move(Random.randI(2) ? kRIGHT : kLEFT, Random.randF(psy_effect_turn_angle)); 
+				pA->cam_Active()->Move(Random.randI(2) ? kUP	: kDOWN, Random.randF(psy_effect_turn_angle)); 
+		}
+	}
+			//Msg("timer psy alive");
+	
+	
+
+
+	//if (time_next_psi_attack > m_dwCurrentTime) return;
+	//time_next_psi_attack			= m_dwCurrentTime + Random.randI(4000,6000);
+	//// start postprocess
+	//if (EnemyMan.get_enemy()){
+	//auto pA = const_cast<CActor *>(smart_cast<const CActor *>(EnemyMan.get_enemy()));  // possibpy get_enemy error (fixed? 21.04.18)
+	////CActor *pA = const_cast<CActor *>(smart_cast<const CActor *>(EnemyMan.get_enemy()));  // possibpy get_enemy error (fixed? 21.04.18) // рабочий
+	////auto pA = smart_cast<CGameObject*>(g_actor);
+	//if (!pA) return;
+	//if (g_Alive()) {
+	//if (Position().distance_to(pA->Position()) <= 10.0f) {
+	//com_man().seq_run(anim().get_motion_id(eAnimAttackPsi));
+	//play_effect_sound();
+	////CActor* pA =  smart_cast<CActor*>(Level().CurrentEntity());
+	//	//if (pA) {
+	//		pA->Cameras().AddCamEffector(xr_new<CMonsterEffectorHit>(m_psi_effector.ce_time,m_psi_effector.ce_amplitude,m_psi_effector.ce_period_number,m_psi_effector.ce_power));
+	//		pA->Cameras().AddPPEffector(xr_new<CMonsterEffector>(m_psi_effector.ppi, m_psi_effector.time, m_psi_effector.time_attack, m_psi_effector.time_release));
+
+	//		if (pA->cam_Active()) {
+	//			pA->cam_Active()->Move(Random.randI(2) ? kRIGHT : kLEFT, Random.randF(psy_effect_turn_angle)); 
+	//			pA->cam_Active()->Move(Random.randI(2) ? kUP	: kDOWN, Random.randF(psy_effect_turn_angle)); 
+	//		//}
+	//	}
+	//}
+	//		//Msg("timer psy alive");
+	//}
+	//}
+
+}
 
 void CAI_PseudoDog::HitEntityInJump		(const CEntity *pEntity) 
 {
@@ -181,3 +280,13 @@ IStateManagerBase *CAI_PseudoDog::create_state_manager()
 	return xr_new<CStateManagerPseudodog>(this);
 }
 
+
+void CAI_PseudoDog::play_effect_sound()
+{
+	CActor *pA = smart_cast<CActor*>(Level().CurrentEntity());
+	if (!pA) return;
+	//Msg("play psy sound");
+	Fvector pos = pA->Position();
+	pos.y += 1.5f;
+	::Sound->play_at_pos(psy_effect_sound,pA,pos);
+}

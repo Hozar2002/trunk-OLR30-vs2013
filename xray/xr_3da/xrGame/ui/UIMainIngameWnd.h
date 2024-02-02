@@ -10,11 +10,9 @@
 #include "../alife_space.h"
 
 #include "UICarPanel.h"
-#include "UIMotionIcon.h"
+//#include "UIMotionIcon.h"
 #include "../hudsound.h"
 #include "../script_export_space.h"
-#include "../inventory.h"
-#include "../../../build_config_defines.h"
 
 //для режима настройки HUD
 extern int				g_bHudAdjustMode;
@@ -23,56 +21,14 @@ extern float			g_fHudAdjustValue;
 class					CUIPdaMsgListItem;
 class					CLAItem;
 class					CUIZoneMap;
-class					CUIArtefactPanel;
+//class					CUIArtefactPanel;
 class					CUIScrollView;
 struct					GAME_NEWS_DATA;
 class					CActor;
 class					CWeapon;
 class					CMissile;
 class					CInventoryItem;
-
-#ifdef INV_QUICK_SLOT_PANEL
-class CUIXml;
-class CUIStatic;
-
-class CUIQuickSlotPanel : public CUIWindow
-{
-private:
-	typedef				CUIWindow inherited;
-public:
-	CUIQuickSlotPanel			();
-	~CUIQuickSlotPanel			();
-	virtual void 		Update			();
-	virtual void		Draw			();
-	virtual void		Show			();
-	virtual void		Hide			();
-	virtual void 		Init			();
-	void				DrawItemInSlot		(const PIItem itm, CUIStatic* m_QuickSlot_Icon, Fvector2 m_QuickSlot_Icon_Size );
-protected:
-	//
-	Fvector2					m_QuickSlot_0_Icon_Size; 
-	Fvector2					m_QuickSlot_1_Icon_Size;
-	Fvector2					m_QuickSlot_2_Icon_Size;
-	Fvector2					m_QuickSlot_3_Icon_Size;	
-	//
-	CUIStatic*					m_QuickSlot_0_Icon;
-	CUIStatic*					m_QuickSlot_1_Icon;
-	CUIStatic*					m_QuickSlot_2_Icon;
-	CUIStatic*					m_QuickSlot_3_Icon;	
-	//
-	CUIStatic*					m_CountItemQuickSlot_0_Text;
-	CUIStatic*					m_CountItemQuickSlot_1_Text;
-	CUIStatic*					m_CountItemQuickSlot_2_Text;
-	CUIStatic*					m_CountItemQuickSlot_3_Text;
-	//
-	CUIStatic*					m_UseQuickSlot_0_Text;
-	CUIStatic*					m_UseQuickSlot_1_Text;
-	CUIStatic*					m_UseQuickSlot_2_Text;
-	CUIStatic*					m_UseQuickSlot_3_Text;
-	//
-	CUIStatic*					m_QuickSlotPanelBackground;
-};
-#endif
+//class                   CUIMainIngameWnd;
 
 class CUIMainIngameWnd: public CUIWindow  
 {
@@ -85,31 +41,35 @@ public:
 	virtual void Update();
 
 	bool OnKeyboardPress(int dik);
-	void HudAdjustMode(int);
+	//void HudAdjustMode(int);
 
 protected:
 
-	CUIStatic			UIStaticDiskIO;
+	//CUIStatic			UIStaticDiskIO;
 	CUIStatic			UIStaticHealth;
 	CUIStatic			UIStaticArmor;
 	CUIStatic			UIStaticQuickHelp;
 	CUIProgressBar		UIHealthBar;
 	CUIProgressBar		UIArmorBar;
 	CUICarPanel			UICarPanel;
-	CUIMotionIcon		UIMotionIcon;	
+	//CUIMotionIcon		UIMotionIcon;	
 	CUIZoneMap*			UIZoneMap;
 
+	CUIStatic* m_water_static;
+	CUIStatic* m_sleep_static;
+
 	//иконка, показывающая количество активных PDA
-	CUIStatic			UIPdaOnline;
+	//CUIStatic			UIPdaOnline;
 	
 	//изображение оружия
 	CUIStatic			UIWeaponBack;
 	CUIStatic			UIWeaponSignAmmo;
+	CUIStatic			UIWeaponSignAmmoName;
 	CUIStatic			UIWeaponIcon;
 	Frect				UIWeaponIcon_rect;
 		
 public:
-	CUIStatic*			GetPDAOnline					() { return &UIPdaOnline; };
+	//CUIStatic*			GetPDAOnline					() { return &UIPdaOnline; };
 	CUIZoneMap*			GetUIZoneMap					() { return UIZoneMap; }
 protected:
 
@@ -133,10 +93,7 @@ protected:
 	CUIWindow*			m_pMPChatWnd;
 	CUIWindow*			m_pMPLogWnd;
 public:	
-	CUIArtefactPanel*    m_artefactPanel;
-	#ifdef INV_QUICK_SLOT_PANEL
-	CUIQuickSlotPanel*	 m_quickSlotPanel;
-	#endif
+	//CUIArtefactPanel*    m_artefactPanel;
 	
 public:
 	
@@ -175,7 +132,7 @@ public:
 	void				SetFlashIconState_				(EFlashingIcons type, bool enable);
 
 	void				AnimateContacts					(bool b_snd);
-	HUD_SOUND			m_contactSnd;
+	//HUD_SOUND			m_contactSnd;
 
 	void				ReceiveNews						(GAME_NEWS_DATA* news);
 	
@@ -201,32 +158,30 @@ protected:
 	// Отображение подсказок при наведении прицела на объект
 	void				RenderQuickInfos();
 
+
 public:
 	CUICarPanel&		CarPanel							(){return UICarPanel;};
-	CUIMotionIcon&		MotionIcon							(){return UIMotionIcon;}
+	//CUIMotionIcon&		MotionIcon							(){return UIMotionIcon;}
 	void				OnConnected							();
 	void				reset_ui							();
 protected:
 	CInventoryItem*		m_pPickUpItem;
-	CUIStatic			UIPickUpItemIcon;
 
 	float				m_iPickUpItemIconX;
 	float				m_iPickUpItemIconY;
 	float				m_iPickUpItemIconWidth;
 	float				m_iPickUpItemIconHeight;
 
-	void				UpdatePickUpItem();
 public:
-	void				SetPickUpItem	(CInventoryItem* PickUpItem);
+	//void				SetPickUpItem	(CInventoryItem* PickUpItem);
+
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION
-#ifdef DEBUG
-	void				draw_adjust_mode					();
-#endif
+
+//	void				draw_adjust_mode					();
+
 };
 
 add_to_type_list(CUIMainIngameWnd)
 #undef script_type_list
 #define script_type_list save_type_list(CUIMainIngameWnd)
-
-

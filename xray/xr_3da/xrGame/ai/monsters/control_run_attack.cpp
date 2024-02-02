@@ -91,8 +91,23 @@ void CControlRunAttack::on_event(ControlCom::EEventType type, ControlCom::IEvent
 			CBlend					*blend = m_man->animation().current_blend();
 			VERIFY					(blend);
 
-			// animation time
+			float anim_time_timeTotal = blend->timeTotal;
+			if (anim_time_timeTotal == NULL) {
+				Msg("anim_time  set  ---   anim_time_timeTotal NULL");
+			}
+
+			float anim_time_speed = blend->speed;
+			if (anim_time_speed == NULL) {
+				Msg("anim_time  set  ---   anim_time_speed NULL");
+			}
+
+
 			float					anim_time = blend->timeTotal / blend->speed;
+			if (anim_time == NULL) {
+				Msg("anim_time set");
+				anim_time = 3.0f;
+			}
+
 			
 			// run velocity
 			u32						velocity_mask	= MonsterMovement::eVelocityParameterRunNormal;

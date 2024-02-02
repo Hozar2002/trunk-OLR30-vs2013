@@ -17,6 +17,9 @@
 #include "../skeletoncustom.h"
 #include "level.h"
 #include "CarWeapon.h"
+#include "../../build_config_defines.h"
+#include "HudManager.h"
+
 
 void	CCar::OnMouseMove(int dx, int dy)
 {
@@ -32,6 +35,12 @@ void	CCar::OnMouseMove(int dx, int dy)
 		float d		= ((psMouseInvert.test(1))?-1:1)*float(dy)*scale*3.f/4.f;
 		C->Move		((d>0)?kUP:kDOWN, _abs(d));
 	}
+	if (HasWeapon() && m_car_weapon->IsActive())
+	{
+		collide::rq_result& rq = HUD().GetCurrentRayQuery();
+		m_car_weapon->SetParam(CCarWeapon::eWpnDesiredPos, C->vPosition.add(C->vDirection.mul(rq.range)));
+	}
+
 }
 
 bool CCar::bfAssignMovement(CScriptEntityAction *tpEntityAction)
@@ -125,8 +134,12 @@ void CCar::OnKeyboardPress(int cmd)
 	switch (cmd)	
 	{
 	case kCAM_1:	OnCameraChange(ectFirst);	break;
+	
+#if !defined(OFF_CAM_3_IN_CAR)
 	case kCAM_2:	OnCameraChange(ectChase);	break;
 	case kCAM_3:	OnCameraChange(ectFree);	break;
+#endif
+	
 	case kACCEL:	TransmissionUp();			break;
 	case kCROUCH:	TransmissionDown();			break;
 	case kFWD:		PressForward();				break;
@@ -134,9 +147,16 @@ void CCar::OnKeyboardPress(int cmd)
 	case kR_STRAFE:	PressRight();				if (OwnerActor()) OwnerActor()->steer_Vehicle(1);	break;
 	case kL_STRAFE:	PressLeft();				if (OwnerActor()) OwnerActor()->steer_Vehicle(-1);break;
 	case kJUMP:		PressBreaks();				break;
-	case kENGINE:	SwitchEngine();				break;
+	//case kENGINE:	SwitchEngine();				break;
+	case kENGINE:	
+		SwitchEngine(); 
+		if (HasWeapon()) 
+			m_car_weapon->Action(CCarWeapon::eWpnActivate, b_engine_on);	
+		break;
 	case kTORCH:	m_lights.SwitchHeadLights();break;
 	case kUSE:									break;
+	case kWPN_FIRE: if (HasWeapon()) m_car_weapon->Action(CCarWeapon::eWpnFire, 1); break;
+	//case kWPN_FUNC: m_repairing = true;			break;
 	};
 
 }
@@ -152,6 +172,8 @@ void	CCar::OnKeyboardRelease(int cmd)
 	case kL_STRAFE:	ReleaseLeft();				if (OwnerActor()) OwnerActor()->steer_Vehicle(0);	break;
 	case kR_STRAFE:	ReleaseRight();				if (OwnerActor()) OwnerActor()->steer_Vehicle(0);	break;
 	case kJUMP:		ReleaseBreaks();			break;
+	case kWPN_FIRE: if (HasWeapon()) m_car_weapon->Action(CCarWeapon::eWpnFire, 0); break;
+	//case kWPN_FUNC: m_repairing = false;		break;
 	};
 }
 

@@ -824,7 +824,7 @@ u8 CUIBagWnd::GetItemIndex(CUICellItem* pItem, u8 &sectionNum){
 
 	CInventoryItem* iitem = (CInventoryItem*)pItem->m_pData;
 
-	if (iitem->GetSlot() == PISTOL_SLOT || iitem->GetSlot() == RIFLE_SLOT)
+	if (iitem->GetSlot() == PISTOL_SLOT || iitem->GetSlot() == RIFLE_SLOT || iitem->GetSlot() == GREN_SLOT)
 	{
 		CWeapon* pWeapon = (CWeapon*)pItem->m_pData;
 

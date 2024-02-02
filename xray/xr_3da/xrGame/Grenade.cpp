@@ -12,10 +12,6 @@
 #include "game_cl_base.h"
 #include "xrserver_objects_alife.h"
 #include "../../build_config_defines.h"
-#include "pch_script.h"
-#include "game_object_space.h"
-#include "script_callback_ex.h"
-#include "script_game_object.h"
 
 #define GRENADE_REMOVE_TIME		30000
 const float default_grenade_detonation_threshold_hit=100;
@@ -38,7 +34,7 @@ void CGrenade::Load(LPCSTR section)
 	HUD_SOUND::LoadSound(section,"snd_checkout",sndCheckout,m_eSoundCheckout);
 
 	//////////////////////////////////////
-	//время убирания оружия с уровня
+	//????? ???????? ?????? ? ??????
 	if(pSettings->line_exist(section,"grenade_remove_time"))
 		m_dwGrenadeRemoveTime = pSettings->r_u32(section,"grenade_remove_time");
 	else
@@ -48,7 +44,10 @@ void CGrenade::Load(LPCSTR section)
 
 void CGrenade::Hit					(SHit* pHDS)
 {
-	if( ALife::eHitTypeExplosion==pHDS->hit_type && m_grenade_detonation_threshold_hit<pHDS->damage()&&CExplosive::Initiator()==u16(-1)) 
+	// hi_flyer & BASE1707: ?????????? ? ??????-????????????? ???????
+	bool condition{ m_bContactExplode && m_bGeometryContact };
+
+	if (condition || ALife::eHitTypeExplosion == pHDS->hit_type && m_grenade_detonation_threshold_hit<pHDS->damage() && CExplosive::Initiator() == u16(-1))
 	{
 		CExplosive::SetCurrentParentID(pHDS->who->ID());
 		Destroy();
@@ -128,7 +127,6 @@ void CGrenade::State(u32 state)
 	inherited::State(state);
 }
 
-
 void CGrenade::Throw() 
 {
 	if (!m_fake_missile || m_thrown)
@@ -139,21 +137,12 @@ void CGrenade::Throw()
 	
 	if (pGrenade) {
 		pGrenade->set_destroy_time(m_dwDestroyTimeMax);
-		//установить ID того кто кинул гранату
+		//?????????? ID ???? ??? ????? ???????
 		pGrenade->SetInitiator( H_Parent()->ID() );
 	}
 	inherited::Throw			();
 	m_fake_missile->processing_activate();//@sliph
 	m_thrown = true;
-	
-	// Real Wolf.Start.18.12.14
-	auto parent = smart_cast<CGameObject*>(H_Parent());
-	auto obj	= smart_cast<CGameObject*>(m_fake_missile);
-	if (parent && obj)
-	{
-		parent->callback(GameObject::eOnThrowGrenade)(obj->lua_game_object());
-	}
-	// Real Wolf.End.18.12.14
 }
 
 
@@ -187,7 +176,7 @@ void CGrenade::PutNextToSlot()
 	if (OnClient()) return;
 	VERIFY									(!getDestroy());
 
-	//выкинуть гранату из инвентаря
+	//???????? ??????? ?? ?????????
 	if (m_pCurrentInventory)
 	{
 		NET_Packet						P;
@@ -248,7 +237,7 @@ bool CGrenade::Action(s32 cmd, u32 flags)
 
 	switch(cmd) 
 	{
-	//переключение типа гранаты
+	//???????????? ???? ???????
 	case kWPN_NEXT:
 		{
             if(flags&CMD_START) 
@@ -334,12 +323,13 @@ void CGrenade::Deactivate()
 	inherited::Deactivate();
 }
 
-void CGrenade::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count)
+void CGrenade::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name)
 {
 	str_name				= NameShort();
-	u32 ThisGrenadeCount	= m_pCurrentInventory->dwfGetSameItemCount(*cNameSect(), true);
-	string16				stmp;
-	sprintf_s					(stmp, "%d", ThisGrenadeCount);
-	str_count				= stmp;
+	//u32 ThisGrenadeCount	= m_pCurrentInventory->dwfGetSameItemCount(*cNameSect(), true);
+	//string16				stmp;
+	//sprintf_s					(stmp, "%d", ThisGrenadeCount);
+	str_count				= ""; //stmp;
 	icon_sect_name			= *cNameSect();
+	ammo_sect_name = "";
 }

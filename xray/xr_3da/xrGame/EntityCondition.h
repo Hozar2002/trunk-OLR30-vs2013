@@ -56,6 +56,8 @@ public:
 	virtual float xr_stdcall	GetAlcohol			()					{return 0.f;};
 
 	virtual void 			ChangeSatiety			(float value)		{};
+	virtual void 			ChangeWater				(float value)		{};
+	virtual void 			ChangeSleep				(float value)		{};
 	virtual void 			ChangeAlcohol			(float value)		{};
 	void 					ChangeHealth			(float value);
 	void 					ChangePower				(float value);

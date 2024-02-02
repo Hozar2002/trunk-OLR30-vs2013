@@ -26,6 +26,7 @@ protected:
 	HUD_SOUND		sndShot;
 	HUD_SOUND		sndEmptyClick;
 	HUD_SOUND		sndReload;
+	HUD_SOUND		sndReload_jammed;
 	HUD_SOUND		sndSightsUp;		//added by Daemonion for iron sight audio parameter - sights being raised
 	HUD_SOUND		sndSightsDown;		//added by Daemonion for iron sight audio parameter - sights being lowered
 	//звук текущего выстрела
@@ -43,12 +44,14 @@ protected:
 	ESoundTypes		m_eSoundShot;
 	ESoundTypes		m_eSoundEmptyClick;
 	ESoundTypes		m_eSoundReload;
+	ESoundTypes		m_eSoundReload_jammed;
 	ESoundTypes		m_eSoundSightsUp;		//added by Daemonion for iron sight audio parameter - sights being raised
 	ESoundTypes		m_eSoundSightsDown;		//added by Daemonion for iron sight audio parameter - sights being lowered
 	struct SWMmotions{
 		MotionSVec		mhud_idle;
 		MotionSVec		mhud_idle_aim;
 		MotionSVec		mhud_reload;	//
+		MotionSVec		mhud_reload_jammed;	//
 		MotionSVec		mhud_hide;		//
 		MotionSVec		mhud_show;		//
 		MotionSVec		mhud_shots;		//
@@ -67,6 +70,7 @@ protected:
 	virtual void	switch2_Fire2	(){}
 	virtual void	switch2_Empty	();
 	virtual void	switch2_Reload	();
+	virtual void	switch2_ReloadJammed	();
 	virtual void	switch2_Hiding	();
 	virtual void	switch2_Hidden	();
 	virtual void	switch2_Showing	();
@@ -85,6 +89,7 @@ protected:
 
 protected:
 	virtual void	ReloadMagazine	();
+	virtual void	RestoreMagazineJammed();
 			void	ApplySilencerKoeffs	();
 
 	virtual void	state_Fire		(float dt);
@@ -122,7 +127,7 @@ public:
 	bool			IsAmmoAvailable	();
 	virtual void	UnloadMagazine	(bool spawn_ammo = true);
 
-	virtual void	GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count);
+	virtual void	GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name);
 
 
 	//////////////////////////////////////////////
@@ -188,9 +193,11 @@ protected:
 	virtual void	PlayAnimShow();
 	virtual void	PlayAnimHide();
 	virtual void	PlayAnimReload();
+	virtual void	PlayAnimReloadJammed();
 	virtual void	PlayAnimIdle();
 	virtual void	PlayAnimShoot();
 	virtual void	PlayReloadSound		();
+	virtual void	PlayReloadJammedSound();
 
 	virtual void	StartIdleAnim		();
 	virtual	int		ShotsFired			() { return m_iShotNum; }

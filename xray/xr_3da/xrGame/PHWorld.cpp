@@ -307,8 +307,8 @@ void CPHWorld::Step()
 
 	if(physics_step_time_callback) 
 	{
-		physics_step_time_callback(start_time,start_time+u32(fixed_step*1000));	
-		start_time += u32(fixed_step*1000);
+		physics_step_time_callback(start_time,start_time+u32(fixed_step*100000));	
+		start_time += u32(fixed_step*100000);
 	};
 
 

@@ -80,6 +80,7 @@ void CChimera::Load(LPCSTR section)
 	anim().AddAnim(eAnimUpperThreaten,		"stand_up_threaten_",	-1, &velocity_none,			PS_STAND_UPPER);
 	anim().AddAnim(eAnimUpperAttack,			"stand_up_attack_",		-1, &velocity_turn,	PS_STAND_UPPER);
 
+	anim().AddAnim(eAnimThreatenSit,			"threaten_",		-1, &velocity_none,	PS_STAND_UPPER); ////////////// NEW ADD 05.12.17
 	//////////////////////////////////////////////////////////////////////////
 	// define transitions
 	anim().AddTransition(PS_STAND,			PS_STAND_UPPER,		eAnimStandToUpperStand,		false);
@@ -112,7 +113,7 @@ void CChimera::Load(LPCSTR section)
 void CChimera::reinit()
 {
 	inherited::reinit();
-	b_upper_state					= false;
+	b_upper_state					= false;  // !! hi_flyer - 25.02.19 - если тру, то работает, но глючно
 
 	movement().detail().add_velocity(MonsterMovement::eChimeraVelocityParameterUpperWalkFwd,	CDetailPathManager::STravelParams(m_fsVelocityWalkUpper.velocity.linear,	m_fsVelocityWalkUpper.velocity.angular_path, m_fsVelocityWalkUpper.velocity.angular_real));
 	move().load_velocity(*cNameSect(), "Velocity_JumpGround",MonsterMovement::eChimeraVelocityParameterJumpGround);
@@ -243,4 +244,13 @@ void CChimera::HitEntityInJump(const CEntity *pEntity)
 void CChimera::UpdateCL()
 {
 	inherited::UpdateCL				();
+	//com_man().seq_run(anim().get_motion_id(eAnimThreatenSit));
+
+	if (g_Alive()){
+	if (conditions().GetHealth() < 1.0f){
+		conditions().ChangeHealth(0.00005f);
+		//Msg(" chimera regen [%f]", GetHealth());		
+		}
+	};
+
 }

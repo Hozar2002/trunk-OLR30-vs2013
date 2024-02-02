@@ -23,6 +23,7 @@ CFontManager::CFontManager()
 	m_all_fonts.push_back(&pFontGraffiti50Russian	);
 	m_all_fonts.push_back(&pFontLetterica25			);
 	m_all_fonts.push_back(&pFontStat				);
+	m_all_fonts.push_back(&pFontStartup				);
 
 	FONTS_VEC_IT it		= m_all_fonts.begin();
 	FONTS_VEC_IT it_e	= m_all_fonts.end();
@@ -47,6 +48,7 @@ void CFontManager::InitializeFonts()
 	InitializeFont(pFontGraffiti50Russian	,"ui_font_graff_50"				);
 	InitializeFont(pFontLetterica25			,"ui_font_letter_25"			);
 	InitializeFont(pFontStat				,"stat_font",					CGameFont::fsDeviceIndependent);
+	InitializeFont(pFontStartup				,"startup_font",					CGameFont::fsDeviceIndependent);
 
 }
 
@@ -176,7 +178,7 @@ void CHUDManager::Render_First()
 	O->renderable_Render			();
 	::Render->set_Invisible			(FALSE);
 }
-
+extern void draw_wnds_rects();
 void CHUDManager::Render_Last()
 {
 	if (!psHUD_Flags.is(HUD_WEAPON|HUD_WEAPON_RT))return;
@@ -191,12 +193,16 @@ void CHUDManager::Render_Last()
 	if(O->CLS_ID == CLSID_SPECTATOR)
 		return;
 
+	draw_wnds_rects();
+
 	// hud itself
 	::Render->set_HUD				(TRUE);
 	::Render->set_Object			(O->H_Root());
 	O->OnHUDDraw					(this);
 	::Render->set_HUD				(FALSE);
 }
+
+//#include "Inventory.h"
 void CHUDManager::Render_Actor_Shadow()	// added by KD
 {
 	if (0==pUI)						return;
@@ -208,8 +214,18 @@ void CHUDManager::Render_Actor_Shadow()	// added by KD
 													// in other modes actor model already in scene graph and renders well
 	::Render->set_Object			(O->H_Root());
 	O->renderable_Render			();
+
+	auto item = A->inventory().ActiveItem();
+	if (item){ ::Render->set_Object(smart_cast<CObject*>(item)); item->renderable_Render(); };
+
+	/*auto item = A->inventory().ActiveItem();
+	if (item)
+	{ ::Render->set_Object(smart_cast<CObject*>(item)); 
+	item->renderable_Render(); 
+	};*/
+
 }
-extern void draw_wnds_rects();
+
 extern ENGINE_API BOOL bShowPauseString;
 //отрисовка элементов интерфейса
 #include "string_table.h"
@@ -242,7 +258,6 @@ void  CHUDManager::RenderUI()
 		pFont->Out			(_pos.x, _pos.y, _str);
 		pFont->OnRender		();
 	}
-
 }
 
 void CHUDManager::OnEvent(EVENT E, u64 P1, u64 P2)

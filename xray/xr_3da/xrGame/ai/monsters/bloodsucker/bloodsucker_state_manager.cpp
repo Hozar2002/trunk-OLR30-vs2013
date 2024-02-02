@@ -42,15 +42,22 @@ void CStateManagerBloodsucker::execute()
 		} else {
 
 			switch (object->EnemyMan.get_danger_type()) {
-			case eStrong:	state_id = eStatePanic; break;
-			case eWeak:		state_id = eStateAttack; break;
+			case eStrong:	state_id = eStatePanic;
+				object->play_panic_anim();
+				break;
+
+			case eWeak:		state_id = eStateAttack; 
+				object->play_aggresive_anim();
+				break;
 			}
 		}
 
 	} else if (object->HitMemory.is_hit()) {
 		state_id = eStateHitted;
+
 	} else if (object->hear_dangerous_sound || object->hear_interesting_sound) {
 		state_id = eStateHearInterestingSound;
+
 	} else {
 		if (can_eat())	state_id = eStateEat;
 		else			state_id = eStateRest;
@@ -67,6 +74,14 @@ void CStateManagerBloodsucker::execute()
 	// check if stop interesting sound state
 	if ((prev_substate == eStateHearInterestingSound) && (state_id != eStateHearInterestingSound)) {
 		object->predator_stop();
+	}
+
+	// hi_flyer new states
+	if ((object->hear_interesting_sound) && !enemy) {
+		object->play_LookAround_anim();
+	}
+	if ((object->hear_dangerous_sound) && !enemy) {
+		object->play_panic_anim();
 	}
 	///////////////////////////////////////////////////////////////////////////////
 

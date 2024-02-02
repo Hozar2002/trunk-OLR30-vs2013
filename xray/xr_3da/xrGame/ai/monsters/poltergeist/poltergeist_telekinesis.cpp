@@ -161,18 +161,17 @@ bool CPolterTele::trace_object(CObject *obj, const Fvector &target)
 }
 
 
-void CPolterTele::tele_find_objects(xr_vector<CObject*> &objects, const Fvector &pos) 
-{
-	m_nearest.clear_not_free		();
-	Level().ObjectSpace.GetNearest	(m_nearest, pos, m_pmt_radius, NULL);
+void CPolterTele::tele_find_objects(xr_vector<CObject*> &objects, const Fvector &pos) {
+	m_nearest.clear_not_free();
+	Level().ObjectSpace.GetNearest(m_nearest, pos, m_pmt_radius, NULL);
 
 	for (u32 i=0;i<m_nearest.size();i++) {
-		CPhysicsShellHolder *obj			= smart_cast<CPhysicsShellHolder *>(m_nearest[i]);
-		CCustomMonster		*custom_monster	= smart_cast<CCustomMonster *>(m_nearest[i]);
+		auto obj= smart_cast<CPhysicsShellHolder*>(m_nearest[i]);
+		//auto custom_monster = smart_cast<CCustomMonster*>(m_nearest[i]);
 		if (!obj || 
 			!obj->PPhysicsShell() || 
 			!obj->PPhysicsShell()->isActive()|| 
-			custom_monster ||
+			//custom_monster ||
 			(obj->spawn_ini() && obj->spawn_ini()->section_exist("ph_heavy")) || 
 			(obj->m_pPhysicsShell->getMass() < m_pmt_object_min_mass) || 
 			(obj->m_pPhysicsShell->getMass() > m_pmt_object_max_mass) || 
@@ -184,8 +183,11 @@ void CPolterTele::tele_find_objects(xr_vector<CObject*> &objects, const Fvector 
 		Fvector center;
 		Actor()->Center(center);
 		
-		if (trace_object(obj, center) || trace_object(obj, get_head_position(Actor())))
+		bool b1 = trace_object(obj, center);
+		bool b2 = trace_object(obj, get_head_position(Actor()));
+		if (b1 || b2) {
 			objects.push_back(obj);
+		}
 	}
 }
 

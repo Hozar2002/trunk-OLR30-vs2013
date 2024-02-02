@@ -10,7 +10,7 @@
 #include "entity_alive.h"
 #include "EntityCondition.h"
 
-#define BREAK_POWER 5.f
+#define BREAK_POWER 0.1f
 
 CBottleItem::CBottleItem(void) 
 {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #define TEMPLATE_SPECIALIZATION template <\
 	typename _Object\
 >

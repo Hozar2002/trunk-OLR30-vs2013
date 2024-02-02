@@ -111,6 +111,7 @@ class CScriptGameObject;
 #endif
 
 class CScriptGameObject;
+class CPhraseDialog;
 
 namespace SightManager {
 	enum ESightType;
@@ -211,11 +212,21 @@ public:
 			void				SetActorDirection	(float dir);
 	// CCustomMonster
 			bool				CheckObjectVisibility(const CScriptGameObject *tpLuaGameObject);
+			bool				CheckObjectVisibilityNow(const CScriptGameObject *tpLuaGameObject);
 			bool				CheckTypeVisibility	(const char *section_name);
 			LPCSTR				WhoHitName			();
 			LPCSTR				WhoHitSectionName	();
 
 			void				ChangeTeam			(u8 team, u8 squad, u8 group);
+			
+			void				UpdateAvailableDialogs(CScriptGameObject* s_partner);
+			void				SayPhrase(CPhraseDialog* phrase_dialog, LPCSTR phrase_id);
+			void				AvailableDialogsForeach(luabind::functor<void> func);
+			int					GetAvailableDialogsSize() const;
+			const CPhraseDialog* GetAvailableDialogsFront() const;
+			const CPhraseDialog* GetDialogByID(LPCSTR dialog_id) const;
+			bool				HaveAvailableDialog(LPCSTR dialog_id) const;
+			void 				InitDialog (CScriptGameObject* dialog_partner, CPhraseDialog* phrase_dialog);
 
 	// CAI_Stalker
 			CScriptGameObject	*GetCurrentWeapon	() const;
@@ -317,6 +328,9 @@ public:
 
 			LPCSTR				ProfileName			();
 			LPCSTR				CharacterName		();
+			LPCSTR				CharacterIcon		();
+			LPCSTR				CharacterBio		();
+			void				IterateActorDialogs	(luabind::functor<void> functor);
 			LPCSTR				CharacterCommunity	();
 			int					CharacterRank		();
 			int					CharacterReputation	();
@@ -506,12 +520,15 @@ public:
 			CHangingLamp*		get_hanging_lamp		();
 			CHolderCustom*		get_custom_holder		();
 			CHolderCustom*		get_current_holder		(); //actor only
+			
+			void AddAnswerNews(LPCSTR SpeakerName, LPCSTR str, LPCSTR icon_name, Frect icon_rect);
 
 			Fvector				bone_position			(LPCSTR bone_name) const;
 			bool				is_body_turning			() const;
 			CPhysicsShell*		get_physics_shell		() const;
 			bool				weapon_strapped			() const;
 			bool				weapon_unstrapped		() const;
+
 			void				eat						(CScriptGameObject *item);
 			bool				inside					(const Fvector &position, float epsilon) const;
 			bool				inside					(const Fvector &position) const;
@@ -567,6 +584,12 @@ public:
 			bool				invulnerable						() const;
 			void				invulnerable						(bool invulnerable);
 			
+
+			float				ReturnActorWater					() const;
+			float				ReturnActorSleep					() const;
+			void				SetActorWater						(float water);
+			void				SetActorSleep						(float water);
+
 			/************************************************** added by Ray Twitty (aka Shadows) START **************************************************/	
 			// инвентарь
 			float				GetActorMaxWeight					() const;
@@ -585,6 +608,7 @@ public:
 
 			/* Checks to see if the player character is outdoors */
 			bool				IsActorOutdoors() const;
+			bool				IsObjectOutdoors() const;
 
 			/**************************************************** added by Cribbledirge END ****************************************************/
 
@@ -605,6 +629,9 @@ public:
 			// functions for CInventoryItem class
 			void				SetIIFlags						(flags16);
 			flags16				GetIIFlags						();
+
+			u32					InvBoxCount();
+			CScriptGameObject	*ObjectFromInvBox(int _i);
 
 			// functions for object testing
 			_DECLARE_FUNCTION10	(IsGameObject			,			bool);
@@ -664,6 +691,15 @@ public:
 			void DetachVehicle();
 			void SetDirection(const Fvector &dir, float bank);
 			void SetPosition(const Fvector &pos);
+			
+			u32 GetHudItemState() const;
+			void SetHudItemState(u32 value);
+			
+			void ActorPlayHudAnimation(LPCSTR M, bool bMixIn);
+			u32 ActorGetState() const;
+			
+			CScriptGameObject* GetHolderOwner() const;
+			
 
 			void HealWounds(float);
 			CScriptIniFile* GetVisualIni() const;

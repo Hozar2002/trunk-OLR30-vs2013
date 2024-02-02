@@ -112,12 +112,14 @@ BOOL CWeaponStatMgun::net_Spawn(CSE_Abstract* DC)
 	m_cur_y_rot				= m_bind_y_rot;
 	m_destEnemyDir.setHP	(m_bind_y_rot,m_bind_x_rot);
 	XFORM().transform_dir	(m_destEnemyDir);
+	m_pPhysicsShell->GetGlobalTransformDynamic(&XFORM()); // fix from xpdev rev 92
 
 	inheritedShooting::Light_Create();
 
 	processing_activate		();
 	setVisible				(TRUE);
 	setEnabled				(TRUE);
+
 	return					TRUE;
 }
 
@@ -229,12 +231,27 @@ void CWeaponStatMgun::cam_Update			(float dt, float fov)
 	Camera()->pitch		= angle_inertion_var(Camera()->pitch,	des_cam_dir.y,	0.5f,	7.5f,	PI_DIV_6,	Device.fTimeDelta);
 
 
+	//if(OwnerActor()){
+	//	// rotate head
+	//	OwnerActor()->Orientation().yaw			= -Camera()->yaw;
+	//	OwnerActor()->Orientation().pitch		= -Camera()->pitch;
+	//}
 
-
-	if(OwnerActor()){
-		// rotate head
-		OwnerActor()->Orientation().yaw			= -Camera()->yaw;
-		OwnerActor()->Orientation().pitch		= -Camera()->pitch;
+	CActor *A = OwnerActor();
+	if(A){
+		CCameraBase *cam = Camera();
+		A->Orientation().yaw			= -cam->yaw;
+		A->Orientation().pitch		= cam->pitch; 
+		CCameraBase *fe = A->cam_FirstEye();
+		if (fe)
+		{   
+			fe->yaw = cam->yaw;
+			fe->pitch = cam->pitch;
+			Fvector p = P;
+			p.y -= A->Radius() *2.f / 3.f;
+			A->XFORM().c = p;
+		}
+		
 	}
 	
 

@@ -246,6 +246,7 @@ void ui_core::RenderFont()
 	Font()->Render();
 }
 
+// не то
 bool ui_core::is_16_9_mode()
 {
 	return (Device.dwWidth)/float(Device.dwHeight) > (UI_BASE_WIDTH/UI_BASE_HEIGHT +0.01f);

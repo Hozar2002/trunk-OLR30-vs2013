@@ -98,8 +98,19 @@ void CControlAnimation::play()
 void CControlAnimation::play_part(SAnimationPart &part, PlayCallback callback)
 {
 	VERIFY				(part.motion.valid());
+
+	// Ignore the bad animation
+	if (part.motion.val == 65535)
+	{
+		Msg("! OLR ERROR: Incorrect animation detected!");
+		return;
+	}
 	
 	u16 bone_or_part	= m_skeleton_animated->LL_GetMotionDef(part.motion)->bone_or_part;
+	if (bone_or_part == NULL) {
+		//Msg("fix bone_or_part");
+		bone_or_part = m_skeleton_animated->LL_PartID("default");
+	};
 	if (bone_or_part == u16(-1)) bone_or_part = m_skeleton_animated->LL_PartID("default");
 	
 	// initialize synchronization of prev and current animation

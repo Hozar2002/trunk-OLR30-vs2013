@@ -33,7 +33,7 @@ TEMPLATE_SPECIALIZATION
 void CStateControllerFastMoveAbstract::execute()
 {
 	object->set_action	(ACT_RUN);
-
+	Msg("contr fast move inline ACT_RUN inline");
 	//select another cover
 
 

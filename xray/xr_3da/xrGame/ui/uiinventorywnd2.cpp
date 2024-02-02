@@ -8,15 +8,21 @@
 #include "../inventory.h"
 #include "UIInventoryUtilities.h"
 
-
 #include "UICellItem.h"
 #include "UICellItemFactory.h"
 #include "UIDragDropListEx.h"
 #include "UI3tButton.h"
 
-#include "../../../build_config_defines.h"
 
-#include "../WeaponMagazined.h"
+#include "../pch_script.h"
+#include "../game_object_space.h"
+#include "../script_callback_ex.h"
+#include "../script_game_object.h"
+
+#include "../eatable_item_object.h"
+
+
+#include "../../../build_config_defines.h"
 
 CUICellItem* CUIInventoryWnd::CurrentItem()
 {
@@ -33,6 +39,10 @@ void CUIInventoryWnd::SetCurrentItem(CUICellItem* itm)
 	if(m_pCurrentCellItem == itm) return;
 	m_pCurrentCellItem				= itm;
 	UIItemInfo.InitItem			(CurrentIItem());
+	if (m_pCurrentCellItem==NULL)
+	{
+		UIItemInfo.SetItemImageDefaultValues();
+	}
 }
 
 void CUIInventoryWnd::SendMessage(CUIWindow *pWnd, s16 msg, void *pData)
@@ -81,78 +91,77 @@ void CUIInventoryWnd::InitInventory()
 		CUICellItem* itm				= create_cell_item(_itm);
 		m_pUIAutomaticList->SetItem		(itm);
 	}
+	_itm								= m_pInv->m_slots[GREN_SLOT].m_pIItem;
+	if(_itm)
+	{
+		CUICellItem* itm				= create_cell_item(_itm);
+		m_pUIGrenList->SetItem		(itm);
+	}
 	
 #ifdef INV_NEW_SLOTS_SYSTEM
-	if (GameID() == GAME_SINGLE){
-			_itm								= m_pInv->m_slots[KNIFE_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUIKnifeList->SetItem		(itm);
+	if (GameID() == GAME_SINGLE) {
+			_itm = m_pInv->m_slots[KNIFE_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUIKnifeList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[APPARATUS_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUIBinocularList->SetItem		(itm);
+			_itm = m_pInv->m_slots[APPARATUS_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUIBinocularList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[DETECTOR_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUIDetectorList->SetItem		(itm);
+#	if !defined(OLR_SLOTS)
+			_itm = m_pInv->m_slots[DETECTOR_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUIDetectorList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[TORCH_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUITorchList->SetItem		(itm);
+#	endif
+			_itm = m_pInv->m_slots[TORCH_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUITorchList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[PDA_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUIPDAList->SetItem		(itm);
+#	if !defined(OLR_SLOTS)
+			_itm = m_pInv->m_slots[PDA_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUIPDAList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[HELMET_SLOT].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUIHelmetList->SetItem		(itm);
+			_itm = m_pInv->m_slots[HELMET_SLOT].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUIHelmetList->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[SLOT_QUICK_ACCESS_0].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUISlotQuickAccessList_0->SetItem		(itm);
+			_itm = m_pInv->m_slots[SLOT_QUICK_ACCESS_0].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUISlotQuickAccessList_0->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[SLOT_QUICK_ACCESS_1].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUISlotQuickAccessList_1->SetItem		(itm);
+			_itm = m_pInv->m_slots[SLOT_QUICK_ACCESS_1].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUISlotQuickAccessList_1->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[SLOT_QUICK_ACCESS_2].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUISlotQuickAccessList_2->SetItem		(itm);
+			_itm = m_pInv->m_slots[SLOT_QUICK_ACCESS_2].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUISlotQuickAccessList_2->SetItem(itm);
 			}
-			_itm								= m_pInv->m_slots[SLOT_QUICK_ACCESS_3].m_pIItem;
-			if(_itm)
-			{
-				CUICellItem* itm				= create_cell_item(_itm);
-				m_pUISlotQuickAccessList_3->SetItem		(itm);
+			_itm = m_pInv->m_slots[SLOT_QUICK_ACCESS_3].m_pIItem;
+			if(_itm) {
+				CUICellItem* itm = create_cell_item(_itm);
+				m_pUISlotQuickAccessList_3->SetItem(itm);
 			}
+#	endif
 	}
 #endif
 
 	PIItem _outfit						= m_pInv->m_slots[OUTFIT_SLOT].m_pIItem;
 	CUICellItem* outfit					= (_outfit)?create_cell_item(_outfit):NULL;
-#if defined(INV_OUTFIT_FULL_ICON_HIDE)
 	if (outfit)
-#endif
 		m_pUIOutfitList->SetItem			(outfit);
+		
 
 	TIItemContainer::iterator it, it_e;
 	for(it=m_pInv->m_belt.begin(),it_e=m_pInv->m_belt.end(); it!=it_e; ++it) 
@@ -169,9 +178,16 @@ void CUIInventoryWnd::InitInventory()
 	int i=1;
 	for(it=ruck_list.begin(),it_e=ruck_list.end(); it!=it_e; ++it,++i) 
 	{
+		/*if ( !(*it)->m_flags.test( CInventoryItem::FIManualHighlighting ) ) {
+			CUICellItem* itm = create_cell_item(*it);
+			 m_pUIBagList->SetItem(itm);
+		}*/
 		CUICellItem* itm			= create_cell_item(*it);
 		m_pUIBagList->SetItem		(itm);
 	}
+
+
+
 	//fake
 	_itm								= m_pInv->m_slots[GRENADE_SLOT].m_pIItem;
 	if(_itm)
@@ -183,17 +199,6 @@ void CUIInventoryWnd::InitInventory()
 		m_pUIBagList->SetItem			(itm);
 #endif
 	}
-	
-//#ifdef INV_NEW_SLOTS_SYSTEM
-//	for(i=SLOT_QUICK_ACCESS_0; i <= SLOT_QUICK_ACCESS_3; ++i ) {
-//		_itm								= m_pInv->m_slots[i].m_pIItem;
-//		if(_itm)
-//		{
-//			CUICellItem* itm				= create_cell_item(_itm);
-//			m_pUIBagList->SetItem			(itm);
-//		}
-//	}
-//#endif
 
 	InventoryUtilities::UpdateWeight					(UIBagWnd, true);
 
@@ -202,123 +207,122 @@ void CUIInventoryWnd::InitInventory()
 
 void CUIInventoryWnd::DropCurrentItem(bool b_all)
 {
+	CActor* pActor = smart_cast<CActor*>(Level().CurrentEntity());
+	if(!pActor) return;
+	
+	CEatableItemObject* pEatable = smart_cast<CEatableItemObject*>(CurrentIItem());
+	
+	const bool is_eat = pEatable && pEatable->IsEat();
+	const bool is_drop = CurrentIItem() && !CurrentIItem()->IsQuestItem() && !is_eat;
 
-	CActor *pActor			= smart_cast<CActor*>(Level().CurrentEntity());
-	if(!pActor)				return;
-
-	if(!b_all && CurrentIItem() && !CurrentIItem()->IsQuestItem())
-	{
-		SendEvent_Item_Drop		(CurrentIItem());
-		SetCurrentItem			(NULL);
-		InventoryUtilities::UpdateWeight			(UIBagWnd, true);
+	if (!b_all && is_drop) {
+		SendEvent_Item_Drop(CurrentIItem());
+		SetCurrentItem(NULL);
+		InventoryUtilities::UpdateWeight(UIBagWnd, true);
 		return;
 	}
 
-	if(b_all && CurrentIItem() && !CurrentIItem()->IsQuestItem())
-	{
+	if (b_all && is_drop) {
 		u32 cnt = CurrentItem()->ChildsCount();
 
-		for(u32 i=0; i<cnt; ++i){
-			CUICellItem*	itm				= CurrentItem()->PopChild();
-			PIItem			iitm			= (PIItem)itm->m_pData;
-			SendEvent_Item_Drop				(iitm);
+		for(u32 i=0; i<cnt; ++i) {
+			CUICellItem* itm = CurrentItem()->PopChild();
+			PIItem iitm = (PIItem)itm->m_pData;
+			SendEvent_Item_Drop(iitm);
 		}
 
-		SendEvent_Item_Drop					(CurrentIItem());
-		SetCurrentItem						(NULL);
-		InventoryUtilities::UpdateWeight	(UIBagWnd, true);
+		SendEvent_Item_Drop(CurrentIItem());
+		SetCurrentItem(NULL);
+		InventoryUtilities::UpdateWeight(UIBagWnd, true);
 		return;
 	}
 }
 
 //------------------------------------------
 
-bool CUIInventoryWnd::ToSlot(CUICellItem* itm, bool force_place)
-{
-	auto	old_owner	= itm->OwnerList();
-	auto	iitem		= (PIItem)itm->m_pData;
-	auto	_slot		= iitem->GetSlot();
-		
-	if(GetInventory()->CanPutInSlot(iitem))
-	{		
-		
-		auto new_owner	= GetSlotList(_slot);
-		
-		if (!new_owner)
-		{
-			Msg("!ERROR: Bad slot %d", _slot);
-			GetSlotList(_slot);  // for tracing
-			return false;
-		}
+bool CUIInventoryWnd::ToSlot(CUICellItem* itm, bool force_place) {
+	CUIDragDropListEx* old_owner = itm->OwnerList();
+	PIItem	iitem = (PIItem)itm->m_pData;
+	u32 _slot = iitem->GetSlot();
+	auto pEatable = smart_cast<CEatableItemObject*>(iitem);
+	
+	if (pEatable && !pEatable->IsUseHud()) return false;
 
-		if(_slot == GRENADE_SLOT && !new_owner )
+	if(GetInventory()->CanPutInSlot(iitem)){		
+		
+
+		CUIDragDropListEx* new_owner		= GetSlotList(_slot);
+		
+		if(_slot==GRENADE_SLOT && !new_owner )
 #if defined(GRENADE_FROM_BELT)
 			return false;
 #else
 			return true; //fake, sorry (((
 #endif
 		
-#if defined(INV_MOVE_ITM_INTO_QUICK_SLOTS) 
-		//if (_slot >= SLOT_QUICK_ACCESS_0 && _slot <= SLOT_QUICK_ACCESS_3)
-		//{
-		//	for (u32 i = SLOT_QUICK_ACCESS_0; i <= SLOT_QUICK_ACCESS_3; ++i)
-		//	{	
-		//		if(i != _slot)
-		//		{
-		//			auto item	= GetInventory()->m_slots[i].m_pIItem;
 
-		//			if (item)
-		//			{
-		//				auto name1	= item->object().cNameSect();
-		//				auto name2	= iitem->object().cNameSect();
 
-		//				if (!xr_strcmp(name1, name2) && item != iitem)
-		//				{
+	 #if defined(INV_MOVE_ITM_INTO_QUICK_SLOTS) && defined(INV_NEW_SLOTS_SYSTEM) && !defined(OLR_SLOTS)
+			if ((_slot == SLOT_QUICK_ACCESS_0)||(_slot == SLOT_QUICK_ACCESS_1)||(_slot == SLOT_QUICK_ACCESS_2)||(_slot == SLOT_QUICK_ACCESS_3)){
+				for(u32 i=SLOT_QUICK_ACCESS_0; i <= SLOT_QUICK_ACCESS_3; ++i ) 
+				{	
+					if(i != _slot){
+						 PIItem l_pIItem = GetInventory()->m_slots[i].m_pIItem;
+						 if(l_pIItem){
+							if ((!xr_strcmp(l_pIItem->object().cNameSect(), iitem->object().cNameSect()))&&(l_pIItem != iitem)){
+								PIItem	_iitem						= GetInventory()->m_slots[i].m_pIItem;
+								CUIDragDropListEx* slot_list		= GetSlotList(i);
+								VERIFY								(slot_list->ItemsCount()==1);
+								CUICellItem* slot_cell				= slot_list->GetItemIdx(0);
+								VERIFY								(slot_cell && ((PIItem)slot_cell->m_pData)==_iitem);
+								bool result							= ToBag(slot_cell, false);
+								VERIFY								(result);
+								}
+							 }
+						}
+					}
+				}
+	#endif	
 
-		//					CUIDragDropListEx* slot_list		= GetSlotList(i);
 
-		//					CUICellItem* slot_cell				= slot_list->GetItemIdx(0);
-
-		//					bool result							= ToBag(slot_cell, false);
-
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-#endif	
+		bool result							= GetInventory()->Slot(iitem);
+		if (!new_owner)
+		{
+			Msg("!ERROR: Bad slot %d", _slot);
+			GetSlotList(_slot);  // for tracing
+			return false;
+		}
 	
+
+		VERIFY								(result);
 #ifdef DEBUG_SLOTS
 		Msg("# inventory wnd ToSlot (0x%p) from old_owner = 0x%p ", itm, old_owner);
 #endif
-		auto i	= old_owner->RemoveItem(itm, (old_owner == new_owner) );	
-		new_owner->SetItem(i);
+		CUICellItem* i						= old_owner->RemoveItem(itm, (old_owner==new_owner) );
+		
 
-		SendEvent_Item2Slot(iitem);
-
-#if defined(INV_NO_ACTIVATE_APPARATUS_SLOT)
+		new_owner->SetItem					(i);
+		// fix double callback in slot
+		//SendEvent_Item2Slot					(iitem);
+	#if defined(INV_NO_ACTIVATE_APPARATUS_SLOT)
 		if (activate_slot(_slot))
-			SendEvent_ActivateSlot(iitem);
-#else
-		SendEvent_ActivateSlot(iitem);
-#endif
+			SendEvent_ActivateSlot				(iitem);
+	#else
+		SendEvent_ActivateSlot				(iitem);
+	#endif
 
 		/************************************************** added by Ray Twitty (aka Shadows) START **************************************************/
 		// обновляем статик веса в инвентаре
 		InventoryUtilities::UpdateWeight	(UIBagWnd, true);
 		/*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
-		m_b_need_reinit = true;
-		
-		return	true;
-	}
-	else
-	{ 
-		// in case slot is busy
-		if(!force_place ||  _slot == NO_ACTIVE_SLOT || GetInventory()->m_slots[_slot].m_bPersistent) 
-			return false;
 
-		auto	_iitem		= GetInventory()->m_slots[_slot].m_pIItem;
-		auto	slot_list	= GetSlotList(_slot);
+		return								true;
+	}else
+	{ // in case slot is busy
+		if(!force_place ||  _slot==NO_ACTIVE_SLOT || GetInventory()->m_slots[_slot].m_bPersistent) return false;
+
+		PIItem	_iitem						= GetInventory()->m_slots[_slot].m_pIItem;
+		CUIDragDropListEx* slot_list		= GetSlotList(_slot);
 
 		if (0 == slot_list->ItemsCount())
 		{
@@ -326,70 +330,73 @@ bool CUIInventoryWnd::ToSlot(CUICellItem* itm, bool force_place)
 			return false;
 		}
 
-		ToBag(slot_list->GetItemIdx(0), false);
 
-		return ToSlot(itm, false);
+
+		VERIFY								(slot_list->ItemsCount()==1);
+		VERIFY								(slot_list->ItemsCount()>=1);
+
+
+		CUICellItem* slot_cell				= slot_list->GetItemIdx(0);
+		VERIFY								(slot_cell && ((PIItem)slot_cell->m_pData)==_iitem);
+
+		bool result							= ToBag(slot_cell, false);
+		VERIFY								(result);
+
+		return ToSlot						(itm, false);
 	}
 }
 
-bool CUIInventoryWnd::ToBag(CUICellItem* itm, bool b_use_cursor_pos)
-{
-	PIItem	iitem						= (PIItem)itm->m_pData;
+bool CUIInventoryWnd::ToBag(CUICellItem* itm, bool b_use_cursor_pos) {
+	PIItem	iitem = (PIItem)itm->m_pData;
+	auto pEatable = smart_cast<CEatableItemObject*>(iitem);
+	if (pEatable && pEatable->IsEat()) return false;
 
-	if(GetInventory()->CanPutInRuck(iitem))
-	{
+	if(GetInventory()->CanPutInRuck(iitem)) {
 #ifdef DEBUG_SLOTS
 		Msg("# inventory wnd ToBag (0x%p) ", itm);
 #endif
 
-		CUIDragDropListEx*	old_owner		= itm->OwnerList();
-		CUIDragDropListEx*	new_owner		= NULL;
-		if(b_use_cursor_pos){
-				new_owner					= CUIDragDropListEx::m_drag_item->BackList();
-				VERIFY						(new_owner==m_pUIBagList);
-		}else
-				new_owner					= m_pUIBagList;
+		CUIDragDropListEx* old_owner = itm->OwnerList();
+		CUIDragDropListEx* new_owner = NULL;
+		if (b_use_cursor_pos){
+			new_owner = CUIDragDropListEx::m_drag_item->BackList();
+			VERIFY(new_owner==m_pUIBagList);
+		}
+		else {
+			new_owner = m_pUIBagList;
+		}
 
 
-		bool result							= GetInventory()->Ruck(iitem);
-		VERIFY								(result);
-		CUICellItem* i						= old_owner->RemoveItem(itm, (old_owner==new_owner) );
+		bool result = GetInventory()->Ruck(iitem);
+		VERIFY(result);
+		CUICellItem* i = old_owner->RemoveItem(itm, (old_owner==new_owner) );
 
 		/************************************************** added by Ray Twitty (aka Shadows) START **************************************************/
 		// обновляем статик веса в инвентаре
 		InventoryUtilities::UpdateWeight	(UIBagWnd, true);
 		/*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
 
-#ifdef INV_RUCK_UNLIMITED_FIX
-		result = new_owner->CanSetItem(i);
-		if (result || new_owner->IsAutoGrow())
-		{
+#ifdef INV_RUCK_UNLIMITED_FIX		
+		if (result = new_owner->CanSetItem(i) || new_owner->IsAutoGrow() ) {
 #endif
-			if (b_use_cursor_pos)
-			{
-				new_owner->SetItem(i, old_owner->GetDragItemPosition());
+			if(b_use_cursor_pos) {
+				new_owner->SetItem(i,old_owner->GetDragItemPosition() );
 			}
-			else
-			{
+			else {
 				new_owner->SetItem(i);
 			}
-			SendEvent_Item2Ruck					(iitem);
+			SendEvent_Item2Ruck(iitem);
 #ifdef INV_RUCK_UNLIMITED_FIX
 		}
-		else
-		{
-			NET_Packet					P;
-			iitem->object().u_EventGen	(P, GE_OWNERSHIP_REJECT, iitem->object().H_Parent()->ID());
-			P.w_u16						(u16(iitem->object().ID()));
+		else {
+			NET_Packet P;
+			iitem->object().u_EventGen(P, GE_OWNERSHIP_REJECT, iitem->object().H_Parent()->ID());
+			P.w_u16(u16(iitem->object().ID()));
 			iitem->object().u_EventSend(P);
 		}
 
-		m_b_need_reinit = true;
-		
 		return result;
 #else
-		m_b_need_reinit = true;
-		
 		return true;
 #endif
 	}
@@ -426,8 +433,7 @@ bool CUIInventoryWnd::ToBelt(CUICellItem* itm, bool b_use_cursor_pos)
 		// обновляем статик веса в инвентаре
 		InventoryUtilities::UpdateWeight	(UIBagWnd, true);
 		/*************************************************** added by Ray Twitty (aka Shadows) END ***************************************************/
-		m_b_need_reinit = true;
-		
+
 		return true;
 	}
 	return									false;
@@ -446,75 +452,28 @@ bool CUIInventoryWnd::OnItemStartDrag(CUICellItem* itm)
 
 bool CUIInventoryWnd::OnItemSelected(CUICellItem* itm)
 {
-	SetCurrentItem		(itm);
-#ifdef INV_COLORIZE_AMMO
-	ColorizeAmmo		(itm);
-#endif
-	return				false;
-}
-
-#ifdef INV_COLORIZE_AMMO
-void CUIInventoryWnd::ClearColorizeAmmo()
-{
-
-	u32 item_count = m_pUIBagList->ItemsCount();
-		for (u32 i=0;i<item_count;++i) {
-			CUICellItem* bag_item = m_pUIBagList->GetItemIdx(i);
-			bag_item->SetTextureColor				(0xffffffff);
-		}
-
-	u32 belt_item_count = m_pUIBeltList->ItemsCount();
-		for (u32 i=0;i<belt_item_count;++i) {
-			CUICellItem* belt_item = m_pUIBeltList->GetItemIdx(i);
-			belt_item->SetTextureColor				(0xffffffff);
-		}
-}
-
-void CUIInventoryWnd::ColorizeAmmo(CUICellItem* itm)
-{
-
-	ClearColorizeAmmo();
-		
-	CInventoryItem* inventoryitem = (CInventoryItem*) itm->m_pData;
-	if (!inventoryitem) return;
-
-	CWeaponMagazined* weapon = smart_cast<CWeaponMagazined*>(inventoryitem);
-	if (!weapon) return;
-
-	xr_vector<shared_str> ammo_types = weapon->m_ammoTypes;
+	if(m_pCurrentCellItem != itm){
+		if(m_pCurrentCellItem)
+			m_pCurrentCellItem->m_selected = false;
+	}
 	
-	u32 color = pSettings->r_color("inventory_color_ammo","color");
+	SetCurrentItem		(itm);
 
-	//for bag
-	for (size_t id = 0;id<ammo_types.size();++id) {
-	u32 item_count = m_pUIBagList->ItemsCount();
-		for (u32 i=0;i<item_count;++i) {
-			CUICellItem* bag_item = m_pUIBagList->GetItemIdx(i);
-			PIItem invitem = (PIItem) bag_item->m_pData;
+	if(m_pCurrentCellItem)
+		m_pCurrentCellItem->m_selected = true;
+	
+	CActor *pActor = smart_cast<CActor*>(Level().CurrentEntity());
+	
+	if (!pActor) return false;
+	
+	PIItem __item = (PIItem)itm->m_pData;
+	
+	if (!__item) return false;
 
-			if (invitem && xr_strcmp(invitem->object().cNameSect(), ammo_types[id])==0 && invitem->Useful()) {
-				bag_item->SetTextureColor				(color);
-				break;										//go out from loop, because we can't have 2 CUICellItem's with same section
-			}
-
-		}
-	}
-
-	//for belt
-	for (size_t id = 0;id<ammo_types.size();++id) {
-	u32 belt_item_count = m_pUIBeltList->ItemsCount();
-		for (u32 i=0;i<belt_item_count;++i) {
-			CUICellItem* belt_item = m_pUIBeltList->GetItemIdx(i);
-			PIItem invitem = (PIItem) belt_item->m_pData;
-
-			if (invitem && xr_strcmp(invitem->object().cNameSect(), ammo_types[id])==0 && invitem->Useful()) {
-				belt_item->SetTextureColor				(color);
-			}
-
-		}
-	}
+	pActor->callback(GameObject::eOnItemSelect)((smart_cast<CGameObject*>(__item))->lua_game_object());
+	
+	return false;
 }
-#endif
 
 bool CUIInventoryWnd::OnItemDrop(CUICellItem* itm)
 {
@@ -594,13 +553,13 @@ bool CUIInventoryWnd::OnItemDrop(CUICellItem* itm)
 		#endif
 #endif				
 			if(GetSlotList(item->GetSlot()) == new_owner)
-				ToSlot	(itm, true);
+				if (ToSlot(itm, true)) SetCurrentItem(NULL);
 		}break;
 		case iwBag:{
-			ToBag	(itm, true);
+			if (ToBag(itm, true)) SetCurrentItem(NULL);
 		}break;
 		case iwBelt:{
-			ToBelt	(itm, true);
+			if (ToBelt(itm, true)) SetCurrentItem(NULL);
 		}break;
 	};
 
@@ -615,31 +574,17 @@ bool CUIInventoryWnd::OnItemDbClick(CUICellItem* itm)
 	PIItem	__item		= (PIItem)itm->m_pData;
 	u32		__slot		= __item->GetSlot();
 	auto	old_owner	= itm->OwnerList();
-#if  defined(INV_NEW_SLOTS_SYSTEM)
-	if (__slot < SLOT_QUICK_ACCESS_0 || __slot > SLOT_QUICK_ACCESS_3){
-		if(TryUseItem(__item))
-		return true;
-	}else{
-		PIItem iitem = GetInventory()->Same(__item,true);
-		if(iitem){
-			if(TryUseItem(iitem))
-			return true;
-		}else{
-			if(TryUseItem(__item))
-			return true;
-		}	
-	}
-#else
+#if defined(INV_NEW_SLOTS_SYSTEM) && !defined(OLR_SLOTS)
+	if (__slot < SLOT_QUICK_ACCESS_0 || __slot > SLOT_QUICK_ACCESS_3)
+#endif
 	if(TryUseItem(__item))
 		return true;
-#endif
-
 	
 	EListType t_old						= GetType(old_owner);
 
 	switch(t_old){
 		case iwSlot:{
-			ToBag	(itm, false);
+			if (ToBag(itm, false)) SetCurrentItem(NULL);
 		}break;
 
 		case iwBag:
@@ -653,30 +598,38 @@ bool CUIInventoryWnd::OnItemDbClick(CUICellItem* itm)
 			#endif
 			for (u8 i = 0; i < (u8)slots.size(); ++i)
 			{
-				#if !defined(INV_MOVE_ITM_INTO_QUICK_SLOTS)
+				#if !defined(INV_MOVE_ITM_INTO_QUICK_SLOTS) && !defined(OLR_SLOTS)
 				if (!is_eat || is_quick_slot(slots[i], __item, m_pInv) )
 				{
 					__item->SetSlot(slots[i]);
-					if (ToSlot(itm, false) )
+					if (ToSlot(itm, false)){
+						SetCurrentItem(NULL);
 						return true;
+					}
 				}
 				#else
 					__item->SetSlot(slots[i]);
-					if (ToSlot(itm, false) )
-						return true;		
+					if (ToSlot(itm, false)){
+						SetCurrentItem(NULL);
+						return true;
+					}
+								
 				#endif
 			}			
 			__item->SetSlot(slots.size()? slots[0]: NO_ACTIVE_SLOT);
 #endif
 			if(!ToSlot(itm, false))
 			{
-				if( !ToBelt(itm, false) )
-					ToSlot	(itm, true);
+				if (!ToBelt(itm, false))
+				{
+					ToSlot(itm, true);
+					SetCurrentItem(NULL);
+				}
 			}
 		}break;
 
 		case iwBelt:{
-			ToBag	(itm, false);
+			if (ToBag(itm, false)) SetCurrentItem(NULL);
 		}break;
 	};
 
@@ -690,59 +643,6 @@ bool CUIInventoryWnd::OnItemRButtonClick(CUICellItem* itm)
 	ActivatePropertiesBox		();
 	return						false;
 }
-
-bool CUIInventoryWnd::OnItemFocusedUpdate(CUICellItem* itm)
-{
-	if ( itm )
-	{
-		#ifdef INV_FLOAT_ITEM_INFO
-		Fvector2 c_pos			= GetUICursor()->GetCursorPosition();
-		Frect vis_rect;
-		vis_rect.set			(0,0,UI_BASE_WIDTH, UI_BASE_HEIGHT);
-
-		Frect r;
-		r.set					(0.0f, 0.0f, UIItemInfo.GetWidth(), UIItemInfo.GetHeight());
-		r.add					(c_pos.x, c_pos.y);
-
-		r.sub					(0.0f,r.height());
-		if (false==((vis_rect.x1<r.x1)&&(vis_rect.x2>r.x2)&&(vis_rect.y1<r.y1)&&(vis_rect.y2>r.y2)))
-			r.sub				(r.width(),0.0f);
-		if (false==((vis_rect.x1<r.x1)&&(vis_rect.x2>r.x2)&&(vis_rect.y1<r.y1)&&(vis_rect.y2>r.y2)))
-			r.add				(0.0f,r.height());
-		if (false==((vis_rect.x1<r.x1)&&(vis_rect.x2>r.x2)&&(vis_rect.y1<r.y1)&&(vis_rect.y2>r.y2)))
-			r.add				(r.width(), 45.0f);
-
-		UIItemInfo.SetWndPos(r.lt);
-		SetCurrentItem	(itm);
-		#endif
-	}
-	return true;
-}
-
-bool CUIInventoryWnd::OnItemFocusReceive(CUICellItem* itm)
-{
-	#ifdef INV_COLORIZE_AMMO
-	ClearColorizeAmmo();
-	#endif
-	
-	#ifdef INV_FLOAT_ITEM_INFO
-	SetCurrentItem	(NULL);
-	#endif
-	return true;
-}
-
-bool CUIInventoryWnd::OnItemFocusLost(CUICellItem* itm)
-{
-	#ifdef INV_COLORIZE_AMMO
-	ClearColorizeAmmo();
-	#endif
-	
-	#ifdef INV_FLOAT_ITEM_INFO
-	SetCurrentItem	(NULL);
-	#endif
-	return true;
-}
-
 
 CUIDragDropListEx* CUIInventoryWnd::GetSlotList(u32 slot_idx)
 {	
@@ -758,20 +658,24 @@ void CUIInventoryWnd::ClearAllLists()
 	m_pUIBeltList->ClearAll					(true);
 	m_pUIOutfitList->ClearAll				(true);
 	m_pUIPistolList->ClearAll				(true);
+	m_pUIGrenList->ClearAll				    (true);
 	m_pUIAutomaticList->ClearAll			(true);
 
 #ifdef INV_NEW_SLOTS_SYSTEM
 if (IsGameTypeSingle()) {
 	m_pUIKnifeList->ClearAll				(true);
 	m_pUIBinocularList->ClearAll			(true);
-	m_pUIDetectorList->ClearAll				(true);
 	m_pUITorchList->ClearAll				(true);
+#	if !defined(OLR_SLOTS)
+	m_pUIDetectorList->ClearAll				(true);
 	m_pUIPDAList->ClearAll					(true);
 	m_pUIHelmetList->ClearAll				(true);
 	m_pUISlotQuickAccessList_0->ClearAll	(true);
 	m_pUISlotQuickAccessList_1->ClearAll	(true);
 	m_pUISlotQuickAccessList_2->ClearAll	(true);
 	m_pUISlotQuickAccessList_3->ClearAll	(true);
+#	endif
 }
 #endif
 }
+

@@ -17,7 +17,6 @@
 #include "../IGame_Persistent.h"
 #ifdef DEBUG
 #	include "phdebug.h"
-
 #endif
 
 
@@ -43,7 +42,7 @@ void create_force_progress()
 	xml_init.InitProgressShape		(uiXml, "progress", 0, g_MissileForceShape);
 }
 
-CMissile::CMissile(void) 
+CMissile::CMissile(void) : m_bContactExplode{}, m_bGeometryContact{}
 {
 }
 
@@ -69,6 +68,9 @@ void CMissile::Load(LPCSTR section)
 {
 	inherited::Load		(section);
 
+	// hi_flyer & BASE1707: ?????????? ? ??????-????????????? ???????
+	m_bContactExplode = READ_IF_EXISTS(pSettings, r_bool, section, "contact_explode", false);
+
 	m_fMinForce			= pSettings->r_float(section,"force_min");
 	m_fConstForce		= pSettings->r_float(section,"force_const");
 	m_fMaxForce			= pSettings->r_float(section,"force_max");
@@ -81,17 +83,68 @@ void CMissile::Load(LPCSTR section)
 	m_vHudThrowPoint	= pSettings->r_fvector3(*hud_sect,"throw_point");
 	m_vHudThrowDir		= pSettings->r_fvector3(*hud_sect,"throw_dir");
 
-	//загрузить анимации HUD-а
-	m_sAnimShow			= pSettings->r_string(*hud_sect, "anim_show");
+	//????????? ???????? HUD-?
+	/*m_sAnimShow			= pSettings->r_string(*hud_sect, "anim_show");
 	m_sAnimHide			= pSettings->r_string(*hud_sect, "anim_hide");
 	m_sAnimIdle			= pSettings->r_string(*hud_sect, "anim_idle");
-	m_sAnimIdleSprint	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_sprint", *m_sAnimIdle);
 	m_sAnimPlaying		= pSettings->r_string(*hud_sect, "anim_playing");
 	m_sAnimThrowBegin	= pSettings->r_string(*hud_sect, "anim_throw_begin");
 	m_sAnimThrowIdle	= pSettings->r_string(*hud_sect, "anim_throw_idle");
 	m_sAnimThrowAct		= pSettings->r_string(*hud_sect, "anim_throw_act");
 	m_sAnimThrowEnd		= pSettings->r_string(*hud_sect, "anim_throw_end");
-	m_sAnimShow2		= READ_IF_EXISTS(pSettings, r_string, *hud_sect, "anim_show2", *m_sAnimShow);
+	m_sAnimIdleSprint	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_sprint", *m_sAnimIdle);
+	m_sAnimIdleWalk		= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk", *m_sAnimIdle);
+	m_sAnimIdleWalkSlow	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk_slow", *m_sAnimIdle);*/
+
+	m_bolt	= !!READ_IF_EXISTS(pSettings,r_bool,section,"this_bolt",false); //READ_IF_EXISTS(pSettings,r_bool,section,"this_bolt",false);
+
+
+if(m_bolt){
+	//Msg("m_bolt true");
+	if (Random.randI(100) > 50){
+		//Msg("load bolt first");
+		m_sAnimShow			= "draw";
+		m_sAnimHide			= "holster_0";
+		m_sAnimIdle			= "idle_0";
+		m_sAnimPlaying		= "idle_01";
+		m_sAnimThrowBegin	= "attack_0_begin";
+		m_sAnimThrowIdle	= "attack_0_idle";
+		m_sAnimThrowAct		= "attack_0_act";
+		m_sAnimThrowEnd		= "attack_0_end";
+		m_sAnimIdleSprint	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_sprint", *m_sAnimIdle);
+		m_sAnimIdleWalk		= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk", *m_sAnimIdle);
+		m_sAnimIdleWalkSlow	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk_slow", *m_sAnimIdle);
+	}else{
+		//Msg("load bolt second");
+		m_sAnimShow			= "draw_0";
+		m_sAnimHide			= "holster_0";
+		m_sAnimIdle			= "idle_1";
+		m_sAnimPlaying		= "idle_01";
+		m_sAnimThrowBegin	= "attack_0_begin";
+		m_sAnimThrowIdle	= "attack_0_idle";
+		m_sAnimThrowAct		= "attack_0_act";
+		m_sAnimThrowEnd		= "attack_0_end";
+		m_sAnimIdleSprint	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_sprint", *m_sAnimIdle);
+		m_sAnimIdleWalk		= "idle_1";
+		m_sAnimIdleWalkSlow	= "idle_1";
+
+	}
+}else{
+	//Msg("m_bolt false");
+	//Msg("load default - grenade");
+	m_sAnimShow			= pSettings->r_string(*hud_sect, "anim_show");
+	m_sAnimHide			= pSettings->r_string(*hud_sect, "anim_hide");
+	m_sAnimIdle			= pSettings->r_string(*hud_sect, "anim_idle");
+	m_sAnimPlaying		= pSettings->r_string(*hud_sect, "anim_playing");
+	m_sAnimThrowBegin	= pSettings->r_string(*hud_sect, "anim_throw_begin");
+	m_sAnimThrowIdle	= pSettings->r_string(*hud_sect, "anim_throw_idle");
+	m_sAnimThrowAct		= pSettings->r_string(*hud_sect, "anim_throw_act");
+	m_sAnimThrowEnd		= pSettings->r_string(*hud_sect, "anim_throw_end");
+	m_sAnimIdleSprint	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_sprint", *m_sAnimIdle);
+	m_sAnimIdleWalk		= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk", *m_sAnimIdle);
+	m_sAnimIdleWalkSlow	= READ_IF_EXISTS (pSettings, r_string, *hud_sect, "anim_idle_walk_slow", *m_sAnimIdle);
+};
+
 
 	if(pSettings->line_exist(section,"snd_playing"))
 		HUD_SOUND::LoadSound(section,"snd_playing",sndPlaying);
@@ -181,13 +234,26 @@ void CMissile::OnH_B_Independent(bool just_before_destroy)
 	}
 }
 
-u32 CMissile::idle_state()
-{
-	CActor	*actor = smart_cast<CActor*>(H_Parent());
-	if (actor && actor->get_state() & mcSprint)
-		return MS_IDLE_SPRINT;
-	else
-		return MS_IDLE;
+u32 CMissile::idle_state() {
+	CActor* actor = smart_cast<CActor*>(H_Parent());
+	if (actor) {
+		if (actor->get_state() & mcSprint) {
+			return MS_IDLE_SPRINT;
+		}
+		else if (actor->get_state() & mcAnyMove) {
+			const bool is_slow = (
+				actor->get_state() & mcAccel ||
+				actor->get_state() & mcCrouch
+			);
+			if (is_slow) {
+				return MS_IDLE_WALK_SLOW;
+			}
+			else {
+				return MS_IDLE_WALK;
+			}
+		}
+	}
+	return MS_IDLE;
 }
 
 void CMissile::UpdateCL() 
@@ -197,10 +263,10 @@ void CMissile::UpdateCL()
 	if(GetState() == MS_IDLE && m_dwStateTime > PLAYING_ANIM_TIME) 
 		OnStateSwitch(MS_PLAYING);
 
-	// alpet: поддержка анимации спринта для болтов
+	// alpet: ????????? ???????? ??????? ??? ??????
 	CActor	*actor = smart_cast<CActor*>(H_Parent());
 	u32		state = GetState();
-	bool	idle = ( MS_IDLE == state ) || ( MS_IDLE_SPRINT == state );	
+	bool	idle = ( MS_IDLE == state ) || ( MS_IDLE_SPRINT == state ) || ( MS_IDLE_WALK == state ) || ( MS_IDLE_WALK_SLOW == state );	
 	if (idle && state != idle_state())
 	{
 		// Msg("# missile %5d state 0x%x, but must 0x%x ", ID(), state, idle_state());		
@@ -226,7 +292,8 @@ void CMissile::shedule_Update(u32 dt)
 	inherited::shedule_Update(dt);
 	if(!H_Parent() && getVisible() && m_pPhysicsShell) 
 	{
-		if(m_dwDestroyTime <= Level().timeServer()) 
+		// hi_flyer & BASE1707: ?????????? ? ??????-????????????? ???????
+		if (m_bContactExplode && m_bGeometryContact || m_dwDestroyTime <= Level().timeServer())
 		{
 			m_dwDestroyTime = 0xffffffff;
 			VERIFY	(!m_pCurrentInventory);
@@ -250,15 +317,6 @@ void CMissile::State(u32 state)
 			m_bPending = true;
 			m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimShow), FALSE, this, GetState());
 		} break;
-	
-	// Real Wolf: Сделаем отдельную анимацию для появления после броска. 29.12.14
-	case MS_SHOWING2:
-	{
-		m_bPending = true;
-		m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimShow2), FALSE, this, GetState());
-		break;
-	} 
-
 	case MS_IDLE:
 		{
 			m_bPending = false;
@@ -268,6 +326,16 @@ void CMissile::State(u32 state)
 		{
 			m_bPending = false;
 			m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimIdleSprint), TRUE, this, GetState());
+		} break;
+	case MS_IDLE_WALK:
+		{
+			m_bPending = false;
+			m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimIdleWalk), TRUE, this, GetState());
+		} break;
+	case MS_IDLE_WALK_SLOW:
+		{
+			m_bPending = false;
+			m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimIdleWalkSlow), TRUE, this, GetState());
 		} break;
 	case MS_HIDING:
 		{
@@ -293,7 +361,7 @@ void CMissile::State(u32 state)
 	case MS_THREATEN:
 		{
 #if defined(MISSILE_THREAT_FIX)
-			// Real Wolf: Останавливаем спринт при броске. 22.07.2014.
+			// Real Wolf: ????????????? ?????? ??? ??????. 22.07.2014.
 			g_actor->set_state_wishful(g_actor->get_state_wishful() & (~mcSprint) );
 #endif
 			m_bPending = true;
@@ -317,8 +385,13 @@ void CMissile::State(u32 state)
 		} break;
 	case MS_PLAYING:
 		{
-			PlaySound(sndPlaying,Position());
-			m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimPlaying), TRUE, this, GetState());
+		 try {
+				PlaySound(sndPlaying, Position());
+				m_pHUD->animPlay(m_pHUD->animGet(*m_sAnimPlaying), TRUE, this, GetState());
+					   }
+					   catch (...) {
+						   Msg("!!!Error in m_sAnimPlaying");
+					   }
 		} break;
 	}
 }
@@ -340,7 +413,6 @@ void CMissile::OnAnimationEnd(u32 state)
 			OnStateSwitch(MS_HIDDEN);
 		} break;
 	case MS_SHOWING:
-	case MS_SHOWING2:
 		{
 			setVisible(TRUE);
 			OnStateSwitch(idle_state());
@@ -372,7 +444,7 @@ void CMissile::OnAnimationEnd(u32 state)
 		} break;
 	case MS_END:
 		{
-			OnStateSwitch(MS_SHOWING2);
+			OnStateSwitch(MS_SHOWING);
 		} break;
 	case MS_PLAYING:
 		{
@@ -723,6 +795,13 @@ void CMissile::OnDrawUI()
 	}	
 }
 
+#include "Actor.h"
+#include "pch_script.h"
+#include "script_callback_ex.h"
+#include "script_game_object.h"
+#include "game_object_space.h"
+#include "alife_object_registry.h"
+
 void	 CMissile::ExitContactCallback(bool& do_colide,bool bo1,dContact& c,SGameMtl * /*material_1*/,SGameMtl * /*material_2*/)
 {
 	dxGeomUserData	*gd1=NULL,	*gd2=NULL;
@@ -737,14 +816,24 @@ void	 CMissile::ExitContactCallback(bool& do_colide,bool bo1,dContact& c,SGameMt
 		gd1 =retrieveGeomUserData(c.geom.g2);
 	}
 	if(gd1&&gd2&&(CPhysicsShellHolder*)gd1->callback_data==gd2->ph_ref_object)	
-																				do_colide=false;
+		do_colide=false;
+	
+	// hi_flyer & BASE1707: ?????????? ? ??????-????????????? ???????
+	if (gd1)
+	{
+		if (CMissile* p = smart_cast<CMissile*>(gd1->ph_ref_object))
+		{
+			p->m_bGeometryContact = true;
+		}
+	}
 }
 
-void CMissile::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count)
+void CMissile::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, xr_string& ammo_sect_name)
 {
 	str_name		= NameShort();
 	str_count		= "";
 	icon_sect_name	= "";
+	ammo_sect_name = "";
 }
 
 u16 CMissile::bone_count_to_synchronize	() const

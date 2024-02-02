@@ -19,6 +19,7 @@
 #include "PhysicsShellHolder.h"
 #include "Level.h"
 #include "CharacterPhysicsSupport.h"
+#include "Car.h"
 CBaseGraviZone ::CBaseGraviZone (void)
 {
 	m_dwTeleTime = 0;
@@ -219,6 +220,10 @@ void CBaseGraviZone ::	AffectPullDead(CPhysicsShellHolder* GO,const Fvector& thr
 void CBaseGraviZone ::	AffectThrow(SZoneObjectInfo* O, CPhysicsShellHolder* GO,const Fvector& throw_in_dir,float dist)
 {
 
+	if(smart_cast<CCar*>(GO))
+	return;
+	//Msg("gravi hit CAR -- Return nil");
+
 	Fvector position_in_bone_space;
 
 	float power = Power(dist);//Power(GO->Position().distance_to(zone_center));
@@ -232,10 +237,22 @@ void CBaseGraviZone ::	AffectThrow(SZoneObjectInfo* O, CPhysicsShellHolder* GO,c
 	//else
 	//	throw_in_dir.normalize();
 
+	/*
+	 if(smart_cast<CCar*>(GO));
+			GO->PPhysicsShell()->applyImpulse(throw_in_dir,dist * m_fThrowInImpulse*GO->GetMass()/100000.f);
+			Msg("gravi hit dead object ---- CAR!!!!!!!!!!");
+			if (!smart_cast<CCar*>(GO));
+				GO->PPhysicsShell()->applyImpulse(throw_in_dir,dist * m_fThrowInImpulse*GO->GetMass()/100.f);
+				Msg("gravi hit dead object ---- !!NO!! CAR!!!!!!!!!!");
+				*/
 
 	//статистика по объекту
 	O->total_damage += power;
 	O->hit_num++;
+	
+	//if(smart_cast<CCar*>(GO));
+	//Msg("gravi hit CAR -- Return nil");
+	//return;
 
 	if(power > 0.01f) 
 	{
@@ -243,6 +260,7 @@ void CBaseGraviZone ::	AffectThrow(SZoneObjectInfo* O, CPhysicsShellHolder* GO,c
 		position_in_bone_space.set(0.f,0.f,0.f);
 		CreateHit(GO->ID(),ID(),throw_in_dir,power,0,position_in_bone_space,impulse,m_eHitTypeBlowout);
 		PlayHitParticles(GO);
+		//Msg("gravi hit object");
 	}
 }
 
@@ -305,4 +323,15 @@ void CBaseGraviZone::net_Relcase(CObject* O)
 	inherited::net_Relcase(O);
 	
 	Telekinesis().remove_links(O);
+}
+
+void CBaseGraviZone::exit_Zone( SZoneObjectInfo& io ) {
+  if ( !io.object->getDestroy() ) {
+    CPhysicsShellHolder* GO = smart_cast<CPhysicsShellHolder*>( io.object );
+    if ( GO && GO->PPhysicsShell() && Telekinesis().is_active_object( GO ) ) {
+      Telekinesis().deactivate( GO );
+      StopTeleParticles( GO );
+    }
+  }
+  inherited::exit_Zone( io );
 }

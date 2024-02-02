@@ -24,6 +24,9 @@
 #include "PHDebug.h"
 #endif
 #include "../../build_config_defines.h"
+
+////#undef INV_NEW_SLOTS_SYSTEM
+
 IC BOOL BE	(BOOL A, BOOL B)
 {
 	bool a = !!A;
@@ -55,9 +58,9 @@ void CActor::OnEvent		(NET_Packet& P, u16 type)
 			CFoodItem* pFood = smart_cast<CFoodItem*>(O);
 			if(pFood)
 #if defined(INV_NEW_SLOTS_SYSTEM)
-			if (pFood->m_eItemPlace != eItemPlaceSlot)
+			if (pFood->CInventoryItem::m_eItemPlace != eItemPlaceSlot)
 #endif
-				pFood->m_eItemPlace = eItemPlaceRuck;
+				pFood->CInventoryItem::m_eItemPlace = eItemPlaceRuck;
 
 			if( inventory().CanTakeItem(smart_cast<CInventoryItem*>(_GO)) )
 			{

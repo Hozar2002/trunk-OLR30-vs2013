@@ -1,6 +1,8 @@
 #pragma once
 #include "../../build_config_defines.h"
 
+//#undef INV_NEW_SLOTS_SYSTEM
+
 enum	EGameActions
 {
 	kLEFT,
@@ -40,6 +42,7 @@ enum	EGameActions
 	kARTEFACT,
 	kWPN_NEXT,
 	kWPN_FIRE,
+	kWPN_FIRE_SEC,
 	kWPN_ZOOM,
 	kWPN_ZOOM_INC,
 	kWPN_ZOOM_DEC,
@@ -96,6 +99,7 @@ enum	EGameActions
 	kUSE_SLOT_QUICK_ACCESS_2,
 	kUSE_SLOT_QUICK_ACCESS_3,
 #endif	
+	kCAR_OPEN_DOOR,
 
 	kLASTACTION,
 	kNOTBINDED,

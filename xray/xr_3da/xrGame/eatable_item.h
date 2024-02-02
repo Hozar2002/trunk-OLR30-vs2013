@@ -1,19 +1,20 @@
 #pragma once
 
-#include "inventory_item.h"
+//#include "inventory_item.h"
 #include "base_client_classes.h"
 
 class CPhysicItem;
 class CEntityAlive;
 
 
-class CEatableItem : public CInventoryItem {	
+class CEatableItem /*: public CInventoryItem*/ {	
 	friend class CEatableItemScript;
 private:
-	typedef CInventoryItem	inherited;
+	//typedef CInventoryItem	inherited;
 
 private:
-	CPhysicItem		*m_physic_item;
+	CPhysicItem*		m_physic_item;
+	bool 						m_use_hud;
 
 public:
 							CEatableItem				();
@@ -26,15 +27,29 @@ public:
 
 	virtual BOOL			net_Spawn					(CSE_Abstract* DC);
 
-	virtual void			OnH_B_Independent			(bool just_before_destroy);
-	virtual	void			UseBy						(CEntityAlive* npc);
+	//virtual void			OnH_B_Independent			(bool just_before_destroy);
+	virtual	void			UseBy						(CEntityAlive* npc) = 0;
 			bool			Empty						()	const				{return m_iPortionsNum==0;};
+			bool			DontEnd						()	const				{return m_infinity;};
+
+	/*bool 				DontEnd					() {
+		return m_infinity;
+	}*/
+	
+	// Использует ли объект худ, или поедается на клик мыши.
+	bool 				IsUseHud					() {
+		return m_use_hud;
+	}
 protected:	
 	//влияние при поедании вещи на параметры игрока
+	bool					m_infinity;
+
 	float					m_fHealthInfluence;
 	float					m_fPowerInfluence;
 	float					m_fSatietyInfluence;
 	float					m_fRadiationInfluence;
+	float					m_fWaterInfluence;
+	float					m_fSleepInfluence;
 	float					m_fMaxPowerUpInfluence;
 	//заживление ран на кол-во процентов
 	float					m_fWoundsHealPerc;
@@ -49,5 +64,7 @@ protected:
 	virtual void			net_Import(NET_Packet&);
 public:
 	int						GetPortionsNum() const	{ return m_iPortionsNum; }
+	CPhysicItem*		GetPhisycItem() const { return m_physic_item; }
+
 };
 

@@ -11,6 +11,11 @@
 #include "../actor.h"
 #include "../string_table.h"
 
+#include "../pch_script.h"
+#include "../game_object_space.h"
+#include "../script_callback_ex.h"
+#include "../script_game_object.h"
+
 #define PDA_CONTACT_HEIGHT 70
 
 #define		PDA_CONTACTS_XML			"pda_contacts_new.xml"
@@ -58,9 +63,9 @@ void CUIPdaContactsWnd::Init()
 	UIRightFrame->AttachChild			(UIRightFrameHeader);
 	xml_init.InitFrameLine				(uiXml, "right_frame_line", 0, UIRightFrameHeader);
 
-	UIAnimation							= xr_new<CUIAnimatedStatic>();UIAnimation->SetAutoDelete(true);
-	UIContactsHeader->AttachChild		(UIAnimation);
-	xml_init.InitAnimatedStatic			(uiXml, "a_static", 0, UIAnimation);
+	//UIAnimation							= xr_new<CUIAnimatedStatic>();UIAnimation->SetAutoDelete(true);
+	//UIContactsHeader->AttachChild		(UIAnimation);
+	//xml_init.InitAnimatedStatic			(uiXml, "a_static", 0, UIAnimation);
 
 	UIListWnd							= xr_new<CUIScrollView>();UIListWnd->SetAutoDelete(true);
 	UIFrameContacts->AttachChild		(UIListWnd);
@@ -169,6 +174,7 @@ bool CUIPdaContactItem::OnMouseDown(int mouse_btn)
 {
 	if(mouse_btn==MOUSE_1){
 		m_cw->UIListWnd->SetSelected(this);
+		Actor()->callback(GameObject::ePdaContactItemClick)(UIInfo->OwnerID());
 		return true;
 	}
 	return false;

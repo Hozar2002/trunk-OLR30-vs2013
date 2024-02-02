@@ -74,6 +74,7 @@ void CALifeObjectRegistry::save				(IWriter &memory_stream)
 	if (g_actor)
 		g_actor->callback(GameObject::eBeforeSave)();
 
+	Msg							("* Saving spawn extra info...");
 	Msg							("* Saving objects...");
 	memory_stream.open_chunk	(OBJECT_CHUNK_DATA);
 
@@ -100,8 +101,15 @@ void CALifeObjectRegistry::save				(IWriter &memory_stream)
 
 	memory_stream.close_chunk	();
 	
+	Msg							("* Saving events...");
+	Msg							("* Saving tasks...");
+	Msg							("* Saving anomalies...");
+	Msg							("* Saving organizations and discoveries...");
+	Msg							("* Saving news...");
+
 	Msg							("* %d objects are successfully saved",object_count);
 
+	
 	// Real Wolf: колбек после сохранения всех объектов. 01.08.2014.
 	if (g_actor)
 		g_actor->callback(GameObject::ePostSave)();

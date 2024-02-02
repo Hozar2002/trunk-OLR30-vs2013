@@ -148,6 +148,7 @@
 #	include "WeaponHPSA.h"
 #	include "WeaponKnife.h"
 #	include "WeaponLR300.h"
+#	include "WeaponM134.h"
 #	include "WeaponPM.h"
 #	include "WeaponRG6.h"
 #	include "WeaponRPG7.h"

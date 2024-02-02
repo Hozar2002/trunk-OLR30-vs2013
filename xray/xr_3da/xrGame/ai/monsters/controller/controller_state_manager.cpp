@@ -33,15 +33,16 @@ CStateManagerController::CStateManagerController(CController *obj) : inherited(o
 	add_state(eStateHearDangerousSound,		xr_new<CStateMonsterHearDangerousSound<CController> >	(obj));
 	add_state(eStateHitted,					xr_new<CStateMonsterHitted<CController> >				(obj));
 	
-	add_state(eStateAttack,					xr_new<CStateMonsterAttackRun<CController> >			(obj));
+	//add_state(eStateAttack,					xr_new<CStateMonsterAttackRun<CController> >			(obj));
+	//add_state(eStateAttack,					xr_new<CStateMonsterAttack<CController> >			(obj));  // flyer
 
-	//add_state(
-	//	eStateAttack, 
-	//	xr_new<CStateControllerAttack<CController> > (obj,
-	//		xr_new<CStateMonsterAttackRun<CController> >(obj), 
-	//		xr_new<CStateMonsterAttackMelee<CController> >(obj)
-	//	)
-	//);
+	add_state(
+		eStateAttack, 
+			xr_new<CStateControllerAttack<CController> > (obj,
+			xr_new<CStateMonsterAttackRun<CController> >(obj), 
+			xr_new<CStateMonsterAttackMelee<CController> >(obj)
+		)
+	);
 
 	add_state(eStateEat,		xr_new<CStateMonsterEat<CController> >(obj));
 	add_state(eStateCustom,		xr_new<CStateControlHide<CController> >(obj));

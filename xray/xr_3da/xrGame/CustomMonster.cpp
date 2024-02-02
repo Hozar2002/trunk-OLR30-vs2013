@@ -87,10 +87,12 @@ CCustomMonster::CCustomMonster()
 	m_sound_player				= 0;
 	m_already_dead				= false;
 	m_invulnerable				= false;
+	m_anomaly_detector				= xr_new<CAnomalyDetector>(this);
 }
 
 CCustomMonster::~CCustomMonster	()
 {
+	xr_delete(m_anomaly_detector);
 	xr_delete					(m_sound_user_data_visitor);
 	xr_delete					(m_memory_manager);
 	xr_delete					(m_movement_manager);
@@ -111,6 +113,8 @@ void CCustomMonster::Load		(LPCSTR section)
 	material().Load				(section);
 	memory().Load				(section);
 	movement().Load				(section);
+
+	m_anomaly_detector->load		(section);
 	//////////////////////////////////////////////////////////////////////////
 
 	///////////
@@ -179,6 +183,8 @@ void CCustomMonster::reinit		()
 	movement().reinit			();
 	sound().reinit				();
 
+	m_anomaly_detector->reinit		();
+
 	m_client_update_delta		= 0;
 	m_last_client_update_time	= Device.dwTimeGlobal;
 
@@ -212,6 +218,8 @@ void CCustomMonster::reload		(LPCSTR section)
 	material().reload			(section);
 	movement().reload			(section);
 	load_killer_clsids			(section);
+
+	m_anomaly_detector->update_schedule();
 
 	m_far_plane_factor			= READ_IF_EXISTS(pSettings,r_float,section,"far_plane_factor",1.f);
 	m_fog_density_factor		= READ_IF_EXISTS(pSettings,r_float,section,"fog_density_factor",.05f);
@@ -312,6 +320,7 @@ void CCustomMonster::shedule_Update	( u32 DT )
 		else
 			Exec_Visibility					();
 		memory().update						(dt);
+		anomaly_detector().update_schedule();
 	}
 	inherited::shedule_Update	(DT);
 
@@ -542,7 +551,7 @@ void CCustomMonster::update_range_fov	(float &new_range, float &new_fov, float s
 
 	float	current_fog_density				= GamePersistent().Environment().CurrentEnv.fog_density	;	
 	// 0=no_fog, 1=full_fog, >1 = super-fog
-	float	current_far_plane				= GamePersistent().Environment().CurrentEnv.far_plane	;	
+	float	current_far_plane = GamePersistent().Environment().CurrentEnv.fog_far;
 	// 300=standart, 50=super-fog
 
 	new_fov									= start_fov;
@@ -561,8 +570,8 @@ void CCustomMonster::update_range_fov	(float &new_range, float &new_fov, float s
 			(
 				1.f + m_fog_density_factor*current_fog_density
 			)
-		)
-	;
+		);
+		clamp(new_range, 0.f, current_far_plane);
 }
 
 void CCustomMonster::eye_pp_s1			()
@@ -817,6 +826,7 @@ BOOL CCustomMonster::feel_touch_on_contact	(CObject *O)
 
 BOOL CCustomMonster::feel_touch_contact		(CObject *O)
 {
+	m_anomaly_detector->on_contact(O);
 	CCustomZone	*custom_zone = smart_cast<CCustomZone*>(O);
 	if (!custom_zone)
 		return	(TRUE);

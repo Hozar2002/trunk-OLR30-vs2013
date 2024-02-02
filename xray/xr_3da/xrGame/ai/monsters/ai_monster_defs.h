@@ -190,6 +190,8 @@ enum EMotionAnim {
 	eAnimUpperWalkFwd,
 	eAnimUpperThreaten,
 	eAnimUpperAttack,
+
+	eAnimThreatenSit,
 	
 	eAnimAttackPsi,
 

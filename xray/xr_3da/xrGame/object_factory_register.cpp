@@ -95,6 +95,8 @@
 #	include "WeaponMounted.h"
 #	include "WeaponStatMgun.h"
 
+#	include "WeaponM134.h"
+
 #	include "scope.h"
 #	include "silencer.h"
 #	include "grenadelauncher.h"
@@ -136,8 +138,14 @@
 #	include "nogravityzone.h"
 #	include "simpledetector.h"
 
+#	include "AcidFog.h"
+
 #	include "torch.h"
 #	include "pda.h"
+//#	include "HandTorch.h"
+#	include "WeaponHandTorch.h"
+
+//#	include "Fireball.h"
 
 #	include "searchlight.h"
 
@@ -167,6 +175,9 @@
 
 #	include "actor_mp_server.h"
 #	include "actor_mp_client.h"
+
+
+
 #endif // NO_XR_GAME
 
 ENGINE_API	bool g_dedicated_server;
@@ -270,6 +281,7 @@ void CObjectFactory::register_classes	()
 	ADD(CWeaponFN2000			,CSE_ALifeItemWeaponMagazinedWGL	,CLSID_OBJECT_W_FN2000			,"wpn_fn2000");
 	ADD(CWeaponAK74				,CSE_ALifeItemWeaponMagazinedWGL	,CLSID_OBJECT_W_AK74			,"wpn_ak74");
 	ADD(CWeaponLR300			,CSE_ALifeItemWeaponMagazined	,CLSID_OBJECT_W_LR300			,"wpn_lr300");
+	ADD(CWeaponM134				,CSE_ALifeItemWeaponMagazined	,CLSID_OBJECT_W_M134			,"wpn_m134");
 	ADD(CWeaponHPSA				,CSE_ALifeItemWeaponMagazined	,CLSID_OBJECT_W_HPSA			,"wpn_hpsa");
 	ADD(CWeaponPM				,CSE_ALifeItemWeaponMagazined	,CLSID_OBJECT_W_PM				,"wpn_pm");
 	ADD(CWeaponFORT				,CSE_ALifeItemWeaponMagazined	,CLSID_OBJECT_W_FORT			,"wpn_fort");
@@ -286,6 +298,8 @@ void CObjectFactory::register_classes	()
 	ADD(CWeaponKnife			,CSE_ALifeItemWeapon			,CLSID_OBJECT_W_KNIFE			,"wpn_knife");
 	ADD(CWeaponBM16				,CSE_ALifeItemWeaponShotGun		,CLSID_OBJECT_W_BM16			,"wpn_bm16");
 	ADD(CWeaponRG6				,CSE_ALifeItemWeaponShotGun		,CLSID_OBJECT_W_RG6				,"wpn_rg6");
+	ADD(CWeaponHandTorch		,CSE_ALifeItemWeapon			,CLSID_DEVICE_HANDTORCH			,"hand_torch");
+	//ADD(CFireball				,CSE_ALifeItemWeapon			,CLSID_OBJECT_W_FIRE			,"wpn_fireball");
 	//-----------------------------------------------------------------------------------------------------
 	ADD(CWeaponAmmo				,CSE_ALifeItemAmmo				,CLSID_OBJECT_AMMO				,"wpn_ammo");
 	ADD(CWeaponAmmo				,CSE_ALifeItemAmmo				,CLSID_OBJECT_A_VOG25			,"wpn_ammo_vog25");
@@ -347,6 +361,9 @@ void CObjectFactory::register_classes	()
 	ADD(CSpaceRestrictor		,CSE_ALifeSpaceRestrictor		,CLSID_SPACE_RESTRICTOR			,"space_restrictor");
 	ADD(CAmebaZone				,CSE_ALifeZoneVisual			,CLSID_Z_AMEBA					,"ameba_zone");
 	ADD(CNoGravityZone			,CSE_ALifeAnomalousZone			,CLSID_Z_NOGRAVITY				,"nogravity_zone");
+	ADD(CAcidFog				,CSE_ALifeAnomalousZone			,CLSID_Z_ACIDF					,"zone_acidfog");
+
+
 	// Detectors
 	ADD(CSimpleDetector			,CSE_ALifeItemDetector			,CLSID_DETECTOR_SIMPLE			,"device_detector_simple");
 
@@ -378,12 +395,14 @@ void CObjectFactory::register_classes	()
 	if (!g_dedicated_server)
 		return;
 
+	//ADD(CWeaponHandTorch		,CSE_ALifeItemWeaponMagazined	,TEXT2CLSID("HTORC_S")			,"hand_torch_s");
 	ADD(CElectricBall			,CSE_ALifeItemArtefact			,TEXT2CLSID("SCRPTART")			,"artefact_s");
 	ADD(CTorch					,CSE_ALifeItemTorch				,TEXT2CLSID("TORCH_S")			,"device_torch_s");
 	ADD(CStalkerOutfit			,CSE_ALifeItemCustomOutfit		,TEXT2CLSID("E_STLK")			,"equ_stalker_s");
 	ADD(CScope					,CSE_ALifeItem					,TEXT2CLSID("WP_SCOPE")			,"wpn_scope_s");
 	ADD(CWeaponAK74				,CSE_ALifeItemWeaponMagazinedWGL,TEXT2CLSID("WP_AK74")			,"wpn_ak74_s");
 	ADD(CWeaponLR300			,CSE_ALifeItemWeaponMagazined	,TEXT2CLSID("WP_LR300")			,"wpn_lr300_s");
+	ADD(CWeaponM134				,CSE_ALifeItemWeaponMagazined	,TEXT2CLSID("WP_M134")			,"wpn_m134_s");
 	ADD(CWeaponBinoculars		,CSE_ALifeItemWeaponMagazined	,TEXT2CLSID("WP_BINOC")			,"wpn_binocular_s");
 	ADD(CWeaponBM16				,CSE_ALifeItemWeaponShotGun		,TEXT2CLSID("WP_BM16")			,"wpn_bm16_s");
 	ADD(CWeaponGroza			,CSE_ALifeItemWeaponMagazinedWGL,TEXT2CLSID("WP_GROZA")			,"wpn_groza_s");

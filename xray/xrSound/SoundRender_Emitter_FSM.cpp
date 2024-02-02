@@ -90,7 +90,7 @@ void CSoundRender_Emitter::update	(float dt)
 				SoundRender->i_stop		(this);
 			}else{
 				// We are still playing
-				update_environment	(dt);
+				update_environment	( dt, dwDeltaTime, true );
 			}
 		}
 		break;
@@ -129,7 +129,7 @@ void CSoundRender_Emitter::update	(float dt)
 			SoundRender->i_stop		(this);
 		}else{
 			// We are still playing
-			update_environment	(dt);
+			update_environment	(dt, dwDeltaTime, true);
 		}
 		break;
 	case stSimulatingLooped:
@@ -212,13 +212,29 @@ float	CSoundRender_Emitter::priority				()
 	return	smooth_volume*att*priority_scale;
 }
 
-void	CSoundRender_Emitter::update_environment	(float dt)
-{
-	if (bMoved)
-	{
-		e_target = *SoundRender->get_environment(p_source.position);
-                // Cribbledirge: updates the velocity of the sound.
-                p_source.update_velocity(dt);
-	}
-	e_current.lerp		(e_current,e_target,dt);
+//void	CSoundRender_Emitter::update_environment	(float dt)
+//{
+//	if (bMoved)
+//	{
+//		e_target = *SoundRender->get_environment(p_source.position);
+//                // Cribbledirge: updates the velocity of the sound.
+//                p_source.update_velocity(dt);
+//	}
+//	e_current.lerp		(e_current,e_target,dt);
+//}
+
+#define ENV_UPDATE_TIME 500u
+void CSoundRender_Emitter::update_environment( float dt, u32 dwDeltaTime, bool starting ) {
+  if ( !b2D && bMoved ) {
+    if ( starting || env_update_time > ENV_UPDATE_TIME ) {
+      env_update_time = 0;
+      //SoundRender->efx_assing_env_slot( p_source.position, target );
+    }
+    else {
+      env_update_time += dwDeltaTime;
+    }
+
+    p_source.update_velocity( dt );
+
+  }
 }

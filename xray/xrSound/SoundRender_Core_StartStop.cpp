@@ -21,6 +21,8 @@ void	CSoundRender_Core::i_start		(CSoundRender_Emitter* E)
 		{
 			T		= Ttest;
 			Ptarget	= Ttest->priority;
+            		if (Ptarget < 0)
+                	break;
 		}
 	}
 

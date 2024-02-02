@@ -179,8 +179,11 @@ float rayTrace	(CDB::COLLIDER* DB, CDB::MODEL* MDL, R_Light& L, Fvector& P, Fvec
 		if (range>0 && range<R) return 0;
 	}
 
+	//int i = 0;
+	//for (i = 1; i <= 10; i++){
 	// 2. Polygon doesn't pick - real database query
 	DB->ray_query	(MDL,P,D,R);
+	//}
 
 	// 3. Analyze polygons and cache nearest if possible
 	if (0==DB->r_count()) {
@@ -191,17 +194,35 @@ float rayTrace	(CDB::COLLIDER* DB, CDB::MODEL* MDL, R_Light& L, Fvector& P, Fvec
 	return 0;
 }
 
+
+
+
+
+
+/////// !!!! САМ РАССЧЕТ ЛАЙТМАПОВ !!!! ВЕСЬ идёт именно здесь !!!!
 void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P, Fvector &N, base_lighting& lights, u32 flags, Face* skip)
 {
 	Fvector		Ldir,Pnew;
-	Pnew.mad	(P,N,0.01f);
+	Pnew.mad	(P,N,0.01f);  // !!!! увеличение 3й цифры поднимает солнце вверх выше !!!!!
+
+	///
+	//Fvector		Ldir2,Pnew2;
+	//Pnew2.mad	(P,N,0.01f);
+	//Fvector		Ldir3,Pnew3;
+	//Pnew3.mad	(P,N,0.01f);
+	//Fvector		Ldir4,Pnew4;
+	//Pnew4.mad	(P,N,0.04f);
+	//Fvector		Ldir5,Pnew5;
+	//Pnew5.mad	(P,N,0.05f);
+	///
+
 
 	BOOL		bUseFaceDisable	= flags&LP_UseFaceDisable;
 
 	if (0==(flags&LP_dont_rgb))
 	{
 		DB->ray_options	(0);
-		R_Light	*L	= &*lights.rgb.begin(), *E = &*lights.rgb.end();
+		R_Light	*L	= &*lights.rgb.begin(), *E = &*lights.rgb.end(); // обычные источники
 		for (;L!=E; L++)
 		{
 			switch (L->type)
@@ -218,9 +239,10 @@ void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P,
 					C.rgb.x		+=	scale * L->diffuse.x; 
 					C.rgb.y		+=	scale * L->diffuse.y;
 					C.rgb.z		+=	scale * L->diffuse.z;
+					clMsg	("* case LT_DIRECT");
 				}
 				break;
-			case LT_POINT:
+			case LT_POINT: /// ЭТО ПОХОДУ ПРОСТО РАССЧЕТ ОСВЕЩЕНИЯ КАЖДОГО ПИКСЕЛЯ ОТ СОЛНЦА (рассеивания нет)
 				{
 					// Distance
 					float sqD	=	P.distance_to_sqr	(L->position);
@@ -236,12 +258,15 @@ void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P,
 					float R		= _sqrt(sqD);
 					float scale = D*L->energy*rayTrace(DB,MDL, *L,Pnew,Ldir,R,skip,bUseFaceDisable);
 					float A		;
-					if (gl_linear)	A	= 1-R/L->range;
-					else			A	= scale / (L->attenuation0 + L->attenuation1*R + L->attenuation2*sqD);
+					if (gl_linear)	
+						A	= 1-R/L->range;  // СИЛЬНЫЙ ЗАСВЕТ БЕЗ РАССЕИВАНИЯ
+					else			
+						A	= scale / (L->attenuation0 + L->attenuation1*R + L->attenuation2*sqD); 
 
 					C.rgb.x += A * L->diffuse.x;
 					C.rgb.y += A * L->diffuse.y;
 					C.rgb.z += A * L->diffuse.z;
+					//clMsg	("* case LT_POINT");  //// ОСНОВНОЙ РАССЧЕТ 
 				}
 				break;
 			case LT_SECONDARY:
@@ -269,26 +294,49 @@ void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P,
 					C.rgb.x += A * L->diffuse.x;
 					C.rgb.y += A * L->diffuse.y;
 					C.rgb.z += A * L->diffuse.z;
+					clMsg	("* case LT_SECONDARY");
 				}
 				break;
 			}
 		}
 	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	if (0==(flags&LP_dont_sun))
 	{
 		DB->ray_options	(0);
-		R_Light	*L		= &*(lights.sun.begin()), *E = &*(lights.sun.end());
+		R_Light	*L		= &*(lights.sun.begin()), *E = &*(lights.sun.end());  /// солнце и sun 
 		for (;L!=E; L++)
 		{
-			if (L->type==LT_DIRECT) {
+			if (L->type==LT_DIRECT) {						// !!!!!!!!!! ВОТ ЭТО СОЛНЦЕ
 				// Cos
 				Ldir.invert	(L->direction);
 				float D		= Ldir.dotproduct( N );
-				if( D <=0 ) continue;
+				if( D <=0 ) continue;  
 
 				// Trace Light
 				float scale	=	L->energy*rayTrace(DB,MDL, *L,Pnew,Ldir,1000.f,skip,bUseFaceDisable);
-				C.sun		+=	scale;
+				C.sun		+=	scale ; // умножал на 10 - ничего
+
+				// короче тут таки добавляются доп источники солнц (но с их положениями шляпа)
+				//
+				//float scale2	=	L->energy*rayTrace(DB,MDL, *L,Pnew2,Ldir2,1000.f,skip,bUseFaceDisable);
+				//C.sun		+=	scale2 ; 
+
+				//float scale3	=	L->energy*rayTrace(DB,MDL, *L,Pnew3,Ldir3,1000.f,skip,bUseFaceDisable);
+				//C.sun		+=	scale3 ; 
+
+				//float scale4	=	L->energy*rayTrace(DB,MDL, *L,Pnew4,Ldir4,1000.f,skip,bUseFaceDisable);
+				//C.sun		+=	scale4 ; 
+
+				//float scale5	=	L->energy*rayTrace(DB,MDL, *L,Pnew5,Ldir5,1000.f,skip,bUseFaceDisable);
+				//C.sun		+=	scale5 ; 
+				//
+				// вообще это походу каша для одного источника (попробовать продублировать эту функцию)
+
+				// !! вычислить откуда именно вызывается эта функция именно для солнца и оттуда продублировать  - 6 вызов ( //.  ВОТ ТУТ ВЫЗОВ )  -- закоменить каждый и вычислить солнце
+				// и продублировать с изменением положения там
+
+				//clMsg	("*lighting*: SUN:   LT_DIRECT");			// !!!!!!!!!! ВОТ ЭТО   СОЛНЦЕ
 			} else {
 				// Distance
 				float sqD	=	P.distance_to_sqr(L->position);
@@ -306,9 +354,11 @@ void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P,
 				float A		=	scale / (L->attenuation0 + L->attenuation1*R + L->attenuation2*sqD);
 
 				C.sun		+=	A;
+				//clMsg	("*lighting*: SUN:  ELSE");
 			}
 		}
 	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	if (0==(flags&LP_dont_hemi))
 	{
 		R_Light	*L	= &*lights.hemi.begin(), *E = &*lights.hemi.end();
@@ -345,6 +395,125 @@ void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P,
 		}
 	}
 }
+/////// !!!! САМ РАССЧЕТ ЛАЙТМАПОВ
+
+
+
+
+
+
+u32 sun_low = 1;  // 4 - светловато  6 тоже  8 норм, но светловато, 9 - норм но немного светловато
+
+float cntll = 0;
+void LightPoint2(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P, Fvector &N, base_lighting& lights, u32 flags, Face* skip)
+{
+
+	//float	random_r;
+	//random_r				= Random.randF(0.01f, 0.50f);
+
+	//Fvector			R;		// вот с этим в mad и второй аргунент R - уже похоже на правду (но есть глюки с выделением лайтмапами полигонов)
+	//R.random_dir();
+
+	Fvector		Ldir,Pnew;
+	Pnew.mad	(P,N,0.01f); // Pnew.mad	(P,N,0.01f); // !!!! увеличение 3й цифры поднимает солнце вверх выше !!!!!
+	// - рассеивание -- Pnew.mad	(P,R,random_r); --  //
+	//Pnew.mad	(P,R,random_r);
+
+	BOOL		bUseFaceDisable	= flags&LP_UseFaceDisable;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	if (0==(flags&LP_dont_sun))
+	{
+		DB->ray_options	(0);
+		R_Light	*L		= &*(lights.sun.begin()), *E = &*(lights.sun.end());  /// солнце и sun 
+		for (;L!=E; L++)
+		{
+			if (L->type==LT_DIRECT) {						// !!!!!!!!!! ВОТ ЭТО СОЛНЦЕ
+				// Cos
+				Ldir.invert	(L->direction); // ?? вот это зачем????  - инвертирует солнце на противоположную сторону  !! без этого неправильно ложатся лайтмапы по треугольникам !!
+
+				float D		= Ldir.dotproduct( N );
+				if( D <=0 ) continue;  
+
+				//Pnew.random_dir(); 
+				// mul 0.4   0.10f
+				// Trace Light
+
+				// вот это attenuation1 попробовать  (?рассеивание по xyz?)
+
+				//// Distance
+				//float sqD	=	P.distance_to_sqr(L->position);
+				//// Dir
+				//Ldir.sub			(L->position,P);
+				//Ldir.normalize_safe	();
+				//// Trace Light
+				//float R		=	_sqrt(sqD);
+				//float scale =	D*L->energy*rayTrace(DB,MDL, *L,Pnew,Ldir,R,skip,bUseFaceDisable);
+				//float A		=	scale / (L->attenuation0 + L->attenuation1*R + L->attenuation2*sqD);
+				//C.sun		+=	A;
+
+				//L->direction.x = L->direction.x + 0.00001;
+				//L->direction.y = L->direction.y + 0.00001;
+				//L->direction.z = L->direction.z + 0.000001;
+
+				//L->direction.x = L->direction.x + 0.0000025;
+				//L->direction.y = L->direction.y + 0.0000025;
+				//L->direction.z = L->direction.z + 0.0000025;  // попробовать !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  это походу L применяется и для первой функции
+
+				/*L->attenuation0 = 0.000001;
+				L->attenuation1 = L->attenuation1 + 0.000002;		
+				L->attenuation2 = 0.00002;*/						// судя по логу тут это применяется
+
+				//L->diffuse.random_dir();
+
+				//clMsg("---------------");
+				//clMsg("* attenuation0 IS %f",L->attenuation0);
+				//clMsg("* attenuation1 IS %f",L->attenuation1);
+				//clMsg("* attenuation2 IS %f",L->attenuation2);
+				//clMsg("---------------");
+
+				//L->direction.add(R);
+
+
+
+				//float samples = 14;
+				//float disp			= deg2rad(3.0f); // dispersion of sun 
+				//float da 			= disp / float(samples-1);
+				//float mn_x  		= L->direction.x-disp/2;
+				//float mn_y  		= L->direction.y-disp/2;
+				//for (int x=0; x<samples; x++){
+				//float _x = mn_x+x*da;
+				//for (int y=0; y<samples; y++){
+				//	float _y = mn_y+y*da;
+				//	L->direction.setHP(_y,_x);
+				//	//clMsg		("* L.direction.setHP _x -%f -- _y -%f ",_x, _y);
+				//	}
+				//}
+				//clMsg		("* L.direction.setHP _x %f _y %f ",L->direction.x, L->direction.y);  // стандарт что то вроде _x 0.824235 _y -0.449315 
+
+				//float disp			= deg2rad(3.0f); // dispersion of sun 
+				//float da 			= disp / float(cnt-1);
+				//float mn_x  		= L->direction.x-disp/2;
+				//float mn_y  		= L->direction.y-disp/2;
+				//float _x = mn_x+cnt*da;
+				//float _y = mn_y+cnt*da;
+				//L->direction.setHP(_y,_x);
+				////clMsg		("* L.direction.setHP _x -%f -- _y -%f ",_x, _y);
+
+				cntll = cntll +1;
+					
+				
+
+				float scale	=	L->energy*rayTrace(DB,MDL, *L,Pnew,Ldir,1000.f,skip,bUseFaceDisable);
+				//float A		=	scale / (L->attenuation0 - L->attenuation1 - L->attenuation2);  // add !!
+				C.sun		+=	scale / sun_low; // -- C.sun		+=	scale; -- !! ЯРКОСТЬ !! // умножал на 10 - ничего  //  /4 - неплохо уменьшается яркость солнца
+
+			}
+		}
+	}
+	//clMsg		("*cnt iterations %f ",cntll);
+}
+
 
 IC u32	rms_diff	(u32 a, u32 b)
 {

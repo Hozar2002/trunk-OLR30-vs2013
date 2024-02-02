@@ -49,9 +49,19 @@ extern const int				idx2edge	[3][3];
 extern BOOL						b_radiosity;
 extern BOOL						b_noise;
 extern BOOL						b_nosun;
+
+// hi_flyer
+extern BOOL						b_noter;
+extern BOOL						b_nosun;
+extern BOOL						b_nohemiz;
+
+
 // KD start
 extern BOOL						b_norgb;
 extern BOOL						b_nolmaps;
 extern BOOL						b_skipinvalid;
 extern float					f_lmap_quality;
+
 // KD end
+extern float					f_light_threads_num;
+extern float					gi_num_photons_q;

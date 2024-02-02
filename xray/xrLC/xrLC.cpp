@@ -31,6 +31,7 @@ extern void logThread(void *dummy);
 extern volatile BOOL bClose;
 
 static const char* h_str = 
+	"xrLC hi_flyer version\n \n"
 	"The following keys are supported / required:\n"
 	"-? or -h		== this help\n"
 	"-o				== modify build options\n"
@@ -40,8 +41,13 @@ static const char* h_str =
 	"-nolmaps		== disable lightmaps calculating\n"
 	"-skipinvalid	== skip crash if invalid faces exists\n"
 	"-lmap_quality	== lightmap quality\n"
+	//"-photons_num   == compile numbers of photons (radiosity must on)"
+	"-lmap_terr		== compile terrain lightmap""\n"
+	"-no_sun_lmaps		== disable compile sun lmaps""\n"
+	"-no_hemi_zones_lmaps		== disable compile xrLC hemizone lmaps""\n" 
+	"-light_threads_num	== threads for LIGHT: LMaps (default - 6)""\n"
+	"-off_pc	== turn off the computer at the end of the process""\n"
 	"-f<NAME>		== compile level in GameData\\Levels\\<NAME>\\\n"
-	"\n"
 	"NOTE: The last key is required for any functionality\n";
 
 void Help()
@@ -105,6 +111,22 @@ void get_console_float(const char *cmd, const char *param_name, float* param)
 	get_console_param(cmd, param_name, "%f", param);
 };
 
+
+void get_console_paramu(const char *cmd, const char *param_name, const char *expr, u32* param)
+{
+	if (strstr(cmd, param_name)) {
+		int						sz = xr_strlen(param_name);
+		sscanf					(strstr(cmd,param_name)+sz,expr,param);
+	}
+}
+
+void get_console_int(const char *cmd, const char *param_name, u32* param)
+{
+	get_console_paramu(cmd, param_name, "%f", param);
+};
+
+
+
 typedef int __cdecl xrOptions(b_params* params, u32 version, bool bRunBuild);
 
 void Startup(LPSTR     lpCmdLine)
@@ -118,6 +140,11 @@ void Startup(LPSTR     lpCmdLine)
 	if (strstr(cmd,"-f")==0)							{ Help(); return; }
 	if (strstr(cmd,"-o"))								bModifyOptions	= TRUE;
 	if (strstr(cmd,"-gi"))								b_radiosity		= TRUE;
+
+	if (strstr(cmd,"-lmap_terr"))						b_noter			= TRUE;
+	if (strstr(cmd,"-no_sun_lmaps"))					b_nosun			= TRUE;
+	if (strstr(cmd,"-no_hemi_zones_lmaps"))				b_nohemiz			= TRUE;
+
 	if (strstr(cmd,"-noise"))							b_noise			= TRUE;
 	if (strstr(cmd,"-nosun"))							b_nosun			= TRUE;
 
@@ -126,6 +153,10 @@ void Startup(LPSTR     lpCmdLine)
 	if (strstr(cmd,"-nolmaps"))							b_nolmaps		= TRUE;
 	if (strstr(cmd,"-skipinvalid"))						b_skipinvalid	= TRUE;
 	get_console_float(lpCmdLine, "-lmap_quality ", &f_lmap_quality);
+
+	get_console_float(lpCmdLine, "-photons_num ", &gi_num_photons_q);
+
+	get_console_float(lpCmdLine, "-light_threads_num ", &f_light_threads_num);
 	
 	// Give a LOG-thread a chance to startup
 	//_set_sbh_threshold(1920);
@@ -176,6 +207,8 @@ void Startup(LPSTR     lpCmdLine)
 	Params.m_lm_pixels_per_meter	= f_lmap_quality;
 	//KD end
 
+	Params.light_threads_count	= f_light_threads_num;
+
 	// Show options if needed
 	if (bModifyOptions)		
 	{
@@ -209,7 +242,9 @@ void Startup(LPSTR     lpCmdLine)
 	u32	dwEndTime			= dwStartupTime.GetElapsed_ms();
 	sprintf					(inf,"Time elapsed: %s",make_time(dwEndTime/1000).c_str());
 	clMsg					("Build succesful!\n%s",inf);
-	MessageBox				(logWindow,inf,"Congratulation!",MB_OK|MB_ICONINFORMATION);
+
+	if (strstr(lpCmdLine, "-off_pc") == NULL)
+		MessageBox				(logWindow,inf,"Congratulation!",MB_OK|MB_ICONINFORMATION);
 
 	// Close log
 	bClose					= TRUE;
@@ -225,6 +260,17 @@ int APIENTRY WinMain(HINSTANCE hInst,
                      LPSTR     lpCmdLine,
                      int       nCmdShow)
 {
+
+	//////////////////
+	//WNDCLASS w;
+
+	//w.style = CS_HREDRAW | CS_VREDRAW;
+ //   w.hInstance = hPrevInstance;
+ //   w.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+ //   w.lpszClassName = "My Class";
+
+	//////////////////
+
 	// KD: let's init debug to enable exception handling
 	Debug._initialize	(false);
 
@@ -244,6 +290,27 @@ int APIENTRY WinMain(HINSTANCE hInst,
 	Core._initialize	(app_name);
 	Startup				(lpCmdLine);
 	Core._destroy		();
-	
+
+	if (strstr(lpCmdLine, "-off_pc"))
+	{
+		HANDLE				token; 
+		TOKEN_PRIVILEGES	token_privileges; 
+
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) 
+			return FALSE; 
+
+		LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &token_privileges.Privileges[0].Luid); 
+
+		token_privileges.PrivilegeCount				= 1;  
+		token_privileges.Privileges[0].Attributes	= SE_PRIVILEGE_ENABLED; 
+
+		AdjustTokenPrivileges(token, FALSE, &token_privileges, 0, 0, 0); 
+
+		if (GetLastError() != ERROR_SUCCESS) 
+			return FALSE; 
+
+		ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE, SHTDN_REASON_MAJOR_OPERATINGSYSTEM | SHTDN_REASON_MINOR_UPGRADE | SHTDN_REASON_FLAG_PLANNED);
+	}
+
 	return 0;
 }

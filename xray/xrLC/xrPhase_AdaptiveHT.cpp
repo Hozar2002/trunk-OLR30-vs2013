@@ -147,7 +147,7 @@ void CBuild::xrPhase_AdaptiveHT	()
 			base_color_c		vC;
 			Vertex*		V		= g_vertices[vit];
 			V->normalFromAdj	();
-			LightPoint			(&DB, RCAST_Model, vC, V->P, V->N, pBuild->L_static, LP_dont_rgb+LP_dont_sun,0);
+			LightPoint			(&DB, RCAST_Model, vC, V->P, V->N, pBuild->L_static, LP_dont_rgb+LP_dont_sun,0);  //. ÂÎÒ ÒÓÒ ÂÛÇÎÂ ! âðîäå íå ñîëíöå !
 			vC.mul				(0.5f);
 			V->C._set			(vC);
 		}

@@ -37,7 +37,7 @@ void CDeflector::L_Direct_Edge (CDB::COLLIDER* DB, base_lighting* LightsSelected
 		// ok - perform lighting
 		base_color_c	C;
 		Fvector			P;	P.mad(v1,vdir,time);
-		LightPoint		(DB, RCAST_Model, C, P, N, *LightsSelected, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_DEFAULT, skip); //.
+		LightPoint		(DB, RCAST_Model, C, P, N, *LightsSelected, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_DEFAULT, skip); //.  ВОТ ТУТ ВЫЗОВ  ! не солнце !
 		
 		C.mul		(.5f);
 		lm.surface	[_y*lm.width+_x]._set	(C);
@@ -94,14 +94,18 @@ void CDeflector::L_Direct	(CDB::COLLIDER* DB, base_lighting* LightsSelected, HAS
 							Vertex	*V2 = F->v[1];
 							Vertex	*V3 = F->v[2];
 							wP.from_bary(V1->P,V2->P,V3->P,B);
-//. не нужно использовать	if (F->Shader().flags.bLIGHT_Sharp)	{ wN.set(F->N); }
-//							else								
+							//. не нужно использовать	if (F->Shader().flags.bLIGHT_Sharp)	{ wN.set(F->N); }
+							//	else								
 							{ 
 								wN.from_bary(V1->N,V2->N,V3->N,B);	exact_normalize	(wN); 
 								wN.add		(F->N);					exact_normalize	(wN);
 							}
 							try {
-								LightPoint	(DB, RCAST_Model, C, wP, wN, *LightsSelected, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_UseFaceDisable, F); //.
+								LightPoint(DB, RCAST_Model, C, wP, wN, *LightsSelected, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_UseFaceDisable, F); //.  ВОТ ТУТ ВЫЗОВ !!! ВРОДЕ СОЛНЦЕ !!!
+								//int i = 0;
+								//for (i = 1; i <= 10; i++){
+									//LightPoint2(DB, RCAST_Model, C, wP, wN, *LightsSelected, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_UseFaceDisable, F);
+								//}
 								Fcount		+= 1;
 							} catch (...) {
 								clMsg("* ERROR (CDB). Recovered. ");

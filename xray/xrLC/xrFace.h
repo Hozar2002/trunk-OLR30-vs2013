@@ -232,7 +232,7 @@ public:
 	{
 		return (v[0]==v[1] || v[0]==v[2] || v[1]==v[2]);
 	};
-	IC float	EdgeLen			(int edge)
+	IC float	EdgeLen			(int edge) const
 	{
 		Vertex* V1 = v[edge2idx[edge][0]];
 		Vertex* V2 = v[edge2idx[edge][1]];

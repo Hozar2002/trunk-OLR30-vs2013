@@ -97,7 +97,7 @@ void xrMU_Model::calc_lighting	(xr_vector<base_color>& dest, Fmatrix& xform, CDB
 			Fvector				P,N;
 			N.random_dir		(vN,deg2rad(30.f));
 			P.mad				(vP,N,a);
-			LightPoint			(&DB, MDL, vC, P, N, lights, flags, 0);
+			LightPoint			(&DB, MDL, vC, P, N, lights, flags, 0);  //.  ÂÎÒ ÒÓÒ ÂÛÇÎÂ ! גנמהו םו סמכםצו !
 		}
 		vC.scale				(n_samples);
 		vC._tmp_				=	v_trans;

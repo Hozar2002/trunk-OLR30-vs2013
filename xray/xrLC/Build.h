@@ -86,6 +86,8 @@ public:
 	void	PreOptimize				();
 	void	CorrectTJunctions		();
 
+	void	SoftenLights		();
+
 	void	xrPhase_AdaptiveHT		();
 	void	u_Tesselate				(tesscb_estimator* E, tesscb_face* F, tesscb_vertex* V);
 	void	u_SmoothVertColors		(int count);

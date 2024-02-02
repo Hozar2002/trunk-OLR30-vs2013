@@ -152,6 +152,8 @@ struct b_params
 	u32			m_lm_rms_zero;			// RMS - after what the lightmap will be shrinked to ZERO pixels
 	u32			m_lm_rms;				// RMS - shrink and recalc
 
+	float			light_threads_count;
+
     // build quality
 	u16			m_quality;
 	u16			u_reserved;

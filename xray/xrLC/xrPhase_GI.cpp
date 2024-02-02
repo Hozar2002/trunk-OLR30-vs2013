@@ -3,12 +3,15 @@
 #include "xrThread.h"
 #include "xrSyncronize.h"
 
-#define	GI_THREADS		2
-const	u32				gi_num_photons		= 32;
-const	float			gi_optimal_range	= 15.f;
-const	float			gi_reflect			= 0.9f;
-const	float			gi_clip				= 0.05f;
-const	u32				gi_maxlevel			= 4;
+#define	GI_THREADS		4 // 2
+
+const	float				gi_num_photons		=  64; //gi_num_photons_q;  // 32 // const	u32
+const	float			gi_optimal_range	=  30; //15.f;
+const	float			gi_reflect			=  3;//0.9f;
+const	float			gi_clip				=  1; //0.05f;
+const	u32				gi_maxlevel			= 10; //4;
+
+const   float			away_from_sf		= 0.1f; //0.01f;
 //////////////////////////////////////////////////////////////////////////
 xr_vector<R_Light>*		task;
 xrCriticalSection		task_cs
@@ -77,7 +80,6 @@ public:
 		CDB::MODEL*	model	= RCAST_Model;
 		CDB::TRI*	tris	= RCAST_Model->get_tris();
 		Fvector*	verts	= RCAST_Model->get_verts();
-
 		// full iteration
 		for (;;)	
 		{
@@ -134,7 +136,7 @@ public:
 				float		dot		= TN.dotproduct	(idir.invert(dir));
 
 				dst.position.mad		(src.position,dir,R->range);
-				dst.position.mad		(TN,0.01f);		// 1cm away from surface
+				dst.position.mad		(TN,away_from_sf);		// 1cm away from surface
 				dst.direction.reflect	(dir,TN);
 				dst.energy				= src.energy * dot * gi_reflect * (1-R->range/src.range) * _scale;
 				if (dst.energy < _clip)	continue;
@@ -215,5 +217,6 @@ void	CBuild::xrPhase_Radiosity	()
 	// info
 	clMsg				("old setup [%d], new setup[%d]",setup_old,setup_new);
 	clMsg				("old energy [%f], new energy[%f]",_energy_before,_energy_after);
+	clMsg				("gi_num_photons IS [%f],",gi_num_photons);
 	FlushLog			();
 }

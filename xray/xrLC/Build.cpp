@@ -12,13 +12,21 @@ xr_vector<OGF_Base *>	g_tree;
 BOOL					b_R2		= FALSE;
 BOOL					b_noise		= FALSE;
 BOOL					b_radiosity	= FALSE;
+
+BOOL					b_noter		= FALSE;
 BOOL					b_nosun		= FALSE;
+BOOL					b_nohemiz		= FALSE;
+
 // KD start
 BOOL					b_norgb		= FALSE;
 BOOL					b_nolmaps	= FALSE;
 BOOL					b_skipinvalid	= FALSE;
 float					f_lmap_quality = 4.f;
 // KD end
+float					gi_num_photons_q		= 32;
+
+float						f_light_threads_num	=	 6;
+
 CThreadManager			mu_base;
 CThreadManager			mu_secondary;
 #define		MU_THREADS	4
@@ -219,6 +227,7 @@ void CBuild::Run	(LPCSTR P)
 	//****************************************** All lighting + lmaps building and saving
 	if (!b_nolmaps)
 		Light						();
+
 
 	//****************************************** Merge geometry
 	FPU::m64r					();

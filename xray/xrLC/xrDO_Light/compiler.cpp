@@ -10,7 +10,7 @@
 #include "r_light.h"
 #include "global_options.h"
 
-#define NUM_THREADS		3
+#define NUM_THREADS		8
 
 enum
 {
@@ -459,6 +459,7 @@ float rayTrace	(CDB::COLLIDER* DB, R_Light& L, Fvector& P, Fvector& D, float R)/
 	return 0;
 }
 
+// не эта
 void LightPoint(CDB::COLLIDER* DB, base_color &C, Fvector &P, Fvector &N, base_lighting& lights, u32 flags)
 {
 	Fvector		Ldir,Pnew;

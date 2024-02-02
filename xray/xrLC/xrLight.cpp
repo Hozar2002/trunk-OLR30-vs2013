@@ -55,16 +55,19 @@ public:
 
 void CBuild::Light()
 {
+
+	if (b_noter){
 	//****************************************** Implicit
-	{
+	//{
 		FPU::m64r		();
 		Phase			("LIGHT: Implicit...");
 		mem_Compact		();
 		ImplicitLighting();
-	}
+	//}
+	};
 
 	//****************************************** Lmaps
-	{
+	//{
 		FPU::m64r		();
 		Phase			("LIGHT: LMaps...");
 		mem_Compact		();
@@ -73,17 +76,34 @@ void CBuild::Light()
 		std::random_shuffle	(g_deflectors.begin(),g_deflectors.end());
 		for					(u32 dit = 0; dit<g_deflectors.size(); dit++)	task_pool.push_back(dit);
 
-		// Main process (4 threads)
+		// Main process (4 threads) // СМТ таки работает 
 		Status			("Lighting...");
 		CThreadManager	threads;
-		const	u32	thNUM	= 6;
+		const	float	thNUM	= g_params.light_threads_count; // 11
+
+		u32 cnt = 0;
+		for				(u32 L=0; L<thNUM; L++){
+			cnt++;
+		};
+		clMsg				("LIGHT THREADS : %d",cnt);
+
+		if (cnt<1||cnt>256){
+			clMsg				("LIGHT THREADS ERROR: incorrect threads num - set default num(6) ");
+			static const char* h_str = 
+			"LIGHT THREADS ERROR\n \n"
+			"LIGHT THREADS ERROR - incorrect threads num, must be (1-256) - set default num(6)\n";
+			MessageBox(0,h_str,"",MB_OK|MB_ICONSTOP);
+			cnt = 6;
+		};
+
 		CTimer	start_time;	start_time.Start();				
-		for				(int L=0; L<thNUM; L++)	threads.start(xr_new<CLMThread> (L));
+		for				(u32 L=0; L<cnt; L++)	threads.start(xr_new<CLMThread> (L));
 		threads.wait	(500);
 		clMsg			("%f seconds",start_time.GetElapsed_sec());
-	}
+		//SoftenLights		();
+	//}
 
-	//****************************************** Vertex
+	//****************************************** Vertex  (если закоментить, то нет лайтмапов от солнца (теней от моста небыло)) !(было с -nosun)!
 	FPU::m64r		();
 	Phase			("LIGHT: Vertex...");
 	mem_Compact		();
@@ -219,7 +239,7 @@ public:
 			if (bVertexLight)	{
 				base_color_c		vC, old;
 				V->C._get			(old);
-				LightPoint			(&DB, RCAST_Model, vC, V->P, V->N, pBuild->L_static, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_dont_hemi, 0);
+				LightPoint			(&DB, RCAST_Model, vC, V->P, V->N, pBuild->L_static, (b_norgb?LP_dont_rgb:0)|(b_nosun?LP_dont_sun:0)|LP_dont_hemi, 0);  //.  ВОТ ТУТ ВЫЗОВ ! не солнце !
 				vC._tmp_			= v_trans;
 				vC.mul				(.5f);
 				vC.hemi				= old.hemi;			// preserve pre-calculated hemisphere

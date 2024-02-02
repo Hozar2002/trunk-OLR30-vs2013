@@ -35,6 +35,8 @@ struct R_Layer
 static bool is_thm_missing = false;
 static bool is_tga_missing = false;
 
+float flyer_count = 0;
+
 void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 {
 	IReader&	fs	= const_cast<IReader&>(_in_FS);
@@ -194,7 +196,8 @@ void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 				Flight	L	= temp.data;
 
 				// type
-				if			(L.type == D3DLIGHT_DIRECTIONAL)	RL.type	= LT_DIRECT;
+				if			(L.type == D3DLIGHT_DIRECTIONAL)	
+					RL.type	= LT_DIRECT;
 				else											
 					RL.type = LT_POINT;
 				RL.level	= 0;
@@ -205,16 +208,75 @@ void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 				if (_abs(_e)>EPS_S)		_c.div	(_e);
 				else					{ _c.set(0,0,0); _e=0; }
 
+
+
 				// generic properties
 				RL.diffuse.set				(_c);
 				RL.position.set				(L.position);
+
+				//flyer_count = flyer_count + 1;
+				//float _x = 1000;
+				//float _y = 2000;
+				//RL.position.setHP(_y,_x);
+				//Msg		("! flyer_count I : %f",flyer_count);
+
+				//float samples = 14;
+				//float disp			= deg2rad(3.0f); // dispersion of sun 
+				//float da 			= disp / float(samples-1);
+				//float mn_x  		= L.direction.x-disp/2;
+				//float mn_y  		= L.direction.y-disp/2;
+				//for (int x=0; x<samples; x++){
+				//float _x = mn_x+x*da;
+				//for (int y=0; y<samples; y++){
+				//	float _y = mn_y+y*da;
+				//	L.direction.setHP(_y,_x);
+				//	clMsg		("* L.direction.setHP _x -%f -- _y -%f ",_x, _y);
+				//	}
+				//}
+
+				//// рабочий вариант БЕКАП
+				//if (L.type == D3DLIGHT_DIRECTIONAL){
+				//	// вариант скрина с геймру
+				//	float disp			= deg2rad(7.5f); // 7 - всё готово !!!!// dispersion of sun !больше - прозрачнее! // 30 было на скрине гамеру
+				//	float da 			= disp / float(10.f);
+				//	float mn_x  		= L.direction.x-disp/2; /// вот тут - на + ???? чтобы тени в другую сторону были  !! НЕ ПОМОГЛО !!
+				//	float mn_y  		= L.direction.y-disp/2;
+				//	float _x = mn_x+flyer_count*da;				 // тут может минус - если минус то типо вниз съезжает
+				//	float _y = mn_y+flyer_count*da;
+				//	L.direction.setHP(_y,_x);
+				//	// вариант скрина с геймру
+				//}	
+
+
+				// текущий фузз солнца
+				//if (L.type == D3DLIGHT_DIRECTIONAL){
+				//	// вариант скрина с геймру
+				//	float disp			= deg2rad(7.5f);		// попробовать покрутить это	// 7 - всё готово !!!!// dispersion of sun !больше - прозрачнее! // 30 было на скрине гамеру
+				//	float da 			= disp / float(10.f);	// и это одновременно	        // - 20 большая тень,  7 - в другую сторону, 12- норм но ещё размытее
+				//	float mn_x  		= L.direction.x-disp/2;		// 
+				//	float mn_y  		= L.direction.y-disp/2; 
+				//	float _x = mn_x+flyer_count*da;					// 
+				//	float _y = mn_y+flyer_count*da;
+				//	L.direction.setHP(_y,_x);
+				//	// вариант скрина с геймру
+				//}	
+
+
+				//clMsg		("* L.direction.setHP _x -%f -- _y -%f ",_x, _y);
+				//clMsg		("* L.direction.setHP _x %f _y %f ",L.direction.x, L.direction.y);
+
+				//clMsg		("* L.direction.setHP _x %f _y %f ",L.direction.x, L.direction.y);
 				RL.direction.normalize_safe	(L.direction);
+
 				RL.range				=	L.range*1.1f;
 				RL.range2				=	RL.range*RL.range;
 				RL.attenuation0			=	L.attenuation0;
-				RL.attenuation1			=	L.attenuation1;
-				RL.attenuation2			=	L.attenuation2;
-				RL.energy				=	_e;
+				RL.attenuation1			=	L.attenuation1;	/// !!! ТУТ ЕСЛИ ЗАХАРДКОДИТЬ ТО В ЛОГЕ МОЕЙ ФУНКЦИИ ЕСТЬ ЭТОТ ХАРДКОД
+				RL.attenuation2			=	L.attenuation2;	// пробовал хардкодить
+				RL.energy				=	_e;	// если умножить то конец уменьшается но качество хуже
+				// тут для солнца читается attenuation1
+
+				//Msg		("! LOAD attenuation1 build_load : %f",L.attenuation1);
 
 				// place into layer
 				R_ASSERT	(temp.controller_ID<L_layers.size());
@@ -227,27 +289,47 @@ void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 		for (u32 LH=0; LH<L_layers.size(); LH++)
 		{
 			R_Layer&	TEST	= L_layers[LH];
+
+			if (!b_nohemiz){
+			//!!!!!!!!!   FLYER - добавление хеми для рассчета   !!!! осень много занимает по времени в расчете лайтмапов !!!!  !! сделать флаг !! ?для полностью подземных лок можно не компилить?
 			if (0==stricmp(TEST.control.name,LCONTROL_HEMI))
 			{
 				// Hemi found
 				L_static.hemi			= TEST.lights;
 			}
-			if (0==stricmp(TEST.control.name,LCONTROL_SUN))
-			{
-				// Sun found
-				L_static.sun			= TEST.lights;
 			}
+
+			if (!b_nosun){
+				//!!!!!!!!!   FLYER - добавление СОЛНЦ ВСЕХ для рассчета
+				if (0==stricmp(TEST.control.name,LCONTROL_SUN))
+				{
+					// Sun found
+					L_static.sun			= TEST.lights;
+				}
+			}
+
 			if (0==stricmp(TEST.control.name,LCONTROL_STATIC))
 			{
 				// Static found
 				L_static.rgb			= TEST.lights;
 			}
 		}
-		clMsg	("*lighting*: HEMI:   %d lights",L_static.hemi.size());
-		clMsg	("*lighting*: SUN:    %d lights",L_static.sun.size());
+		if (!b_nohemiz){
+			clMsg	("*lighting*: HEMI:   %d lights",L_static.hemi.size());
+		}
+		if (!b_nosun){
+			clMsg	("*lighting*: SUN:    %d lights",L_static.sun.size());
+		}
 		clMsg	("*lighting*: STATIC: %d lights",L_static.rgb.size());
-		R_ASSERT(L_static.hemi.size());
-		R_ASSERT(L_static.sun.size());
+
+		if (!b_nohemiz){
+			R_ASSERT(L_static.hemi.size());
+		}
+
+		if (!b_nosun){
+			R_ASSERT(L_static.sun.size());
+		}
+
 		R_ASSERT(L_static.rgb.size());
 
 		// Dynamic

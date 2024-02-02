@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "platform.h"
-#include <vorbis/vorbisenc.h>
+#include <X:\trunk\3rd party\Xiph\libvorbis\include\vorbis\vorbisenc.h>
 #include "encode.h"
 //#include "i18n.h"
 

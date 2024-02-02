@@ -2,7 +2,7 @@
 #define __ENCODE_H
 
 #include <stdio.h>
-#include <vorbis/codec.h>
+#include <X:\trunk\3rd party\Xiph\libvorbis\include\vorbis\codec.h>
 
 typedef void TIMER;
 typedef long (*audio_read_func)(void *src, float **buffer, int samples);

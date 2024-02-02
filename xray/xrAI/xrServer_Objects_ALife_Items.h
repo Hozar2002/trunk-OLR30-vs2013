@@ -91,8 +91,8 @@ add_to_type_list(CSE_ALifeItem)
 SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemTorch,CSE_ALifeItem)
 //флаги
 	enum EStats{
-		eTorchActive				= (1<<0),
-		eNightVisionActive			= (1<<1)	
+		eTorchActive				= (1<<0)
+		//eNightVisionActive			= (1<<1)	
 	};
 	bool							m_active;
 	bool							m_nightvision_active;

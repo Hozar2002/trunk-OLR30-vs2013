@@ -34,6 +34,7 @@ IC bool RayPick(CDB::COLLIDER& DB, Fvector& P, Fvector& D, float r, R_Light& L)
 	}
 }
 
+// не эта
 float LightPoint(CDB::COLLIDER& DB, Fvector &P, Fvector &N, LSelection& SEL)
 {
 	Fvector		Ldir,Pnew;

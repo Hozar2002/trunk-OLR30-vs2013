@@ -245,7 +245,10 @@ void xrLoad(LPCSTR name, bool draft_mode)
 				RL.range2				=	RL.range*RL.range;
 				RL.attenuation0			=	L.attenuation0;
 				RL.attenuation1			=	L.attenuation1;
-				RL.attenuation2			=	L.attenuation2;
+				RL.attenuation2			=	L.attenuation2;  // пробовал хардкодить но в логе нет - 0
+				// для солнца это походу не читается
+
+				//Msg		("! LOAD attenuation1 : %f",L.attenuation1);
 
 				RL.amount				=	L.diffuse.magnitude_rgb	();
 				RL.tri[0].set			(0,0,0);

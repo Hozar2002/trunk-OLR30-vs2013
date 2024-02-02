@@ -169,6 +169,8 @@
 #define CLSID_DEVICE_TORCH			MK_CLSID('D','_','T','O','R','C','H',' ')
 #define CLSID_DEVICE_AF_MERGER		MK_CLSID('D','_','A','F','M','E','R','G')
 
+#define CLSID_DEVICE_HANDTORCH		MK_CLSID('D','_','H','T','O','R','C','H')
+
 // Inventory items
 #define CLSID_IITEM_BOLT			MK_CLSID('I','I','_','B','O','L','T',' ')
 

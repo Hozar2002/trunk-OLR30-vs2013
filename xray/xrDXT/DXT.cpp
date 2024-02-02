@@ -7,7 +7,7 @@
 #pragma warning(disable:4018)
 #include "dxtlib.h"
 #ifdef USE_NVTT
-	#include "X:\trunk\3rd party\nvtt\src\nvtt/nvtt.h"
+	#include "nvtt/nvtt.h"
 	//#include <nvtt/nvtt.h>
 #endif
 #pragma warning(pop)

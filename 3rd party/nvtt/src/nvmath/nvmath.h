@@ -85,12 +85,14 @@ inline float asinf_assert(const float f)
 }
 
 // Replace default functions with asserting ones.
+#if !NV_CC_MSVC || (NV_CC_MSVC && (_MSC_VER < 1700))    // IC: Apparently this was causing problems in Visual Studio 2012. See Issue 194: https://code.google.com/p/nvidia-texture-tools/issues/detail?id=194
 #define sqrt sqrt_assert
 #define sqrtf sqrtf_assert
 #define acos acos_assert
 #define acosf acosf_assert
 #define asin asin_assert
 #define asinf asinf_assert
+#endif
 
 #if NV_OS_WIN32
 #include <float.h>

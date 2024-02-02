@@ -27,7 +27,7 @@ function is called.  Output of timing test is saved to a local .txt file.
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include <dds\ddsTypes.h>
+#include "dds\ddsTypes.h"
 #include "dds.h"
 
 //struct TimingInfo;		// defined in Image_DXTC.cpp

@@ -6,8 +6,8 @@
     #include <mmsystem.h>	// MAKEFOURCC
 #endif
 
-#include <dds/tPixel.h>
-#include <dds/nvErrorCodes.h >
+#include "dds/tPixel.h"
+#include "dds/nvErrorCodes.h"
 
 
 

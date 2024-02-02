@@ -2,8 +2,10 @@
 
 #include <math.h>
 #include <memory.h>
-#include <dds/tVector.h>
-#include <dds/nvErrorCodes.h>
+//#include <dds/tVector.h>
+#include "dds/tVector.h"
+//#include <dds/nvErrorCodes.h>
+#include "dds/nvErrorCodes.h"
 
 #pragma warning(disable : 4201)
 
@@ -1836,5 +1838,5 @@ public:
 
 
 
-#include <dds/ConvertColor.h>   
-
+//#include <dds/ConvertColor.h>   
+#include "dds/ConvertColor.h"

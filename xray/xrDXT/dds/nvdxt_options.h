@@ -16,8 +16,10 @@
 #pragma once
 
 #include <windows.h>
-#include <dds/tPixel.h>
-#include <dds/ddsTypes.h>
+//#include <dds/tPixel.h>
+#include "dds/tPixel.h"
+//#include <dds/ddsTypes.h>
+#include "dds/ddsTypes.h"
                     
 inline char * GetDXTCVersion() { return "Version 8.30";}
 

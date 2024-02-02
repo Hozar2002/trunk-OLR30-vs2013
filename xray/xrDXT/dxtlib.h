@@ -19,8 +19,12 @@
 #define DXTLIB_API
 #endif
 
-#include <dds/nvdxt_options.h>
-#include <dds/nvErrorCodes.h>
+#include "dds/nvdxt_options.h"
+#include "dds/nvErrorCodes.h"
+
+
+//#include <dds/nvdxt_options.h>
+//#include <dds/nvErrorCodes.h>
 
 struct MIPMapData
 {

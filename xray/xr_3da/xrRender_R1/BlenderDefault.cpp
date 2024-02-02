@@ -1,5 +1,7 @@
 // BlenderDefault.cpp: implementation of the CBlender_default class.
+// 
 //
+// статическая геометрия на которой лежат лайтмапы (не террейн и не динамика)
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
@@ -14,23 +16,28 @@
 CBlender_default::CBlender_default	()
 {
 	description.CLS		= B_DEFAULT;
+	//Msg("CBlender_default create");
 }
 
 CBlender_default::~CBlender_default	()
 {
-
+		//Msg("CBlender_default destr");
 }
 void	CBlender_default::Save(	IWriter& fs )
 {
 	IBlender::Save	(fs);
+		//Msg("CBlender_default save");
 }
 void	CBlender_default::Load(	IReader& fs, u16 version )
 {
 	IBlender::Load	(fs,version);
+		//Msg("CBlender_default load");
 }
 void	CBlender_default::Compile(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
+	//Msg("CBlender_default compile");
+	//Msg("dist %f",d);
 	if (C.bEditor)	{
 		C.PassBegin		();
 		{
@@ -47,7 +54,7 @@ void	CBlender_default::Compile(CBlender_Compile& C)
 		}
 		C.PassEnd			();
 	} else {
-		if (C.L_textures.size()<3)	Debug.fatal	(DEBUG_INFO,"Not enought textures for shader, base tex: %s",*C.L_textures[0]);
+		if (C.L_textures.size()<3)	Debug.fatal	(DEBUG_INFO," [CBlender_default] Not enought textures for shader, base tex: %s",*C.L_textures[0]);
 		switch (C.iElement)
 		{
 		case SE_R1_NORMAL_HQ:

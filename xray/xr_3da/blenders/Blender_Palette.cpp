@@ -65,6 +65,7 @@ void		IBlender::CreatePalette(xr_vector<IBlender*> &palette)
 #include "..\render.h"
 IBlender*	IBlender::Create	(CLASS_ID cls)
 {
+	//Msg("IBlender::Create (%u):",cls);
 	return ::Render->blender_create	(cls);
 }
 void		IBlender::Destroy	(IBlender*& B)

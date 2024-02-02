@@ -29,7 +29,7 @@ void __fastcall mapNormal_Render	(mapNormalItems& N)
 	_NormalItem				*I=&*N.begin(), *E = &*N.end();
 	for (; I!=E; I++)		{
 		_NormalItem&		Ni	= *I;
-		Ni.pVisual->Render	(calcLOD(Ni.ssa,Ni.pVisual->vis.sphere.R));
+		Ni.pVisual->Render	(calcLOD(Ni.ssa,Ni.pVisual->vis.sphere.R));  // вся статчная геометрия кроме прозрачной (сетка)
 	}
 }
 
@@ -47,7 +47,7 @@ void __fastcall mapMatrix_Render	(mapMatrixItems& N)
 		RCache.set_xform_world			(Ni.Matrix);
 		RImplementation.apply_object	(Ni.pObject);
 		RImplementation.apply_lmaterial	();
-		Ni.pVisual->Render				(calcLOD(Ni.ssa,Ni.pVisual->vis.sphere.R));
+		Ni.pVisual->Render				(calcLOD(Ni.ssa,Ni.pVisual->vis.sphere.R));  // вся динамическая геометрия кроме прозрачной (сетка)
 	}
 	N.clear	();
 }
@@ -453,9 +453,33 @@ void R_dsgraph_structure::r_dsgraph_render_hud	()
 // strict-sorted render
 void	R_dsgraph_structure::r_dsgraph_render_sorted	()
 {
-	// Sorted (back to front)
-	mapSorted.traverseRL	(sorted_L1);
-	mapSorted.clear			();
+		mapSorted.traverseRL(sorted_L1);
+		mapSorted.clear();
+
+#if	RENDER != R_R1
+	ENGINE_API extern float psHUD_FOV;
+	// Change projection
+	Fmatrix Pold = Device.mProject;
+	Fmatrix FTold = Device.mFullTransform;
+	Device.mProject.build_projection(
+		deg2rad(psHUD_FOV*Device.fFOV),
+		Device.fASPECT, VIEWPORT_NEAR,
+		g_pGamePersistent->Environment().CurrentEnv.far_plane);
+
+	Device.mFullTransform.mul(Device.mProject, Device.mView);
+	RCache.set_xform_project(Device.mProject);
+
+	// Rendering
+	rmNear();
+	mapHUDSorted.traverseRL(sorted_L1);
+	mapHUDSorted.clear();
+	rmNormal();
+
+	// Restore projection
+	Device.mProject = Pold;
+	Device.mFullTransform = FTold;
+	RCache.set_xform_project(Device.mProject);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

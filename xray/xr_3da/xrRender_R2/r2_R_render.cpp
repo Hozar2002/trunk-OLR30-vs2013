@@ -108,9 +108,23 @@ void CRender::render_main	(Fmatrix&	m_ViewProjection, bool _fportals)
 
 				if (spatial->spatial.type & STYPE_RENDERABLE)
 				{
-					// renderable
-					IRenderable*	renderable		= spatial->dcast_Renderable	();
-					VERIFY							(renderable);
+					//// renderable
+					//IRenderable*	renderable		= spatial->dcast_Renderable	();
+					//VERIFY							(renderable);
+
+					IRenderable* renderable = spatial->dcast_Renderable();
+					//bool bSphere = view.testSphere_dirty(spatial->spatial.sphere.P, spatial->spatial.sphere.R);
+ 					if (!renderable)
+					{
+						CGlow* pGlow = dynamic_cast<CGlow*>(spatial);
+						R_ASSERT(pGlow, "Glow don't created!");
+ 						//if (bSphere)
+							Glows->add(pGlow);
+						//else
+						//	pGlow->hide_glow();
+					}
+					else //if (bSphere)
+					{
 
 					// Occlusion
 					vis_data&		v_orig			= renderable->renderable.visual->vis;
@@ -127,16 +141,20 @@ void CRender::render_main	(Fmatrix&	m_ViewProjection, bool _fportals)
 					set_Object						(renderable);
 					renderable->renderable_Render	();
 					set_Object						(0);
+					}
 				}
 				break;	// exit loop on frustums
 			}
 		}
 		if (g_pGameLevel && (phase==PHASE_NORMAL))	g_pGameLevel->pHUD->Render_Last();		// HUD
+		
 	}
 	else
 	{
 		set_Object									(0);
+		if (g_pGameLevel && (phase == PHASE_NORMAL))	g_pGameLevel->pHUD->Render_First();		// HUD
 		if (g_pGameLevel && (phase==PHASE_NORMAL))	g_pGameLevel->pHUD->Render_Last();		// HUD
+		
 	}
 }
 
@@ -378,7 +396,7 @@ void CRender::Render		()
 		Lights_LastFrame.clear	();
 	}
 
-	// Directional light - fucking sun
+	// Directional light - fucking sun  //  && Device.dwFrame&1 test
 	if (bSUN)	{
 		RImplementation.stats.l_visible		++;
 		render_sun_near						();
@@ -397,6 +415,11 @@ void CRender::Render		()
 
 	// Postprocess
 	Target->phase_combine					();
+
+	Device.Statistic->RenderDUMP_HUD.Begin();
+	if (g_pGameLevel)	g_pGameLevel->pHUD->RenderUI();
+	Device.Statistic->RenderDUMP_HUD.End();
+
 	VERIFY	(0==mapDistort.size());
 }
 
@@ -417,6 +440,8 @@ void CRender::render_forward				()
 		r_dsgraph_render_sorted					()	;					// strict-sorted geoms
 		r_dsgraph_render_hud_sorted				()	;
 		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts
+		if (Glows)
+			Glows->Render();
 	}
 
 	RImplementation.o.distortion				= FALSE;				// disable distorion

@@ -32,6 +32,7 @@ public:
 	u32															marker;
 	bool														pmask		[2]		;
 	bool														pmask_wmark			;
+	LPCSTR														ShaderFromModel;
 public:
 	// Dynamic scene graph
 	R_dsgraph::mapNormal_T										mapNormal	[2]		;	// 2==(priority/2)
@@ -83,6 +84,14 @@ public:
 				void					set_Recorder			(xr_vector<Fbox3,render_alloc<Fbox3> >* dest)		{ val_recorder	= dest;	if (dest) dest->clear();	}
 				void					get_Counters			(u32&	s,	u32& d)				{ s=counter_S; d=counter_D;			}
 				void					clear_Counters			()								{ counter_S=counter_D=0; 			}
+	
+	virtual LPCSTR getShaderFromModel() {
+		return ShaderFromModel;
+	}
+	virtual void setShaderFromModel(LPCSTR value) {
+		ShaderFromModel = value;
+	}
+
 public:
 	R_dsgraph_structure	()
 	{
@@ -97,6 +106,7 @@ public:
 		marker				= 0;
 		r_pmask				(true,true);
 		b_loaded			= FALSE	;
+		ShaderFromModel		= NULL;
 	};
 
 	void		r_dsgraph_destroy()

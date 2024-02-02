@@ -128,7 +128,7 @@ IDirect3DTexture9*	TW_LoadTextureFromTexture
 		HW.pDevice,
 		top_width,top_height,
 		levels_exist,0,t_dest_fmt,
-		D3DPOOL_MANAGED,&t_dest
+		D3DPOOL_DEFAULT,&t_dest   // D3DPOOL_MANAGED - ориг // D3DPOOL_DEFAULT  - правка  //noramtexture
 		));
 
 	// Copy surfaces & destroy temporary
@@ -320,7 +320,7 @@ _DDS_CUBE:
 				D3DX_DEFAULT,
 				IMG.MipLevels,0,
 				IMG.Format,
-				D3DPOOL_MANAGED,
+				D3DPOOL_DEFAULT,   // D3DPOOL_MANAGED - ориг // D3DPOOL_DEFAULT  - правка  //noramtexture
 				D3DX_DEFAULT,
 				D3DX_DEFAULT,
 				0,&IMG,0,
@@ -341,13 +341,17 @@ _DDS_2D:
 			// Check for LMAP and compress if needed
 			strlwr					(fn);
 
+			//IMG.Format			= D3DFMT_A16B16G16R16;
 
-			// Load   SYS-MEM-surface, bound to device restrictions
+			// Load   SYS-MEM-surface, bound to device restrictions   
 			IDirect3DTexture9*		T_sysmem;
-			R_CHK2(D3DXCreateTextureFromFileInMemoryEx
+			if(ps_common_flags.test(RFLAG_COMPRESS_LMAPS)&&(strstr(fn,"lmap#"))) { 
+					UINT dim = 128;
+					R_CHK2(D3DXCreateTextureFromFileInMemoryEx
 					(
 						HW.pDevice,S->pointer(),S->length(),
-						D3DX_DEFAULT,D3DX_DEFAULT,
+						//D3DX_DEFAULT,D3DX_DEFAULT,
+						dim,dim,
 						IMG.MipLevels,0,
 						IMG.Format,
 						D3DPOOL_SYSTEMMEM,
@@ -356,8 +360,28 @@ _DDS_2D:
 						0,&IMG,0,
 						&T_sysmem
 					), fn);
+				 }else{
+					UINT dim = HW.Caps.raster.bNonPow2 ? D3DX_DEFAULT_NONPOW2 : D3DX_DEFAULT;
+					R_CHK2(D3DXCreateTextureFromFileInMemoryEx
+					(
+						HW.pDevice,S->pointer(),S->length(),
+						//D3DX_DEFAULT,D3DX_DEFAULT,
+						dim,dim,
+						IMG.MipLevels,0,
+						IMG.Format,
+						D3DPOOL_SYSTEMMEM,
+						D3DX_DEFAULT,
+						D3DX_DEFAULT,
+						0,&IMG,0,
+						&T_sysmem
+					), fn);
+				 };
+			//IMG.Format				= D3DFMT_D24FS8;  // flyer
+			//Msg						("* Loaded: %s --[%d]",fn,dum);
+
 			FS.r_close				(S);
-			img_loaded_lod			= get_texture_load_lod(fn);
+
+			img_loaded_lod			= get_texture_load_lod(fn);    // !!! texture_lod уровни  (больше - хуже качество текстур)
 			pTexture2D				= TW_LoadTextureFromTexture(T_sysmem,IMG.Format, img_loaded_lod, dwWidth, dwHeight);
 			mip_cnt					= pTexture2D->GetLevelCount();
 			_RELEASE				(T_sysmem);

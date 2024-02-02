@@ -9,23 +9,23 @@
 #include "..\fbasicvisual.h"
 #include "..\CustomHUD.h"
  
-const	float		S_distance		= 48;
+const	float		S_distance		= 128;
 const	float		S_distance2		= S_distance*S_distance;
-const	float		S_ideal_size	= 4.f;		// ideal size for the object
-const	float		S_fade			= 4.5;
+const	float		S_ideal_size	= 24.f;		// ideal size for the object
+const	float		S_fade			= 24.5;
 const	float		S_fade2			= S_fade*S_fade;
 
-const	float		S_level			= .05f;		// clip by energy level
-const	int			S_size			= 85;
-const	int			S_rt_size		= 512;
-const	int			batch_size		= 256;
-const	float		S_tess			= .5f;
-const	int 		S_ambient		= 32;
+const	float		S_level			= .2f;		// clip by energy level
+const	int			S_size			= 256;
+const	int			S_rt_size		= 2048;
+const	int			batch_size		= 2048;
+const	float		S_tess			= 1.5f;
+const	int 		S_ambient		= 128; // 96 // освещение тени (больше - светлее)
 const	int 		S_clip			= 256-8;
 const	D3DFORMAT	S_rtf			= D3DFMT_A8R8G8B8;
-const	float		S_blur_kernel	= 0.75f;
+const	float		S_blur_kernel	= 1.55f; // 1.75f; // размытость
 
-const	u32			cache_old		= 30*1000;	// 30 secs
+const	u32			cache_old		= 300*1000;	// 30 secs
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -86,24 +86,26 @@ void CLightShadows::set_object	(IRenderable* O)
 	if (0==O)	current		= 0;
 	else 
 	{
-		if (!O->renderable_ShadowGenerate()	|| RImplementation.val_bHUD || ((CROS_impl*)O->renderable_ROS())->shadow_gen_frame==Device.dwFrame)
+		if (!O->renderable_ShadowGenerate()	|| RImplementation.val_bHUD || ((CROS_impl*)O->renderable_ROS())->shadow_gen_frame==Device.dwFrame) // dont work 1fps hud shadows // ! не оно - не работает
 		{
 			current		= 0;
 			return;
 		}
 
-		Fvector		C;	O->renderable.xform.transform_tiny		(C,O->renderable.visual->vis.sphere.P);
-		float		R				= O->renderable.visual->vis.sphere.R;
+		Fvector		C;	
+		O->renderable.xform.transform_tiny		(C,O->renderable.visual->vis.sphere.P);
+		float		R				= O->renderable.visual->vis.sphere.R * 10.0f;  // hi_flyer 26/09/18
 		float		D				= C.distance_to(Device.vCameraPosition)+R;
 					// D=0 -> P=0; 
 					// R<S_ideal_size -> P=max, R>S_ideal_size -> P=min
+
 		float		_priority		= (D/S_distance)*(S_ideal_size/(R+EPS));
 		if (_priority<1.f)		current	= O;
 		else					current = 0;
 		
 		if (current)
 		{
-			((CROS_impl*)O->renderable_ROS())->shadow_gen_frame	=	Device.dwFrame;
+			((CROS_impl*)O->renderable_ROS())->shadow_gen_frame	=	Device.dwFrame;  // тут может для солнца (тоже поделить / 2500) ! не оно - не работает
 
 			// alloc
 			caster*	cs		= NULL;
@@ -219,9 +221,9 @@ void CLightShadows::calculate	()
 			if (L.source->flags.type==IRender_Light::DIRECT)
 			{
 				// Msg		(" -direct- : %f",L.energy);
-				Lpos.mul	(L.source->direction,-100);
+				Lpos.mul	(L.source->direction,-100); //-100
 				Lpos.add	(C.C);
-				Lrange		= 120;
+				Lrange		= 120; // радиус тени от света
 			} else {
 				VERIFY		(_valid(Lpos));
 				VERIFY		(_valid(C.C));
@@ -252,11 +254,12 @@ void CLightShadows::calculate	()
 			float		p_near	=	p_dist-p_R-eps;									
 			float		p_nearR	=	C.C.distance_to(L.source->position) + p_R*0.85f + eps;
 						p_nearR =	p_near;
-			float		p_far	=	_min(Lrange,_max(p_dist+S_fade,p_dist+p_R));	
-			if (p_near<eps)			continue;
-			if (p_far<(p_near+eps))	continue;
-			if (p_hat>0.9f)			continue;
-			if (p_hat<0.01f)		continue;
+			float		p_far	=	_min(Lrange,_max(p_dist+S_fade,p_dist+p_R));
+
+			//if (p_near<eps)			continue;
+			//if (p_far<(p_near+eps))	continue;
+			//if (p_hat>0.9f)			continue;
+			//if (p_hat<0.01f)		continue;
 
 			//Msg			("* near(%f), near-x(%f)",p_near,p_nearR);
 			
@@ -317,9 +320,20 @@ void CLightShadows::calculate	()
 		casters_pool.push_back(casters[cs]);
 	casters.clear	();
 	
-	// Blur
+	// Blur 
+	// тут тени принимают вид родителя (если закоменить - тень просто квадрат-полотно)
 	if (bRTS)
 	{
+
+		// add
+		//float							dim				= S_rt_size;
+		//Fvector2						shift,p0,p1,a0,a1,b0,b1,c0,c1,d0,d1;
+		//p0.set							(.5f/dim, .5f/dim);
+		//p1.set							((dim+.5f)/dim, (dim+.5f)/dim);
+		//shift.set(.5f/dim, .5f/dim); a0.add(p0,shift); a1.add(p1,shift); b0.sub(p0,shift); b1.sub(p1,shift);
+		//shift.set(.5f/dim,-.5f/dim); c0.add(p0,shift); c1.add(p1,shift); d0.sub(p0,shift); d1.sub(p1,shift);
+		// add
+
 		// Fill VB
 		u32							Offset;
 		FVF::TL4uv* pv				= (FVF::TL4uv*) RCache.Vertex.Lock	(4,geom_Blur.stride(),Offset);
@@ -412,7 +426,7 @@ void CLightShadows::render	()
 				else if (!CI->Lp.similar(CI->L->position))		bValid = FALSE;
 			}
 		}
-		CI->time				= Device.dwTimeGlobal;	// acess time
+		CI->time				= Device.dwTimeGlobal / 2500;	// acess time  // !! hi_flyer edit soft fade - only for POINT lamps?
 
 		if (!bValid)			{
 			// Frustum

@@ -4,6 +4,9 @@
 #include	"xrRender_console.h"
 #include    "../../../build_config_defines.h"
 
+
+int ps_GlowsPerFrame = 16;
+
 u32			ps_Preset				=	2	;
 xr_token							qpreset_token							[ ]={
 	{ "Minimum",					0											},
@@ -106,7 +109,7 @@ float		ps_r2_dhemi_scale			= 1.f;				// 1.5f
 int			ps_r2_dhemi_count			= 5;				// 5
 int			ps_r2_wait_sleep			= 0;
 
-float		ps_r2_lt_smooth				= 1.f;				// 1.f
+float		ps_r2_lt_smooth				= 1.f;				// 1.f ---- 1.f flyer
 float		ps_r2_slight_fade			= 1.f;				// 1.f
 
 // KD start
@@ -202,7 +205,7 @@ public:
 			CHK_DX(HW.pDevice->SetSamplerState( i, D3DSAMP_MIPMAPLODBIAS, *((LPDWORD) value)));
 	}
 
-	CCC_tf_MipBias(LPCSTR N, float*	v) : CCC_Float(N, v, -0.5f, +0.5f)	{ };
+	CCC_tf_MipBias(LPCSTR N, float*	v) : CCC_Float(N, v, -3.5f, +3.5f)	{ };
 	virtual void Execute(LPCSTR args)
 	{
 		CCC_Float::Execute	(args);
@@ -317,13 +320,13 @@ void		xrRender_initconsole	()
 
 	Fvector	tw_min,tw_max;
 	
-	CMD4(CCC_Float,		"r__geometry_lod",		&ps_r__LOD,					0.1f,	/*1.2f*/ 3.0f		);	// KD: extended from 1.2 to 3.0
+	CMD4(CCC_Float,		"r__geometry_lod",		&ps_r__LOD,					0.1f,	/*1.2f*/ 9.0f		);	// KD: extended from 1.2 to 3.0
 //.	CMD4(CCC_Float,		"r__geometry_lod_pow",	&ps_r__LOD_Power,			0,		2		);
 
 //.	CMD4(CCC_Float,		"r__detail_density",	&ps_r__Detail_density,		.05f,	0.99f	);
 	CMD4(CCC_Float,		"r__detail_density",	&ps_current_detail_density/*&ps_r__Detail_density*/,		0.04f/*.2f*/,	0.6f	);	// KD: extended from 0.2 to 0.04 and replaced variable
 
-#ifdef DEBUG
+//#ifdef DEBUG
 	CMD4(CCC_Float,		"r__detail_l_ambient",	&ps_r__Detail_l_ambient,	.5f,	.95f	);
 	CMD4(CCC_Float,		"r__detail_l_aniso",	&ps_r__Detail_l_aniso,		.1f,	.5f		);
 
@@ -334,7 +337,7 @@ void		xrRender_initconsole	()
 	tw_min.set			(EPS,EPS,EPS);
 	tw_max.set			(2,2,2);
 	CMD4(CCC_Vector3,	"r__d_tree_wave",		&ps_r__Tree_Wave,			tw_min, tw_max	);
-#endif // DEBUG
+//#endif // DEBUG
 
 	CMD2(CCC_tf_Aniso,	"r__tf_aniso",			&ps_r__tf_Anisotropic		); //	{1..16}
 
@@ -344,10 +347,10 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Float,		"r1_lmodel_lerp",		&ps_r1_lmodel_lerp,			0,		0.333f	);
 	CMD2(CCC_tf_MipBias,"r1_tf_mipbias",		&ps_r1_tf_Mipbias			);//	{-3 +3}
 	CMD3(CCC_Mask,		"r1_dlights",			&ps_r1_flags,				R1FLAG_DLIGHTS	);
-	CMD4(CCC_Float,		"r1_dlights_clip",		&ps_r1_dlights_clip,		10.f,	150.f	);
+	CMD4(CCC_Float,		"r1_dlights_clip",		&ps_r1_dlights_clip,		10.f,	300.f	); // 300
 	CMD4(CCC_Float,		"r1_pps_u",				&ps_r1_pps_u,				-1.f,	+1.f	);
 	CMD4(CCC_Float,		"r1_pps_v",				&ps_r1_pps_v,				-1.f,	+1.f	);
-	CMD4(CCC_Float,		"r1_dlights_clip",		&ps_r1_dlights_clip,		10.f,	150.f	);
+	CMD4(CCC_Float,		"r1_dlights_clip",		&ps_r1_dlights_clip,		10.f,	300.f	); // 300
 
 	// R1-specific
 	CMD4(CCC_Integer,	"r1_glows_per_frame",	&ps_r1_GlowsPerFrame,		2,		32		);
@@ -380,7 +383,7 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask,		"r2_allow_r1_lights",	&ps_r2_ls_flags,			R2FLAG_R1LIGHTS	);
 
 	//- Mad Max
-	CMD4(CCC_Float,		"r2_gloss_factor",		&ps_r2_gloss_factor,		.0f,	10.f	);
+	CMD4(CCC_Float,		"r2_gloss_factor",		&ps_r2_gloss_factor,		.0f,	100.f	);
 	//- Mad Max
 
 #ifdef DEBUG
@@ -399,15 +402,15 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask,		"r2_sun_tsm",			&ps_r2_ls_flags,			R2FLAG_SUN_TSM	);
 	CMD4(CCC_Float,		"r2_sun_tsm_proj",		&ps_r2_sun_tsm_projection,	.001f,	0.8f	);
 	CMD4(CCC_Float,		"r2_sun_tsm_bias",		&ps_r2_sun_tsm_bias,		-0.5,	+0.5	);
-	CMD4(CCC_Float,		"r2_sun_near",			&ps_r2_sun_near,			1.f,	/*50.f*/150.f	);	// KD: extended from 50 to 150
+	CMD4(CCC_Float,		"r2_sun_near",			&ps_r2_sun_near,			1.f,	/*50.f*/350.f	);	// KD: extended from 50 to 150
 	CMD4(CCC_Float,		"r2_sun_near_border",	&ps_r2_sun_near_border,		.5f,	1.0f	);
 	CMD4(CCC_Float,		"r2_sun_depth_far_scale",&ps_r2_sun_depth_far_scale,0.5,	1.5		);
 	CMD4(CCC_Float,		"r2_sun_depth_far_bias",&ps_r2_sun_depth_far_bias,	-0.5,	+0.5	);
 	CMD4(CCC_Float,		"r2_sun_depth_near_scale",&ps_r2_sun_depth_near_scale,0.5,	1.5		);
 	CMD4(CCC_Float,		"r2_sun_depth_near_bias",&ps_r2_sun_depth_near_bias,-0.5,	+0.5	);
-	CMD4(CCC_Float,		"r2_sun_lumscale",		&ps_r2_sun_lumscale,		-1.0,	+3.0	);
-	CMD4(CCC_Float,		"r2_sun_lumscale_hemi",	&ps_r2_sun_lumscale_hemi,	0.0,	+3.0	);
-	CMD4(CCC_Float,		"r2_sun_lumscale_amb",	&ps_r2_sun_lumscale_amb,	0.0,	+3.0	);
+	CMD4(CCC_Float,		"r2_sun_lumscale",		&ps_r2_sun_lumscale,		-3.0,	+6.0	);
+	CMD4(CCC_Float,		"r2_sun_lumscale_hemi",	&ps_r2_sun_lumscale_hemi,	-3.0,	+6.0	);
+	CMD4(CCC_Float,		"r2_sun_lumscale_amb",	&ps_r2_sun_lumscale_amb,	-3.0,	+6.0	);
 
 	CMD3(CCC_Mask,		"r2_aa",				&ps_r2_ls_flags,			R2FLAG_AA);
 	CMD4(CCC_Float,		"r2_aa_kernel",			&ps_r2_aa_kernel,			0.3f,	0.7f	);
@@ -421,17 +424,17 @@ void		xrRender_initconsole	()
 
 	CMD4(CCC_Integer,	"r2_wait_sleep",		&ps_r2_wait_sleep,			0,		1		);
 
-#ifdef DEBUG
-	CMD4(CCC_Integer,	"r2_dhemi_count",		&ps_r2_dhemi_count,			4,		25		);
+//#ifdef DEBUG
+	CMD4(CCC_Integer,	"r2_dhemi_count",		&ps_r2_dhemi_count,			4,		25		); 
 	CMD4(CCC_Float,		"r2_dhemi_scale",		&ps_r2_dhemi_scale,			.5f,	3.f		);
 	CMD4(CCC_Float,		"r2_dhemi_smooth",		&ps_r2_lt_smooth,			0.f,	10.f	);
-#endif // DEBUG
+//#endif // DEBUG
 
 	CMD4(CCC_Float,		"r2_ls_depth_scale",	&ps_r2_ls_depth_scale,		0.5,	1.5		);
 	CMD4(CCC_Float,		"r2_ls_depth_bias",		&ps_r2_ls_depth_bias,		-0.5,	+0.5	);
 
 	CMD4(CCC_Float,		"r2_parallax_h",		&ps_r2_df_parallax_h,		.0f,	.5f		);
-//	CMD4(CCC_Float,		"r2_parallax_range",	&ps_r2_df_parallax_range,	5.0f,	175.0f	);
+	CMD4(CCC_Float,		"r2_parallax_range",	&ps_r2_df_parallax_range,	5.0f,	175.0f	);
 
 	CMD4(CCC_Float,		"r2_slight_fade",		&ps_r2_slight_fade,			.02f,	2.f		);
 
@@ -447,6 +450,10 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask,			"r2_soft_water",		&ps_r2_ls_flags,			R2FLAG_SOFT_WATER		);
 	CMD3(CCC_Mask,			"r2_soft_particles",	&ps_r2_ls_flags,			R2FLAG_SOFT_PARTICLES	);
 	CMD3(CCC_Token,			"r2_steep_parallax",	&ps_steep_parallax,			ext_quality_token	);
+
+	CMD3(CCC_Mask, 			"r2_old_bloom",				&ps_r2_ls_flags, 			R2FLAG_OLDBLOOM);
+	CMD3(CCC_Mask,			"r__compress_lmaps",		&ps_common_flags,			RFLAG_COMPRESS_LMAPS);
+
 #ifdef KD_DETAIL_RADIUS
 	CMD4(CCC_detail_radius,	"r__detail_radius",		&ps_r__detail_radius,		49,	250	);
 #endif

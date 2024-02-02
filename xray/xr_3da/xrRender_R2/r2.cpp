@@ -11,21 +11,21 @@
 CRender										RImplementation;
 
 //////////////////////////////////////////////////////////////////////////
-class CGlow				: public IRender_Glow
-{
-public:
-	bool				bActive;
-public:
-	CGlow() : bActive(false)		{ }
-	virtual void					set_active			(bool b)					{ bActive=b;		}
-	virtual bool					get_active			()							{ return bActive;	}
-	virtual void					set_position		(const Fvector& P)			{ }
-	virtual void					set_direction		(const Fvector& D)			{ }
-	virtual void					set_radius			(float R)					{ }
-	virtual void					set_texture			(LPCSTR name)				{ }
-	virtual void					set_color			(const Fcolor& C)			{ }
-	virtual void					set_color			(float r, float g, float b)	{ }
-};
+//class CGlow				: public IRender_Glow
+//{
+//public:
+//	bool				bActive;
+//public:
+//	CGlow() : bActive(false)		{ }
+//	virtual void					set_active			(bool b)					{ bActive=b;		}
+//	virtual bool					get_active			()							{ return bActive;	}
+//	virtual void					set_position		(const Fvector& P)			{ }
+//	virtual void					set_direction		(const Fvector& D)			{ }
+//	virtual void					set_radius			(float R)					{ }
+//	virtual void					set_texture			(LPCSTR name)				{ }
+//	virtual void					set_color			(const Fcolor& C)			{ }
+//	virtual void					set_color			(float r, float g, float b)	{ }
+//};
 
 float		r_dtex_range		= 50.f;
 //////////////////////////////////////////////////////////////////////////
@@ -327,6 +327,28 @@ BOOL CRender::is_sun()
 IRender_ObjectSpecific*	CRender::ros_create				(IRenderable* parent)				{ return xr_new<CROS_impl>();			}
 void					CRender::ros_destroy			(IRender_ObjectSpecific* &p)		{ xr_delete(p);							}
 IRender_Visual*			CRender::model_Create			(LPCSTR name, IReader* data)		{ return Models->Create(name,data);		}
+
+IRender_Visual*			CRender::model_Instance_Load	(LPCSTR name, IReader* data) {
+	string_path low_name;	VERIFY	(xr_strlen(name)<sizeof(low_name));
+	strcpy(low_name,name);	strlwr	(low_name);
+	if (strext(low_name))	*strext	(low_name)=0;
+	
+	const bool find = (Models->Instance_Find(low_name)==NULL);
+	IRender_Visual* Base;
+	Models->SetAllowChildrenDuplicate(FALSE);
+	if (data) Base = Models->Instance_Load(low_name,data,find);
+	else Base = Models->Instance_Load(low_name,find);
+	Models->SetAllowChildrenDuplicate(TRUE);
+#ifdef _EDITOR
+	if (!Base)		return NULL;
+#endif
+	IRender_Visual*		Model	= Models->Instance_Duplicate(Base);
+	Models->GetRegistry().insert		( mk_pair(Model,low_name) );
+	Models->Delete(Base,FALSE);
+	return				Model;
+	
+}
+
 IRender_Visual*			CRender::model_CreateChild		(LPCSTR name, IReader* data)		{ return Models->CreateChild(name,data);}
 IRender_Visual*			CRender::model_Duplicate		(IRender_Visual* V)					{ return Models->Instance_Duplicate(V);	}
 void					CRender::model_Delete			(IRender_Visual* &V, BOOL bDiscard)	{ Models->Delete(V, bDiscard);			}
@@ -387,7 +409,7 @@ IRender_Light*			CRender::light_create			()					{ return Lights.Create();							
 IRender_Glow*			CRender::glow_create			()					{ return xr_new<CGlow>();								}
 
 void					CRender::flush					()					{ r_dsgraph_render_graph	(0);						}
-
+void					CRender::rpmask(bool _1, bool _2, bool _wm)	{ r_pmask(_1, _2, _wm); }
 BOOL					CRender::occ_visible			(vis_data& P)		{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(sPoly& P)			{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(Fbox& P)			{ return HOM.visible(P);								}
@@ -630,6 +652,11 @@ HRESULT	CRender::shader_compile			(
 		defines[def_it].Definition	=	c_parallax;
 		def_it						++;
 	}
+	if (ps_r2_ls_flags.test(R2FLAG_OLDBLOOM))		{
+		defines[def_it].Name		=	"USE_OLDBLOOM";
+		defines[def_it].Definition	=	"1";
+		def_it						++	;
+	}	
 
 
 	// finish

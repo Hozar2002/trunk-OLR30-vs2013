@@ -3,6 +3,8 @@
 #pragma once
 
 // Common
+extern ECORE_API	int			ps_GlowsPerFrame;
+
 extern ENGINE_API	int			ps_r__Supersample;
 extern ECORE_API	int			ps_r__LightSleepFrames;
 
@@ -126,6 +128,8 @@ enum
 	R2FLAG_TRUE_SHADOWS			= (1<<18),
 	R2FLAG_SOFT_WATER			= (1<<19),
 	R2FLAG_SOFT_PARTICLES		= (1<<20),
+
+	R2FLAG_OLDBLOOM		= (1<<21),
 };
 
 extern void						xrRender_initconsole	();
@@ -142,6 +146,7 @@ enum
 {
 	RFLAG_BLOODMARKS					= (1<<0),
 	RFLAG_ACTOR_SHADOW					= (1<<1),
+	RFLAG_COMPRESS_LMAPS					= (1<<2),
 };
 
 #endif

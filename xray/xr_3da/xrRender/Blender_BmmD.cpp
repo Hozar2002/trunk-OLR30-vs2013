@@ -138,7 +138,7 @@ void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 	// codepath is the same, only the shaders differ
 	// ***only pixel shaders differ***
 	string256				mask;
-	strconcat				(sizeof(mask),mask,C.L_textures[0].c_str(),"_mask");
+	strconcat				(sizeof(mask),mask,C.L_textures[0].c_str(),"");  // strconcat				(sizeof(mask),mask,C.L_textures[0].c_str(),"_mask");
 	switch(C.iElement) 
 	{
 	case SE_R2_NORMAL_HQ: 		// deffer

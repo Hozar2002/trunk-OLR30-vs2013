@@ -47,7 +47,7 @@ public:
 	xrXRC														Sectors_xrc;
 	CDB::MODEL*													rmPortals;
 	CHOM														HOM;
-//.	R_occlusion													HWOCC;
+//	R_occlusion													HWOCC;
 	
 	// Global containers
 	xr_vector<FSlideWindowItem>									SWIs;
@@ -142,6 +142,7 @@ public:
 	
 	// Main 
 	virtual void					flush					();
+	virtual void					rpmask					(bool _1, bool _2, bool _wm);
 	virtual void					set_Object				(IRenderable*		O	);
 	virtual	void					add_Occluder			(Fbox2&	bb_screenspace	);			// mask screen region as oclluded
 	virtual void					add_Visual				(IRender_Visual*	V	);			// add visual leaf (no culling performed at all)
@@ -172,6 +173,7 @@ public:
 	virtual IRender_Visual*			model_CreateParticles	(LPCSTR name);
 	virtual IRender_DetailModel*	model_CreateDM			(IReader*F);
 	virtual IRender_Visual*			model_Create			(LPCSTR name, IReader*data=0);
+	virtual IRender_Visual*			model_Instance_Load		(LPCSTR name, IReader* data = 0);
 	virtual IRender_Visual*			model_CreateChild		(LPCSTR name, IReader*data);
 	virtual IRender_Visual*			model_Duplicate			(IRender_Visual*	V);
 	virtual void					model_Delete			(IRender_Visual* &	V, BOOL bDiscard);

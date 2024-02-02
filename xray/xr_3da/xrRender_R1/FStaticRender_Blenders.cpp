@@ -18,6 +18,7 @@
 #include "..\xrRender\blender_detail_still.h"
 #include "..\xrRender\blender_tree.h"
 #include "..\xrRender\blender_particle.h"
+#include "blender_light.h"
 
 IBlender*	CRender::blender_create	(CLASS_ID cls)
 {	
@@ -31,14 +32,15 @@ IBlender*	CRender::blender_create	(CLASS_ID cls)
 	case B_SCREEN_GRAY:		return xr_new<CBlender_Screen_GRAY>		();	
 	case B_EDITOR_WIRE:		return xr_new<CBlender_Editor_Wire>		();	
 	case B_EDITOR_SEL:		return xr_new<CBlender_Editor_Selection>();
-	case B_LaEmB:			return xr_new<CBlender_LaEmB>			();		
+	case B_LaEmB:			return xr_new<CBlender_LaEmB>			();	
+	case B_LIGHT:			return xr_new<CBlender_LIGHT>			();
 	case B_LmEbB:			return xr_new<CBlender_LmEbB>			();		
 	case B_BmmD:			return xr_new<CBlender_BmmD>			();			
 	case B_SHADOW_WORLD:	return xr_new<CBlender_ShWorld>			();		
 	case B_BLUR:			return xr_new<CBlender_Blur>			();			
 	case B_MODEL:			return xr_new<CBlender_Model>			();		
 	case B_MODEL_EbB:		return xr_new<CBlender_Model_EbB>		();	
-	case B_DETAIL:			return xr_new<CBlender_Detail_Still>	();	
+	case B_DETAIL:			return xr_new<CBlender_Detail_Still>	();	// Shader 'details\set' not found in library.
 	case B_TREE:			return xr_new<CBlender_Tree>			();	
 	case B_PARTICLE:		return xr_new<CBlender_Particle>		();
 	}

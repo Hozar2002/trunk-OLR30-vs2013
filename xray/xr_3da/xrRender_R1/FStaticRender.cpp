@@ -78,7 +78,7 @@ void					CRender::create					()
 	Models						= xr_new<CModelPool>		();
 	L_Dynamic					= xr_new<CLightR_Manager>	();
 	PSLibrary.OnCreate			();
-//.	HWOCC.occq_create			(occq_size);
+//	HWOCC.occq_create			(occq_size);
 
 	xrRender_apply_tf			();
 	::PortalTraverser.initialize();
@@ -87,7 +87,7 @@ void					CRender::create					()
 void					CRender::destroy				()
 {
 	::PortalTraverser.destroy	();
-//.	HWOCC.occq_destroy			();
+//	HWOCC.occq_destroy			();
 	PSLibrary.OnDestroy			();
 	
 	xr_delete					(L_Dynamic);
@@ -109,13 +109,13 @@ void					CRender::reset_begin			()
 		Details->Unload				();
 		xr_delete					(Details);
 	}
-//.	HWOCC.occq_destroy			();
+//	HWOCC.occq_destroy			();
 }
 
 void					CRender::reset_end				()
 {
 	xrRender_apply_tf			();
-//.	HWOCC.occq_create			(occq_size);
+//	HWOCC.occq_create			(occq_size);
 	Target						=	xr_new<CRenderTarget>	();
 
 	// KD: let's reload details while changed details options on vid_restart
@@ -131,12 +131,45 @@ void					CRender::reset_end				()
 void					CRender::OnFrame				()
 {
 	Models->DeleteQueue	();
+
+	if (ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))
+    {
+        // MT-details (@front)
+        Device.seqParallel.insert(
+            Device.seqParallel.begin(), fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
+
+        // MT-HOM (@front)
+        Device.seqParallel.insert(Device.seqParallel.begin(), fastdelegate::FastDelegate0<>(&HOM, &CHOM::MT_RENDER));
+    }
+
 }
 
 // Implementation
 IRender_ObjectSpecific*	CRender::ros_create				(IRenderable* parent)					{ return xr_new<CROS_impl>();			}
 void					CRender::ros_destroy			(IRender_ObjectSpecific* &p)			{ xr_delete(p);							}
 IRender_Visual*			CRender::model_Create			(LPCSTR name, IReader* data)			{ return Models->Create(name,data);		}
+
+IRender_Visual*			CRender::model_Instance_Load	(LPCSTR name, IReader* data) {
+	string_path low_name;	VERIFY	(xr_strlen(name)<sizeof(low_name));
+	strcpy(low_name,name);	strlwr	(low_name);
+	if (strext(low_name))	*strext	(low_name)=0;
+	
+	const bool find = (Models->Instance_Find(low_name)==NULL);
+	IRender_Visual* Base;
+	Models->SetAllowChildrenDuplicate(FALSE);
+	if (data) Base = Models->Instance_Load(low_name,data,find);
+	else Base = Models->Instance_Load(low_name,find);
+	Models->SetAllowChildrenDuplicate(TRUE);
+#ifdef _EDITOR
+	if (!Base)		return NULL;
+#endif
+	IRender_Visual*		Model	= Models->Instance_Duplicate(Base);
+	Models->GetRegistry().insert		( mk_pair(Model,low_name) );
+	Models->Delete(Base,FALSE);
+	return				Model;
+	
+}
+
 IRender_Visual*			CRender::model_CreateChild		(LPCSTR name, IReader* data)			{ return Models->CreateChild(name,data);}
 IRender_Visual*			CRender::model_Duplicate		(IRender_Visual* V)						{ return Models->Instance_Duplicate(V);	}
 void					CRender::model_Delete			(IRender_Visual* &V, BOOL bDiscard)		{ Models->Delete(V,bDiscard);			}
@@ -190,6 +223,7 @@ IRender_Light*			CRender::light_create			()					{ return L_DB->Create();								
 IRender_Glow*			CRender::glow_create			()					{ return xr_new<CGlow>();								}
 
 void					CRender::flush					()					{ r_dsgraph_render_graph	(0);						}
+void					CRender::rpmask					(bool _1, bool _2, bool _wm)	{ r_pmask(_1,_2,_wm); }
 
 BOOL					CRender::occ_visible			(vis_data& P)		{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(sPoly& P)			{ return HOM.visible(P);								}
@@ -323,8 +357,13 @@ void CRender::Calculate				()
 	// Frustum & HOM rendering
 	ViewBase.CreateFromMatrix		(Device.mFullTransform,FRUSTUM_P_LRTB|FRUSTUM_P_FAR);
 	View							= 0;
-	HOM.Enable						();
-	HOM.Render						(ViewBase);
+	//HOM.Enable						();
+	//HOM.Render						(ViewBase);
+	if (!ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))
+    {
+        HOM.Enable();
+        HOM.Render(ViewBase);
+    }
 	gm_SetNearer					(FALSE);
 	phase							= PHASE_NORMAL;
 
@@ -393,11 +432,13 @@ void CRender::Calculate				()
 
 			// Exact sorting order (front-to-back)
 			std::sort							(lstRenderables.begin(),lstRenderables.end(),pred_sp_sort);
-
+			
 			// Determine visibility for dynamic part of scene
 			set_Object							(0);
+
 			if (ps_common_flags.test(RFLAG_ACTOR_SHADOW)) g_pGameLevel->pHUD->Render_First	( );	// R1 shadows
-			g_pGameLevel->pHUD->Render_Last		( );	
+			
+			
 			u32 uID_LTRACK						= 0xffffffff;
 			if (phase==PHASE_NORMAL)			{
 				uLastLTRACK	++;
@@ -466,6 +507,8 @@ void CRender::Calculate				()
 				}
 			}
 		}
+		
+		if (g_pGameLevel && (phase == PHASE_NORMAL))	g_pGameLevel->pHUD->Render_Last();		// HUD
 
 		// Calculate miscelaneous stuff
 		L_Shadows->calculate								();
@@ -474,18 +517,19 @@ void CRender::Calculate				()
 	else
 	{
 		set_Object											(0);
-		/*
-		g_pGameLevel->pHUD->Render_First					();	
-		g_pGameLevel->pHUD->Render_Last						();	
-
+		
+		if (g_pGameLevel && (phase == PHASE_NORMAL))	g_pGameLevel->pHUD->Render_First();
+		if (g_pGameLevel && (phase == PHASE_NORMAL))	g_pGameLevel->pHUD->Render_Last();		
+		
 		// Calculate miscelaneous stuff
 		L_Shadows->calculate								();
 		L_Projector->calculate								();
-		*/
+		
 	}
 
 	// End calc
 	Device.Statistic->RenderCALC.End	();
+	
 }
 
 void	CRender::rmNear		()
@@ -544,12 +588,24 @@ void	CRender::Render		()
 	if(L_Glows)L_Glows->Render					();				// glows
 	g_pGamePersistent->Environment().RenderFlares	();				// lens-flares
 	g_pGamePersistent->Environment().RenderLast	();				// rain/thunder-bolts
-
+	
 	// Postprocess, if necessary
 	Target->End									();
 	if (L_Projector) L_Projector->finalize		();
 
 	// HUD
+	Device.Statistic->RenderDUMP_HUD.Begin();
+	bool	_menu_pp = g_pGamePersistent ? g_pGamePersistent->OnRenderPPUI_query() : false;
+	if (!_menu_pp)
+	{
+		//Target->Begin();
+		if (g_pGameLevel)	
+			g_pGameLevel->pHUD->RenderUI();
+			//BulletManager().Render();
+		//Target->End();
+	}
+	Device.Statistic->RenderDUMP_HUD.End();
+
 	Device.Statistic->RenderDUMP.End	();
 }
 
@@ -565,10 +621,37 @@ void	CRender::ApplyBlur4		(FVF::TL4uv* pv, u32 w, u32 h, float k)
 	u32		_c					= 0xffffffff;
 
 	// Fill vertex buffer
-	pv->p.set(EPS,			float(_h+EPS),	EPS,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p1.y-kh);pv->uv[1].set(p0.x+kw,p1.y+kh);pv->uv[2].set(p0.x+kw,p1.y-kh);pv->uv[3].set(p0.x-kw,p1.y+kh);pv++;
-	pv->p.set(EPS,			EPS,			EPS,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p0.y-kh);pv->uv[1].set(p0.x+kw,p0.y+kh);pv->uv[2].set(p0.x+kw,p0.y-kh);pv->uv[3].set(p0.x-kw,p0.y+kh);pv++;
-	pv->p.set(float(_w+EPS),float(_h+EPS),	EPS,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p1.y-kh);pv->uv[1].set(p1.x+kw,p1.y+kh);pv->uv[2].set(p1.x+kw,p1.y-kh);pv->uv[3].set(p1.x-kw,p1.y+kh);pv++;
-	pv->p.set(float(_w+EPS),EPS,			EPS,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p0.y-kh);pv->uv[1].set(p1.x+kw,p0.y+kh);pv->uv[2].set(p1.x+kw,p0.y-kh);pv->uv[3].set(p1.x-kw,p0.y+kh);pv++;
+	pv->p.set(EPS,			float(_h+EPS),	EPS,1.f); 
+	pv->color=_c; 
+	pv->uv[0].set(p0.x-kw,p1.y-kh);
+	pv->uv[1].set(p0.x+kw,p1.y+kh);
+	pv->uv[2].set(p0.x+kw,p1.y-kh);
+	pv->uv[3].set(p0.x-kw,p1.y+kh);
+	pv++;
+
+	pv->p.set(EPS,			EPS,			EPS,1.f); 
+	pv->color=_c; 
+	pv->uv[0].set(p0.x-kw,p0.y-kh);
+	pv->uv[1].set(p0.x+kw,p0.y+kh);
+	pv->uv[2].set(p0.x+kw,p0.y-kh);
+	pv->uv[3].set(p0.x-kw,p0.y+kh);
+	pv++;
+
+	pv->p.set(float(_w+EPS),float(_h+EPS),	EPS,1.f); 
+	pv->color=_c; 
+	pv->uv[0].set(p1.x-kw,p1.y-kh);
+	pv->uv[1].set(p1.x+kw,p1.y+kh);
+	pv->uv[2].set(p1.x+kw,p1.y-kh);
+	pv->uv[3].set(p1.x-kw,p1.y+kh);
+	pv++;
+
+	pv->p.set(float(_w+EPS),EPS,			EPS,1.f); 
+	pv->color=_c; 
+	pv->uv[0].set(p1.x-kw,p0.y-kh);
+	pv->uv[1].set(p1.x+kw,p0.y+kh);
+	pv->uv[2].set(p1.x+kw,p0.y-kh);
+	pv->uv[3].set(p1.x-kw,p0.y+kh);
+	pv++;
 }
 
 #include "..\GameFont.h"

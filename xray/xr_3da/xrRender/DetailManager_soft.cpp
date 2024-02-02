@@ -70,6 +70,7 @@ void CDetailManager::soft_Render	()
 
 				// Filling itself
                 for (u32 item_idx=item_start; item_idx<item_end; ++item_idx){
+					if (items->at(item_idx) == NULL) continue;
 					SlotItem&	Instance	= *items->at(item_idx);
 					float	scale			= Instance.scale_calculated;
 

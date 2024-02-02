@@ -324,7 +324,7 @@ void CSE_ALifeItemTorch::UPDATE_Read		(NET_Packet	&tNetPacket)
 	
 	BYTE F = tNetPacket.r_u8();
 	m_active					= !!(F & eTorchActive);
-	m_nightvision_active		= !!(F & eNightVisionActive);
+	//m_nightvision_active		= !!(F & eNightVisionActive);
 }
 
 void CSE_ALifeItemTorch::UPDATE_Write		(NET_Packet	&tNetPacket)
@@ -333,7 +333,7 @@ void CSE_ALifeItemTorch::UPDATE_Write		(NET_Packet	&tNetPacket)
 
 	BYTE F = 0;
 	F |= (m_active ? eTorchActive : 0);
-	F |= (m_nightvision_active ? eNightVisionActive : 0);
+	//F |= (m_nightvision_active ? eNightVisionActive : 0);
 	tNetPacket.w_u8(F);
 }
 
